@@ -1,0 +1,24 @@
+# Build artifacts
+/obj/
+/lib/
+/tests/obj/
+/tests/bin/
+
+# Alire generated files
+/alire/
+/config/
+
+# Coverage reports
+/coverage/
+*.gcda
+*.gcno
+*.gcov
+
+# Editor and OS files
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Backup files
+*.backup

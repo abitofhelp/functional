@@ -1,0 +1,54 @@
+rules:
+  # Comment formatting - enforce GNAT style (2 spaces after --)
+  AlignCommentsOnConsecutiveLines:
+    Enabled: true
+  CommentSpacing:
+    Enabled: true
+    TwoSpacesAfterComment: true    # Enforce -- followed by 2 spaces (GNAT style)
+  
+  # Indentation
+  ContinuationLineIndentation: 3
+  DeclarationContinuationLineIndentation: 3
+  Indentation: 3
+
+  # Line length
+  LineLength: 120
+  MaxLineLength: 120              # Enforce maximum line length
+  # TODO: As of 2025-01-09, Ada Language Server does not properly implement line wrapping
+  # BreakLongLines: true            # Attempt to break long lines
+  # WrapComments: true              # Wrap long comment lines
+
+  # Spacing - comprehensive token spacing rules
+  InsertSpacesForTabs: true
+  TabWidth: 3
+  
+  # Token spacing (enforces -gnatyt compliance)
+  SpaceAroundOperators: true      # Binary operators must be surrounded by spaces
+  SpaceAfterCommas: true          # Comma must be followed by a space
+  SpaceAroundColons: true         # Colon must be surrounded by spaces
+  SpaceAroundAssignment: true     # Colon-equal (:=) must be surrounded by spaces
+  SpaceAroundArrows: true         # => must be surrounded by spaces
+  
+  # Additional GNAT style enforcement
+  EnforceGNATStyle: true          # Follow GNAT coding standard
+  CheckStyleViolations: true      # Detect and fix -gnaty violations
+  
+  # Subprogram ordering
+  # Note: gnatformat doesn't currently support automatic subprogram sorting.
+  # The -gnatyo compiler flag enforces alphabetical ordering.
+  # To fix: manually reorder subprograms or disable -gnatyo in project file.
+
+# USAGE NOTES:
+# gnatformat operates incrementally and may require 2-3 runs to converge:
+# 1. First run: fixes spacing issues (-gnatyt violations)
+# 2. Second run: fixes line length issues (-gnatyM120) caused by spacing changes  
+# 3. Third run: final adjustments, should result in clean build
+#
+# LIMITATION: As of 2025-01-09, ALS/gnatformat does not split long string literals
+# or wrap long comments, despite configuration settings
+#
+# Best practice workflow:
+# 1. Run: alr exec -- gnatformat -P project.gpr
+# 2. Run: alr exec -- gnatformat -P project.gpr  (repeat)
+# 3. Run: alr exec -- gnatformat -P project.gpr  (if needed)
+# 4. Build: alr build (should be clean)
