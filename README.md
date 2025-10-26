@@ -1,24 +1,24 @@
 # Functional - Type-Safe Error Handling for Ada 2022
 
-**Version:** 1.0.0
-**Date:** October 25, 2025
-**SPDX-License-Identifier:** BSD-3-Clause
-**License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
+**Version:** 1.0.0<br>
+**Date:** October 25, 2025<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root.<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Release
 
 A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
 
 ## Features
 
-✅ **Result<T,E>** - Type-safe error handling (17 operations)
-✅ **Option<T>** - Optional values (11 operations)
-✅ **Either<L,R>** - Disjoint union type (8 operations)
-✅ **Try.To_Result** - Convert exceptions to Result
-✅ **Try.To_Option** - Convert exceptions to Option
-✅ **Pure packages** - No side effects, compile-time guarantees
-✅ **Zero dependencies** - Just Ada 2022 standard library
-✅ **Production ready** - Comprehensive compiler checks and style enforcement
+- ✅ **Result<T,E>** - Type-safe error handling (17 operations)
+- ✅ **Option<T>** - Optional values (11 operations)
+- ✅ **Either<L,R>** - Disjoint union type (8 operations)
+- ✅ **Try.To_Result** - Convert exceptions to Result
+- ✅ **Try.To_Option** - Convert exceptions to Option
+- ✅ **Pure packages** - No side effects, compile-time guarantees
+- ✅ **Zero dependencies** - Just Ada 2022 standard library
+- ✅ **Production ready** - Comprehensive compiler checks and style enforcement
 
 ## Installation
 
