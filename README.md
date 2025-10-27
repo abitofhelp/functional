@@ -288,6 +288,6 @@ BSD-3-Clause - See LICENSE file
 
 ## Credits
 
-Created by [A Bit of Help, Inc.](https://abitofhelp.com)
+Created by [Michael Gardner, A Bit of Help, Inc.](https://abitofhelp.com)
 
 Part of the Ada 2022 Hybrid Architecture ecosystem.
