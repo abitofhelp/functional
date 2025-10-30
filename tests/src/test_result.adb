@@ -412,18 +412,14 @@ procedure Test_Result is
       Err_Called := False;
       Result := Tap_Both (R_Ok);
       Assert
-        (Int_Result.Is_Ok (Result)
-         and then Ok_Called
-         and then not Err_Called,
+        (Int_Result.Is_Ok (Result) and then Ok_Called and then not Err_Called,
          "Tap calls On_Ok for Ok result");
 
       Ok_Called := False;
       Err_Called := False;
       Result := Tap_Both (R_Err);
       Assert
-        (Int_Result.Is_Err (Result)
-         and then Err_Called
-         and then not Ok_Called,
+        (Int_Result.Is_Err (Result) and then Err_Called and then not Ok_Called,
          "Tap calls On_Err for Err result");
    end Test_Tap;
 
