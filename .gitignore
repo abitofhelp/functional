@@ -22,3 +22,4 @@
 
 # Backup files
 *.backup
+/.claude/settings.local.json

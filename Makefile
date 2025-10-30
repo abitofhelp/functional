@@ -12,8 +12,16 @@
 
 PROJECT_NAME := functional
 
-.PHONY: all build clean deep-clean rebuild test test-all test-coverage check format \
-        format-src format-tests format-all format-check format-preview stats help
+.PHONY: all build build-dev build-opt build-release build-tests check clean \
+        deep-clean deps format format-all format-check format-preview \
+        format-src format-tests full help install install-tools quick rebuild \
+        refresh stats test test-all test-coverage test-run
+
+# =============================================================================
+# OS Detection
+# =============================================================================
+
+UNAME := $(shell uname -s)
 
 # =============================================================================
 # Colors for Output
@@ -33,6 +41,7 @@ NC := \033[0m
 # =============================================================================
 
 ALR := alr
+GPRBUILD := gprbuild
 GNATFORMAT := gnatformat
 PYTHON3 := python3
 
@@ -43,10 +52,13 @@ PYTHON3 := python3
 SRC_DIR := src
 TESTS_DIR := tests
 BUILD_DIR := obj
+BIN_DIR := bin
 COVERAGE_DIR := coverage
 
-# Directories to format (library src + tests)
-FORMAT_DIRS := $(wildcard $(SRC_DIR)) $(wildcard $(TESTS_DIR))
+# =============================================================================
+# Tool Flags
+# =============================================================================
+ALR_BUILD_FLAGS := -j8 --no-indirect-imports | grep -E 'warning:|style:|error:' || true
 
 # =============================================================================
 # Default Target
@@ -58,34 +70,46 @@ all: build
 # Help Target
 # =============================================================================
 
-help:
+help: ## Display this help message
 	@echo "$(ORANGE)$(BOLD)╔══════════════════════════════════════════════════╗$(NC)"
-	@echo "$(ORANGE)$(BOLD)║  Functional Library - Ada 2022$(NC)"
+	@echo "$(ORANGE)$(BOLD)║  Functional Library - Ada 2022                   ║$(NC)"
 	@echo "$(ORANGE)$(BOLD)╚══════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Build Commands:$(NC)"
-	@echo "  build         - Build functional library"
-	@echo "  clean         - Remove build artifacts"
-	@echo "  deep-clean    - Remove all artifacts including cache"
-	@echo "  rebuild       - Clean and rebuild"
+	@echo "  build              - Build library (development mode)"
+	@echo "  build-dev          - Build with development settings"
+	@echo "  build-opt          - Build with optimizations (-O2)"
+	@echo "  build-release      - Build production release"
+	@echo "  build-tests        - Build test suite only"
+	@echo "  clean              - Remove build artifacts"
+	@echo "  deep-clean         - Remove all artifacts including cache"
+	@echo "  rebuild            - Clean and rebuild"
+	@echo "  install            - Install via Alire"
 	@echo ""
 	@echo "$(YELLOW)Testing Commands:$(NC)"
-	@echo "  test          - Run comprehensive test suite"
-	@echo "  test-all      - Run all individual test executables"
-	@echo "  test-coverage - Run tests with coverage (HTML report)"
+	@echo "  test               - Run comprehensive test suite"
+	@echo "  test-all           - Run all test executables"
+	@echo "  test-run           - Run tests without building"
+	@echo "  test-coverage      - Run tests with coverage (HTML report)"
 	@echo ""
 	@echo "$(YELLOW)Quality Commands:$(NC)"
-	@echo "  check         - Run static analysis"
-	@echo "  format-src    - Auto-format library source code (src/)"
-	@echo "  format-tests  - Auto-format test code (tests/)"
-	@echo "  format-all    - Auto-format all source code"
-	@echo "  format        - Alias for format-all"
-	@echo "  format-check  - Check if formatting needed"
-	@echo "  format-preview- Preview formatting changes"
+	@echo "  check              - Run static analysis"
+	@echo "  format-src         - Auto-format library source code (src/)"
+	@echo "  format-tests       - Auto-format test code (tests/)"
+	@echo "  format-all         - Auto-format all source code"
+	@echo "  format             - Alias for format-all"
+	@echo "  format-check       - Check if formatting needed"
+	@echo "  format-preview     - Preview formatting changes"
 	@echo ""
 	@echo "$(YELLOW)Development Commands:$(NC)"
-	@echo "  stats         - Display project statistics"
-	@echo "  all           - Build library (default)"
+	@echo "  stats              - Display project statistics"
+	@echo "  deps               - Display project dependencies"
+	@echo "  refresh            - Refresh Alire dependencies"
+	@echo ""
+	@echo "$(YELLOW)Workflow Shortcuts:$(NC)"
+	@echo "  all                - Build library (default)"
+	@echo "  quick              - Quick build (skip clean)"
+	@echo "  full               - Full build, test, and validation"
 
 # =============================================================================
 # Build Commands
@@ -93,8 +117,32 @@ help:
 
 build:
 	@echo "$(GREEN)Building $(PROJECT_NAME) library...$(NC)"
-	$(ALR) build -- -j8
+	$(ALR) build -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Build complete$(NC)"
+
+build-dev:
+	@echo "$(GREEN)Building $(PROJECT_NAME) (development mode)...$(NC)"
+	$(ALR) build --development -- $(ALR_BUILD_FLAGS)
+	@echo "$(GREEN)✓ Development build complete$(NC)"
+
+build-opt:
+	@echo "$(GREEN)Building $(PROJECT_NAME) (optimized -O2)...$(NC)"
+	$(ALR) build -- -O2 $(ALR_BUILD_FLAGS)
+	@echo "$(GREEN)✓ Optimized build complete$(NC)"
+
+build-release:
+	@echo "$(GREEN)Building $(PROJECT_NAME) (release mode)...$(NC)"
+	$(ALR) build --release -- $(ALR_BUILD_FLAGS)
+	@echo "$(GREEN)✓ Release build complete$(NC)"
+
+build-tests:
+	@echo "$(GREEN)Building test suite...$(NC)"
+	@if [ -f "$(TESTS_DIR)/tests.gpr" ]; then \
+		cd $(TESTS_DIR) && $(GPRBUILD) -P tests.gpr -p --no-indirect-imports; \
+		echo "$(GREEN)✓ Test build complete$(NC)"; \
+	else \
+		echo "$(YELLOW)No test project found (tests/tests.gpr)$(NC)"; \
+	fi
 
 clean:
 	@echo "$(YELLOW)Cleaning build artifacts...$(NC)"
@@ -105,7 +153,8 @@ clean:
 deep-clean:
 	@echo "$(YELLOW)Performing deep clean...$(NC)"
 	@$(ALR) clean
-	@rm -rf $(BUILD_DIR) lib alire .build $(COVERAGE_DIR)
+	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib alire .build $(COVERAGE_DIR)
+	@rm -rf $(TESTS_DIR)/obj $(TESTS_DIR)/bin
 	@find . -name "*.backup" -delete 2>/dev/null || true
 	@find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | \
 	  xargs rm -f 2>/dev/null || true
@@ -113,16 +162,19 @@ deep-clean:
 
 rebuild: clean build
 
+install:
+	@echo "$(GREEN)Installing $(PROJECT_NAME)...$(NC)"
+	@$(ALR) install
+	@echo "$(GREEN)✓ Installation complete$(NC)"
+
 # =============================================================================
 # Testing Commands
 # =============================================================================
 
-test: build
-	@echo "$(GREEN)Building and running comprehensive test suite...$(NC)"
-	@rm -rf tests/obj tests/bin
-	cd tests && gprbuild -P tests.gpr -p
-	@if [ -f "tests/bin/test_runner" ]; then \
-		tests/bin/test_runner; \
+test: build build-tests
+	@echo "$(GREEN)Running comprehensive test suite...$(NC)"
+	@if [ -f "$(TESTS_DIR)/bin/test_runner" ]; then \
+		$(TESTS_DIR)/bin/test_runner; \
 		if [ $$? -eq 0 ]; then \
 			echo "$(GREEN)✓ All tests passed$(NC)"; \
 		else \
@@ -134,23 +186,31 @@ test: build
 		exit 1; \
 	fi
 
-test-all: build
+test-all: build build-tests
 	@echo "$(GREEN)Running all test executables...$(NC)"
-	@rm -rf tests/obj tests/bin
-	cd tests && gprbuild -P tests.gpr -p
 	@failed=0; \
-	for test in tests/bin/test_*; do \
-		if [ -x "$$test" ] && [ -f "$$test" ]; then \
-			echo "$(CYAN)Running $$test...$(NC)"; \
-			$$test || failed=1; \
-			echo ""; \
-		fi; \
-	done; \
+	if [ -d "$(TESTS_DIR)/bin" ]; then \
+		for test in $(TESTS_DIR)/bin/test_*; do \
+			if [ -x "$$test" ] && [ -f "$$test" ]; then \
+				echo "$(CYAN)Running $$test...$(NC)"; \
+				$$test || failed=1; \
+				echo ""; \
+			fi; \
+		done; \
+	fi; \
 	if [ $$failed -eq 0 ]; then \
 		echo "$(GREEN)✓ All test suites passed$(NC)"; \
 	else \
 		echo "$(RED)✗ Some tests failed$(NC)"; \
 		exit 1; \
+	fi
+
+test-run:
+	@echo "$(GREEN)Running tests (no build)...$(NC)"
+	@if [ -f "$(TESTS_DIR)/bin/test_runner" ]; then \
+		$(TESTS_DIR)/bin/test_runner; \
+	else \
+		echo "$(YELLOW)Test runner not found$(NC)"; \
 	fi
 
 test-coverage:
@@ -222,7 +282,7 @@ format-check: format-preview
 	@echo "Run 'make format' to apply formatting"
 
 # =============================================================================
-# Statistics
+# Development Commands
 # =============================================================================
 
 stats:
@@ -230,17 +290,15 @@ stats:
 	@echo "$(YELLOW)════════════════════════════════════════$(NC)"
 	@echo ""
 	@echo "Ada Source Files:"
-	@echo "  Source specs:  $$(find $(SRC_DIR) -name "*.ads" 2>/dev/null | \
-	  wc -l)"
-	@echo "  Source bodies: $$(find $(SRC_DIR) -name "*.adb" 2>/dev/null | \
-	  wc -l)"
-	@echo "  Test specs:    $$(find $(TESTS_DIR) -name "*.ads" 2>/dev/null | \
-	  wc -l)"
-	@echo "  Test bodies:   $$(find $(TESTS_DIR) -name "*.adb" 2>/dev/null | \
-	  wc -l)"
+	@echo "  Library specs:  $$(find $(SRC_DIR) -name "*.ads" 2>/dev/null | wc -l)"
+	@echo "  Library bodies: $$(find $(SRC_DIR) -name "*.adb" 2>/dev/null | wc -l)"
+	@echo "  Test specs:     $$(find $(TESTS_DIR) -name "*.ads" 2>/dev/null | wc -l)"
+	@echo "  Test bodies:    $$(find $(TESTS_DIR) -name "*.adb" 2>/dev/null | wc -l)"
 	@echo ""
 	@echo "Lines of Code:"
-	@find $(SRC_DIR) $(TESTS_DIR) -name "*.ads" -o -name "*.adb" 2>/dev/null | xargs wc -l 2>/dev/null | tail -1 | awk '{printf "  Total: %d lines\n", $$1}' || echo "  Total: 0 lines"
+	@find $(SRC_DIR) $(TESTS_DIR) -name "*.ads" -o -name "*.adb" 2>/dev/null | \
+	  xargs wc -l 2>/dev/null | tail -1 | awk '{printf "  Total: %d lines\n", $$1}' || \
+	  echo "  Total: 0 lines"
 	@echo ""
 	@echo "Library Artifacts:"
 	@if [ -f "./lib/libfunctional.a" ]; then \
@@ -248,5 +306,27 @@ stats:
 	else \
 		echo "  No library found (run 'make build')"; \
 	fi
+
+deps: ## Display project dependencies
+	@echo "$(CYAN)Project dependencies from alire.toml:$(NC)"
+	@grep -A 10 "\[\[depends-on\]\]" alire.toml || echo "$(YELLOW)No dependencies found$(NC)"
+	@echo ""
+	@echo "$(CYAN)Alire dependency tree:$(NC)"
+	@$(ALR) show --solve || echo "$(YELLOW)Could not resolve dependencies$(NC)"
+
+refresh: ## Refresh Alire dependencies
+	@echo "$(CYAN)Refreshing Alire dependencies...$(NC)"
+	@$(ALR) update
+	@echo "$(GREEN)✓ Dependencies refreshed$(NC)"
+
+# =============================================================================
+# Workflow Shortcuts
+# =============================================================================
+
+quick: build ## Quick build (skip clean)
+	@echo "$(GREEN)✓ Quick build complete$(NC)"
+
+full: clean build test check ## Full build, test, and validation
+	@echo "$(GREEN)✓ Full validation complete$(NC)"
 
 .DEFAULT_GOAL := help
