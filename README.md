@@ -1,11 +1,11 @@
 # Functional - Type-Safe Error Handling for Ada 2022
 
-**Version:** 1.0.0<br>
-**Date:** October 25, 2025<br>
+**Version:** 2.0.0<br>
+**Date:** November 13, 2025<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
-**Status:** Release
+**Status:** Released
 
 A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
 
@@ -14,8 +14,10 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 - ✅ **Result<T,E>** - Type-safe error handling (17 operations)
 - ✅ **Option<T>** - Optional values (11 operations)
 - ✅ **Either<L,R>** - Disjoint union type (8 operations)
-- ✅ **Try.To_Result** - Convert exceptions to Result
-- ✅ **Try.To_Option** - Convert exceptions to Option
+- ✅ **Try Module** - Convert exceptions to functional types
+  - `Try_To_Result` - General bridge for any Result type
+  - `Try_To_Functional_Result` - Convenience for Functional.Result
+  - `Try_To_Functional_Option` - Convenience for Functional.Option
 - ✅ **Pure packages** - No side effects, compile-time guarantees
 - ✅ **Zero dependencies** - Just Ada 2022 standard library
 - ✅ **Production ready** - Comprehensive compiler checks and style enforcement
@@ -26,7 +28,7 @@ Add to your `alire.toml`:
 
 ```toml
 [[depends-on]]
-functional = "^1.0.0"
+functional = "^2.0.0"
 ```
 
 Then run:
@@ -110,6 +112,55 @@ begin
    end if;
 end Parse_Or_Default;
 ```
+
+### Try Module - Exception Boundaries
+
+The Try module bridges exception-based code to functional Result/Option types. Use at infrastructure boundaries where exceptions occur (I/O, FFI, external libraries).
+
+```ada
+with Functional.Try;
+with Ada.Exceptions;
+
+--  Example: Bridge stream I/O to Result
+function Read_Int32 (Stream : Stream_Access) return Int32_Result.Result is
+
+   --  Raw I/O that may raise exceptions
+   function Raw_Read return Integer_32 is
+      Value : Integer_32;
+   begin
+      Integer_32'Read (Stream, Value);
+      return Value;
+   end Raw_Read;
+
+   --  Map exception to error type
+   function From_Exception (Occ : Exception_Occurrence) return Error_Type is
+   begin
+      if Exception_Identity (Occ) = End_Error'Identity then
+         return (IO_Error, "Unexpected end of stream");
+      else
+         return (IO_Error, Exception_Message (Occ));
+      end if;
+   end From_Exception;
+
+   --  Bridge: exceptions → Result
+   function Try_Read is new Functional.Try.Try_To_Result
+     (T             => Integer_32,
+      E             => Error_Type,
+      Result_Type   => Int32_Result.Result,
+      Ok            => Int32_Result.Ok,
+      Err           => Int32_Result.From_Error,
+      Map_Exception => From_Exception,
+      Action        => Raw_Read);
+begin
+   return Try_Read;
+end Read_Int32;
+```
+
+**Key Points:**
+- Use `Try_To_Result` for custom Result types (e.g., domain-specific)
+- Use `Try_To_Functional_Result` for `Functional.Result` types
+- Use `Try_To_Functional_Option` when exceptions represent absence
+- Keep exception handling at infrastructure boundaries only
 
 ## API Reference
 

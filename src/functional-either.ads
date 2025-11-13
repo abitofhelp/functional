@@ -1,32 +1,26 @@
 pragma Ada_2022;
---  ==========================================================================
+--  ===========================================================================
 --  Functional.Either
---  ==========================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ===========================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Either<L, R> for neutral disjoint unions in Ada 2022.
---    Represents either a Left value or a Right value.
+--    Either interface and type definitions.
 --
---  Usage:
---    package Str_Int_Either is new Functional.Either (L => String, R => Integer);
---    declare
---       E : Str_Int_Either.Either := Str_Int_Either.Left ("error");
---    begin
---       if Str_Int_Either.Is_Left (E) then
---          Put_Line ("Left: " & Str_Int_Either.Left_Value (E));
---       end if;
---    end;
+--  Key Types:
+--    L
+--    R
+--    Either_Kind
+--    Either
+--    U
 --
---  Design Notes:
---    Prefer Functional.Result for error handling. Use Either when Left/Right
---    are not semantically Error/Ok, but rather two equally valid alternatives.
+--  Dependencies:
+--    Inline
+--    Inline
+--    Inline
 --
---  See Also:
---    Functional.Result - error-centric Ok/Err type
---    Functional.Option - optional values
---  ==========================================================================
+--  ===========================================================================
 
 generic
    type L is private;
