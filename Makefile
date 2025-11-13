@@ -13,7 +13,7 @@
 PROJECT_NAME := functional
 
 .PHONY: all build build-dev build-opt build-release build-tests check clean \
-        deep-clean deps format format-all format-check format-preview \
+        compress deep-clean deps format format-all format-check format-preview \
         format-src format-tests full help install install-tools quick rebuild \
         refresh stats test test-all test-coverage test-run
 
@@ -58,7 +58,7 @@ COVERAGE_DIR := coverage
 # =============================================================================
 # Tool Flags
 # =============================================================================
-ALR_BUILD_FLAGS := -j8 --no-indirect-imports | grep -E 'warning:|style:|error:' || true
+ALR_BUILD_FLAGS := -j8 | grep -E 'warning:|style:|error:' || true
 
 # =============================================================================
 # Default Target
@@ -83,6 +83,7 @@ help: ## Display this help message
 	@echo "  build-tests        - Build test suite only"
 	@echo "  clean              - Remove build artifacts"
 	@echo "  deep-clean         - Remove all artifacts including cache"
+	@echo "  compress           - Create compressed source archive (tar.gz)"
 	@echo "  rebuild            - Clean and rebuild"
 	@echo "  install            - Install via Alire"
 	@echo ""
@@ -138,7 +139,7 @@ build-release:
 build-tests:
 	@echo "$(GREEN)Building test suite...$(NC)"
 	@if [ -f "$(TESTS_DIR)/tests.gpr" ]; then \
-		cd $(TESTS_DIR) && $(GPRBUILD) -P tests.gpr -p --no-indirect-imports; \
+		cd $(TESTS_DIR) && $(GPRBUILD) -P tests.gpr -p; \
 		echo "$(GREEN)✓ Test build complete$(NC)"; \
 	else \
 		echo "$(YELLOW)No test project found (tests/tests.gpr)$(NC)"; \
@@ -159,6 +160,25 @@ deep-clean:
 	@find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | \
 	  xargs rm -f 2>/dev/null || true
 	@echo "$(GREEN)✓ Deep clean complete$(NC)"
+
+compress:
+	@echo "$(CYAN)Creating compressed source archive...$(NC)"
+	@tar -czvf "$(PROJECT_NAME).tar.gz" \
+		--exclude="$(PROJECT_NAME).tar.gz" \
+		--exclude='.git' \
+		--exclude='tools' \
+		--exclude='obj' \
+		--exclude='bin' \
+		--exclude='lib' \
+		--exclude='alire' \
+		--exclude='.build' \
+		--exclude='coverage' \
+		--exclude='.DS_Store' \
+		--exclude='*.o' \
+		--exclude='*.ali' \
+		--exclude='*.backup' \
+		.
+	@echo "$(GREEN)✓ Archive created: $(PROJECT_NAME).tar.gz$(NC)"
 
 rebuild: clean build
 

@@ -1,32 +1,24 @@
 pragma Ada_2022;
---  ==========================================================================
+--  ===========================================================================
 --  Functional.Option
---  ==========================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ===========================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Option<T> for optional values in Ada 2022.
---    Represents either a value (Some) or absence (None).
+--    Option interface and type definitions.
 --
---  Usage:
---    package Int_Option is new Functional.Option (T => Integer);
---    declare
---       O : Int_Option.Option := Int_Option.New_Some (42);
---    begin
---       if Int_Option.Is_Some (O) then
---          Put_Line (Int_Option.Value (O)'Image);
---       end if;
---    end;
+--  Key Types:
+--    T
+--    Option_Kind
+--    Option
 --
---  Design Notes:
---    Use when absence is expected and NOT an error. For error cases, prefer
---    Functional.Result. Pattern match via case on Kind when appropriate.
+--  Dependencies:
+--    Inline
+--    Inline
+--    Inline
 --
---  See Also:
---    Functional.Result - error-centric Ok/Err type
---    Functional.Either - disjoint union type
---  ==========================================================================
+--  ===========================================================================
 
 generic
    type T is private;

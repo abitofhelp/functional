@@ -2,6 +2,9 @@ pragma Ada_2022;
 --  ============================================================================
 --  Test_Framework - Implementation
 --  ============================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
+--  SPDX-License-Identifier: BSD-3-Clause
+--  ============================================================================
 
 package body Test_Framework is
 

@@ -1,34 +1,25 @@
 pragma Ada_2022;
---  ==========================================================================
+--  ===========================================================================
 --  Functional.Result
---  ==========================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ===========================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Result<T, E> for type-safe error handling in Ada 2022.
---    Represents either a successful value (Ok) or an error (Err).
+--    Result interface and type definitions.
 --
---  Usage:
---    package Str_Result is new Functional.Result (T => String, E => Error);
---    declare
---       R : Str_Result.Result := Str_Result.Ok ("success");
---    begin
---       if Str_Result.Is_Ok (R) then
---          Put_Line (Str_Result.Value (R));
---       end if;
---    end;
+--  Key Types:
+--    T
+--    E
+--    Result_Kind
+--    Result
 --
---  Design Notes:
---    Prefer Result over exceptions for domain errors. Use And_Then for chaining
---    fallible operations. Catch exceptions at the boundary and convert using
---    Functional.Try.To_Result.
+--  Dependencies:
+--    Inline
+--    Inline
+--    Inline
 --
---  See Also:
---    Functional.Option        - optional values
---    Functional.Either        - disjoint union type
---    Functional.Try.To_Result - exception boundary helpers
---  ==========================================================================
+--  ===========================================================================
 
 generic
    type T is private;

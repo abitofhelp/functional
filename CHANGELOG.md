@@ -1,10 +1,87 @@
 # Changelog
+
+**Version:** 2.0.0  
+**Date:** November 13, 2025  
+**SPDX-License-Identifier:** BSD-3-Clause  
+**License File:** See the LICENSE file in the project root.  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
+**Status:** Released  
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Changed
+
+### Added
+
+### Removed
+
+### Fixed
+
+---
+
+## [2.0.0] - 2025-11-13
+
+### ⚠️ BREAKING CHANGES
+- **Try Module API Redesign**: Complete refactoring of exception handling
+
+### Changed
+- **Try Module**: Redesigned for maximum flexibility
+  - Renamed `Functional.Try.To_Result` → `Functional.Try.Try_To_Result`
+  - Renamed `Functional.Try.To_Option` → `Functional.Try.Try_To_Functional_Option`
+  - Added `Functional.Try.Try_To_Functional_Result` (convenience for Functional.Result)
+  - `Try_To_Result` now works with **any** Result type (domain-specific, custom implementations)
+  - Consolidated all Try functions into single `Functional.Try` package
+  - Removed child packages `Functional.Try.To_Result` and `Functional.Try.To_Option`
+  - Generic parameters allow bridging to any Result implementation with custom `Ok`/`Err` constructors
+
+### Added
+- Generic `Try_To_Result` supports custom Result types with configurable constructors
+- Example code showing usage at infrastructure boundaries
+- Comprehensive documentation for Try pattern in README
+
+### Migration Guide (1.0.0 → 2.0.0)
+
+**Old Code (1.0.0):**
+```ada
+with Functional.Try.To_Result;
+with Functional.Try.To_Option;
+
+function Try_Read is new Functional.Try.To_Result (...);
+function Try_Parse is new Functional.Try.To_Option (...);
+```
+
+**New Code (2.0.0):**
+```ada
+with Functional.Try;
+
+-- For custom domain Result types:
+function Try_Read is new Functional.Try.Try_To_Result
+  (T => Integer_32, E => Error_Type,
+   Result_Type => Domain_Result.Result,
+   Ok => Domain_Result.Ok,
+   Err => Domain_Result.From_Error,
+   Map_Exception => From_Exception,
+   Action => Raw_Read);
+
+-- For Functional.Result:
+function Try_Parse is new Functional.Try.Try_To_Functional_Result
+  (T => String, E => Error,
+   Result_Pkg => Str_Result,
+   Map_Exception => From_Exception,
+   Action => Raw_Parse);
+
+-- For Functional.Option:
+function Try_Lookup is new Functional.Try.Try_To_Functional_Option
+  (T => Integer,
+   Option_Pkg => Int_Option,
+   Action => Raw_Lookup);
+```
+
 
 ## [1.0.0] - 2025-10-25
 
