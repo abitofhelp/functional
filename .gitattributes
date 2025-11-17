@@ -1,0 +1,74 @@
+# =============================================================================
+# Git Attributes for Ada Project - GitHub Linguist Configuration
+# =============================================================================
+# This file configures how GitHub's linguist tool analyzes the repository,
+# ensuring accurate language statistics that reflect this as an Ada project.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Ada Source Files (Primary Language)
+# -----------------------------------------------------------------------------
+*.ads linguist-language=Ada
+*.adb linguist-language=Ada
+
+# -----------------------------------------------------------------------------
+# Exclude Non-Ada Files from Language Statistics
+# -----------------------------------------------------------------------------
+
+# Build and project files
+*.gpr linguist-vendored
+Makefile linguist-vendored
+*.mk linguist-vendored
+
+# Configuration files
+*.toml linguist-vendored
+*.yaml linguist-vendored
+*.yml linguist-vendored
+*.json linguist-vendored
+
+# Documentation
+*.md linguist-documentation
+*.txt linguist-documentation
+*.rst linguist-documentation
+docs/** linguist-documentation
+
+# Scripts and tools
+scripts/** linguist-vendored
+tools/** linguist-vendored
+*.sh linguist-vendored
+*.py linguist-vendored
+*.rb linguist-vendored
+*.pl linguist-vendored
+
+# Examples (optional: remove this line if you want examples counted)
+# examples/** linguist-documentation
+
+# Build artifacts and generated files
+obj/** linguist-generated
+lib/** linguist-generated
+bin/** linguist-generated
+alire/** linguist-generated
+config/functional_config.ads linguist-generated
+
+# Version control and IDE
+.git/** linguist-vendored
+.github/** linguist-vendored
+.vscode/** linguist-vendored
+.idea/** linguist-vendored
+
+# -----------------------------------------------------------------------------
+# Line Ending Configuration
+# -----------------------------------------------------------------------------
+# Ensure consistent line endings across platforms
+*.ads text eol=lf
+*.adb text eol=lf
+*.gpr text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+
+# -----------------------------------------------------------------------------
+# Diff Configuration
+# -----------------------------------------------------------------------------
+# Use Ada-aware diff for Ada files
+*.ads diff=ada
+*.adb diff=ada
