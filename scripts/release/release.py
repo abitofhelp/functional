@@ -558,6 +558,16 @@ _Initial alpha release of Simple_Hybrid library._
             with open(changelog_file, 'r') as f:
                 content = f.read()
 
+            # Check if this version already exists
+            version_already_exists = re.search(
+                rf'## \[{re.escape(new_version)}\]',
+                content
+            )
+            if version_already_exists:
+                print(f"⚠️  WARNING: Version [{new_version}] already exists in CHANGELOG.md")
+                print(f"   Skipping CHANGELOG update (appears to be already prepared)")
+                return True
+
             # Find the [Unreleased] section
             unreleased_pattern = r'## \[Unreleased\]\s*\n(.*?)(?=\n## |\Z)'
             match = re.search(unreleased_pattern, content, re.DOTALL)
@@ -844,36 +854,6 @@ _Initial alpha release of Simple_Hybrid library._
         print(f"PREPARING RELEASE {version}")
         print(f"{'='*70}\n")
 
-        # Pre-flight check: Ensure CHANGELOG.md has release notes
-        changelog_file = self.project_root / "CHANGELOG.md"
-        if changelog_file.exists():
-            try:
-                with open(changelog_file, 'r') as f:
-                    content = f.read()
-                    unreleased_match = re.search(
-                        r'## \[Unreleased\]\s*\n(.*?)(?=\n## |\Z)',
-                        content,
-                        re.DOTALL
-                    )
-                    if unreleased_match:
-                        unreleased_content = unreleased_match.group(1).strip()
-                        # Check if unreleased section is mostly empty (only has section headers)
-                        if not unreleased_content or unreleased_content.count('\n') < 10:
-                            message = f"""📝 CHANGELOG.md appears to have minimal content in [Unreleased] section.
-
-Please:
-1. Edit CHANGELOG.md
-2. Add your release notes under the [Unreleased] section
-3. Commit your changes:
-   git add CHANGELOG.md
-   git commit -m "docs: Add release notes for {version}"
-4. Press ENTER to continue with release preparation
-
-The script will automatically move [Unreleased] → [{version}] when you continue."""
-                            if not self.prompt_user_continue(message):
-                                return False
-            except Exception:
-                pass
 
         # Step 1: Clean up temporary files
         print("\n🧹 Step 1: Cleaning up temporary files...")
@@ -915,6 +895,31 @@ The script will automatically move [Unreleased] → [{version}] when you continu
         # Step 5: Update remaining markdown files
         print("\n📝 Step 5: Updating markdown documentation...")
         self.update_all_markdown_files(version)
+
+        # Checkpoint: Final chance to edit CHANGELOG before script modifies it
+        changelog_file = self.project_root / "CHANGELOG.md"
+        if changelog_file.exists():
+            # Check if version already exists
+            with open(changelog_file, 'r') as f:
+                content = f.read()
+                if not re.search(rf'## \[{re.escape(version)}\]', content):
+                    # Version doesn't exist yet - give user final chance to edit
+                    message = f"""📝 FINAL CHECKPOINT: CHANGELOG.md Review
+
+The script is about to modify CHANGELOG.md:
+- It will move [Unreleased] content → [{version}] section
+- It will create a fresh [Unreleased] section
+
+LAST CHANCE to edit CHANGELOG.md if needed:
+1. Edit CHANGELOG.md (add/modify release notes in [Unreleased])
+2. If you made changes, commit them:
+   git add CHANGELOG.md
+   git commit -m "docs: Update release notes for {version}"
+3. Press ENTER to let the script process CHANGELOG.md
+
+If CHANGELOG is already correct, just press ENTER to continue."""
+                    if not self.prompt_user_continue(message):
+                        return False
 
         # Step 6: Update CHANGELOG.md (create for 0.1.0, update for later versions)
         print("\n📝 Step 6: Updating CHANGELOG.md...")
