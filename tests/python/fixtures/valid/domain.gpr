@@ -1,0 +1,10 @@
+-- Valid Domain layer GPR (no dependencies except shared_config)
+with "../../shared_config.gpr";
+
+library project Domain is
+   for Library_Name use "domain";
+   for Library_Kind use "static";
+   for Source_Dirs use (".", "entity", "value_object", "error");
+
+   package Compiler renames Shared_Config.Compiler;
+end Domain;

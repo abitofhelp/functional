@@ -24,6 +24,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.1.0] - 2025-11-18
+
+### Added
+- **Parameterized Try Functions**: Enhanced exception handling with input context support
+  - `Try_To_Result_With_Param` - Parameterized Result bridge for actions requiring input (e.g., console messages, file paths, user IDs)
+  - `Try_To_Option_With_Param` - Parameterized Option bridge for actions with input context
+  - Support for indefinite types (String, unconstrained arrays) via `type Param (<>) is private` generic formal parameter
+  - Eliminates need for module-level mutable state and unsafe `Unchecked_Access` patterns
+- **Backwards-Compatible Child Packages**: Restored legacy API for existing code
+  - `Functional.Try.To_Result` - Child package wrapping `Try_To_Functional_Result` with `.Run` API
+  - `Functional.Try.To_Option` - Child package wrapping `Try_To_Functional_Option` with `.Run` API
+  - Zero breaking changes - all existing test code continues to work unchanged
+
+### Changed
+- **Enhanced Documentation**: Updated API documentation with parameterized Try usage patterns
+  - Added examples showing safe parameter passing without `Unchecked_Access`
+  - Documented indefinite type support (`type Param (<>) is private`)
+  - Updated architecture notes explaining exception boundary conversion
+
+### Fixed
+- **Type Safety**: Generic formal parameters now support indefinite types (String, unconstrained arrays)
+- **Thread Safety**: Parameterized approach eliminates module-level mutable state in client code
+
+### Technical Details
+- All 83 tests passing (Result: 35, Option: 22, Either: 12, Try: 14)
+- Zero unsafe code patterns required for using Try functions with parameters
+- Fully backwards compatible with 2.0.0 API
+
+---
+
 ## [2.0.0] - 2025-11-13
 
 ### ⚠️ BREAKING CHANGES

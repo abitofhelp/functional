@@ -7,15 +7,15 @@
 # This Makefile provides:
 #   - Build targets (build, clean, rebuild)
 #   - Test infrastructure (test, test-coverage)
-#   - Format/check targets (format, format-check, stats)
+#   - Format/check targets (format, stats)
 # =============================================================================
 
 PROJECT_NAME := functional
 
-.PHONY: all build build-dev build-opt build-release build-tests check clean \
-        compress deep-clean deps format format-all format-check format-preview \
-        format-src format-tests full help install install-tools quick rebuild \
-        refresh stats test test-all test-coverage test-run
+.PHONY: all build build-dev build-opt build-release build-tests check \
+        clean clean-coverage clean-deep compress deps format format-all \
+        format-src format-tests full help install prereqs quick rebuild \
+        refresh stats test test-all test-run
 
 # =============================================================================
 # OS Detection
@@ -59,6 +59,7 @@ COVERAGE_DIR := coverage
 # Tool Flags
 # =============================================================================
 ALR_BUILD_FLAGS := -j8 | grep -E 'warning:|style:|error:' || true
+ALR_TEST_FLAGS  := -j8 | grep -E 'warning:|style:|error:' || true
 
 # =============================================================================
 # Default Target
@@ -71,18 +72,19 @@ all: build
 # =============================================================================
 
 help: ## Display this help message
-	@echo "$(ORANGE)$(BOLD)╔══════════════════════════════════════════════════╗$(NC)"
-	@echo "$(ORANGE)$(BOLD)║  Functional Library - Ada 2022                   ║$(NC)"
-	@echo "$(ORANGE)$(BOLD)╚══════════════════════════════════════════════════╝$(NC)"
-	@echo ""
+	@echo "$(CYAN)$(BOLD)╔══════════════════════════════════════════════════╗$(NC)"
+	@echo "$(CYAN)$(BOLD)║  Functional Library - Ada 2022                   ║$(NC)"
+	@echo "$(CYAN)$(BOLD)╚══════════════════════════════════════════════════╝$(NC)"
+	@echo " "
 	@echo "$(YELLOW)Build Commands:$(NC)"
 	@echo "  build              - Build library (development mode)"
-	@echo "  build-dev          - Build with development settings"
-	@echo "  build-opt          - Build with optimizations (-O2)"
-	@echo "  build-release      - Build production release"
+	@echo "  build-dev          - Build with development flags"
+	@echo "  build-opt          - Build with optimization (-O2)"
+	@echo "  build-release      - Build in release mode"
 	@echo "  build-tests        - Build test suite only"
-	@echo "  clean              - Remove build artifacts"
-	@echo "  deep-clean         - Remove all artifacts including cache"
+	@echo "  clean              - Clean build artifacts"
+	@echo "  clean-coverage     - Clean coverage data"
+	@echo "  clean-deep         - Deep clean (includes Alire cache)"
 	@echo "  compress           - Create compressed source archive (tar.gz)"
 	@echo "  rebuild            - Clean and rebuild"
 	@echo "  install            - Install via Alire"
@@ -91,7 +93,7 @@ help: ## Display this help message
 	@echo "  test               - Run comprehensive test suite"
 	@echo "  test-all           - Run all test executables"
 	@echo "  test-run           - Run tests without building"
-	@echo "  test-coverage      - Run tests with coverage (HTML report)"
+	@echo "  test-coverage      - Run tests with coverage analysis"
 	@echo ""
 	@echo "$(YELLOW)Quality Commands:$(NC)"
 	@echo "  check              - Run static analysis"
@@ -99,12 +101,11 @@ help: ## Display this help message
 	@echo "  format-tests       - Auto-format test code (tests/)"
 	@echo "  format-all         - Auto-format all source code"
 	@echo "  format             - Alias for format-all"
-	@echo "  format-check       - Check if formatting needed"
-	@echo "  format-preview     - Preview formatting changes"
-	@echo ""
-	@echo "$(YELLOW)Development Commands:$(NC)"
 	@echo "  stats              - Display project statistics"
-	@echo "  deps               - Display project dependencies"
+	@echo ""
+	@echo "$(YELLOW)Utility Commands:$(NC)"
+	@echo "  deps               - Show dependency information"
+	@echo "  prereqs            - Verify prerequisites are satisfied"
 	@echo "  refresh            - Refresh Alire dependencies"
 	@echo ""
 	@echo "$(YELLOW)Workflow Shortcuts:$(NC)"
@@ -116,50 +117,63 @@ help: ## Display this help message
 # Build Commands
 # =============================================================================
 
-build:
-	@echo "$(GREEN)Building $(PROJECT_NAME) library...$(NC)"
-	$(ALR) build -- $(ALR_BUILD_FLAGS)
-	@echo "$(GREEN)✓ Build complete$(NC)"
+prereqs:
+	@echo "$(GREEN)✓ All prerequisites satisfied$(NC)"
 
-build-dev:
+build: build-dev
+
+build-dev: prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (development mode)...$(NC)"
 	$(ALR) build --development -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Development build complete$(NC)"
 
-build-opt:
+build-opt: prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (optimized -O2)...$(NC)"
 	$(ALR) build -- -O2 $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Optimized build complete$(NC)"
 
-build-release:
+build-release: prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (release mode)...$(NC)"
 	$(ALR) build --release -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
-build-tests:
+build-tests: prereqs
 	@echo "$(GREEN)Building test suite...$(NC)"
 	@if [ -f "$(TESTS_DIR)/tests.gpr" ]; then \
-		cd $(TESTS_DIR) && $(GPRBUILD) -P tests.gpr -p; \
+		$(ALR) exec -- $(GPRBUILD) -P $(TESTS_DIR)/tests.gpr -p $(ALR_TEST_FLAGS); \
 		echo "$(GREEN)✓ Test build complete$(NC)"; \
 	else \
 		echo "$(YELLOW)No test project found (tests/tests.gpr)$(NC)"; \
 	fi
 
 clean:
-	@echo "$(YELLOW)Cleaning build artifacts...$(NC)"
-	@$(ALR) clean
+	@echo "$(YELLOW)Cleaning project build artifacts (keeps dependencies)...$(NC)"
+	@# Use gprclean WITHOUT -r to clean only our project, not dependencies
+	@$(ALR) exec -- gprclean -P $(PROJECT_NAME).gpr -q 2>/dev/null || true
+	@$(ALR) exec -- gprclean -P $(TESTS_DIR)/tests.gpr -q 2>/dev/null || true
+	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TESTS_DIR)/bin $(TESTS_DIR)/obj
 	@find . -name "*.backup" -delete 2>/dev/null || true
-	@echo "$(GREEN)✓ Clean complete$(NC)"
+	@echo "$(GREEN)✓ Project artifacts cleaned (dependencies preserved for fast rebuild)$(NC)"
 
-deep-clean:
-	@echo "$(YELLOW)Performing deep clean...$(NC)"
+clean-deep:
+	@echo "$(YELLOW)Deep cleaning ALL artifacts including dependencies...$(NC)"
+	@echo "$(YELLOW)⚠️  This will require rebuilding all dependencies (slow!)$(NC)"
 	@$(ALR) clean
-	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib alire .build $(COVERAGE_DIR)
-	@rm -rf $(TESTS_DIR)/obj $(TESTS_DIR)/bin
+	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TESTS_DIR)/bin $(TESTS_DIR)/obj
+	@rm -rf alire .build $(COVERAGE_DIR)
 	@find . -name "*.backup" -delete 2>/dev/null || true
+	@echo "$(GREEN)✓ Deep clean complete (next build will be slow)$(NC)"
+
+clean-coverage:
+	@echo "$(YELLOW)Cleaning coverage artifacts...$(NC)"
+	@find . -name "*.srctrace" -delete 2>/dev/null || true
+	@find . -name "*.traces" -delete 2>/dev/null || true
+	@find . -name "*.sid" -delete 2>/dev/null || true
 	@find . -name "*.gcda" -o -name "*.gcno" -o -name "*.gcov" | \
 	  xargs rm -f 2>/dev/null || true
-	@echo "$(GREEN)✓ Deep clean complete$(NC)"
+	@rm -rf $(COVERAGE_DIR)/ 2>/dev/null || true
+	@rm -rf gnatcov-instr/ 2>/dev/null || true
+	@echo "$(GREEN)✓ Coverage artifacts cleaned$(NC)"
 
 compress:
 	@echo "$(CYAN)Creating compressed source archive...$(NC)"
@@ -167,6 +181,7 @@ compress:
 		--exclude="$(PROJECT_NAME).tar.gz" \
 		--exclude='.git' \
 		--exclude='tools' \
+		--exclude='data' \
 		--exclude='obj' \
 		--exclude='bin' \
 		--exclude='lib' \
@@ -191,37 +206,20 @@ install:
 # Testing Commands
 # =============================================================================
 
-test: build build-tests
-	@echo "$(GREEN)Running comprehensive test suite...$(NC)"
+test: test-all
+
+test-all: build build-tests
+	@echo "$(GREEN)Running all tests...$(NC)"
 	@if [ -f "$(TESTS_DIR)/bin/test_runner" ]; then \
 		$(TESTS_DIR)/bin/test_runner; \
 		if [ $$? -eq 0 ]; then \
-			echo "$(GREEN)✓ All tests passed$(NC)"; \
+			echo "$(GREEN)✓ All test suites passed$(NC)"; \
 		else \
-			echo "$(RED)✗ Tests failed$(NC)"; \
+			echo "$(RED)✗ Some tests failed$(NC)"; \
 			exit 1; \
 		fi; \
 	else \
-		echo "$(RED)Test runner not found. Build failed.$(NC)"; \
-		exit 1; \
-	fi
-
-test-all: build build-tests
-	@echo "$(GREEN)Running all test executables...$(NC)"
-	@failed=0; \
-	if [ -d "$(TESTS_DIR)/bin" ]; then \
-		for test in $(TESTS_DIR)/bin/test_*; do \
-			if [ -x "$$test" ] && [ -f "$$test" ]; then \
-				echo "$(CYAN)Running $$test...$(NC)"; \
-				$$test || failed=1; \
-				echo ""; \
-			fi; \
-		done; \
-	fi; \
-	if [ $$failed -eq 0 ]; then \
-		echo "$(GREEN)✓ All test suites passed$(NC)"; \
-	else \
-		echo "$(RED)✗ Some tests failed$(NC)"; \
+		echo "$(YELLOW)Test runner not found at $(TESTS_DIR)/bin/test_runner$(NC)"; \
 		exit 1; \
 	fi
 
@@ -233,16 +231,13 @@ test-run:
 		echo "$(YELLOW)Test runner not found$(NC)"; \
 	fi
 
-test-coverage:
-	@echo "$(GREEN)Running tests with coverage analysis...$(NC)"
-	@if command -v $(PYTHON3) >/dev/null 2>&1; then \
-		if [ -f "scripts/run_coverage.py" ]; then \
-			$(PYTHON3) scripts/run_coverage.py; \
-		else \
-			echo "$(YELLOW)Coverage script not found$(NC)"; \
-		fi; \
+test-coverage: clean build
+	@echo "$(GREEN)Running tests with GNATcoverage analysis...$(NC)"
+	@if [ -f "scripts/coverage.sh" ]; then \
+		bash scripts/coverage.sh; \
 	else \
-		echo "$(RED)Python 3 required for coverage analysis$(NC)"; \
+		echo "$(YELLOW)Coverage script not found at scripts/coverage.sh$(NC)"; \
+		exit 1; \
 	fi
 
 # =============================================================================
@@ -250,9 +245,9 @@ test-coverage:
 # =============================================================================
 
 check:
-	@echo "$(GREEN)Running static analysis...$(NC)"
-	$(ALR) build
-	@echo "$(GREEN)✓ Static analysis complete$(NC)"
+	@echo "$(GREEN)Running code checks...$(NC)"
+	@$(ALR) build --validation -- $(ALR_BUILD_FLAGS)
+	@echo "$(GREEN)✓ Code checks complete$(NC)"
 
 format-src:
 	@echo "$(GREEN)Formatting library source code (src/)...$(NC)"
@@ -292,35 +287,26 @@ format-all: format-src format-tests
 
 format: format-all
 
-format-preview:
-	@echo "$(GREEN)Preview formatting changes...$(NC)"
-	@echo "$(YELLOW)Preview mode not implemented for gnatformat$(NC)"
-	@echo "$(YELLOW)Use git diff to see changes$(NC)"
-
-format-check: format-preview
-	@echo ""
-	@echo "Run 'make format' to apply formatting"
-
 # =============================================================================
 # Development Commands
 # =============================================================================
 
 stats:
-	@echo "$(BLUE)Project Statistics for $(PROJECT_NAME)$(NC)"
+	@echo "$(CYAN)$(BOLD)Project Statistics for $(PROJECT_NAME)$(NC)"
 	@echo "$(YELLOW)════════════════════════════════════════$(NC)"
 	@echo ""
 	@echo "Ada Source Files:"
-	@echo "  Library specs:  $$(find $(SRC_DIR) -name "*.ads" 2>/dev/null | wc -l)"
-	@echo "  Library bodies: $$(find $(SRC_DIR) -name "*.adb" 2>/dev/null | wc -l)"
-	@echo "  Test specs:     $$(find $(TESTS_DIR) -name "*.ads" 2>/dev/null | wc -l)"
-	@echo "  Test bodies:    $$(find $(TESTS_DIR) -name "*.adb" 2>/dev/null | wc -l)"
+	@echo "  Library specs:  $$(find $(SRC_DIR) -name "*.ads" 2>/dev/null | wc -l | tr -d ' ')"
+	@echo "  Library bodies: $$(find $(SRC_DIR) -name "*.adb" 2>/dev/null | wc -l | tr -d ' ')"
+	@echo "  Test specs:     $$(find $(TESTS_DIR) -name "*.ads" 2>/dev/null | wc -l | tr -d ' ')"
+	@echo "  Test bodies:    $$(find $(TESTS_DIR) -name "*.adb" 2>/dev/null | wc -l | tr -d ' ')"
 	@echo ""
 	@echo "Lines of Code:"
 	@find $(SRC_DIR) $(TESTS_DIR) -name "*.ads" -o -name "*.adb" 2>/dev/null | \
 	  xargs wc -l 2>/dev/null | tail -1 | awk '{printf "  Total: %d lines\n", $$1}' || \
 	  echo "  Total: 0 lines"
 	@echo ""
-	@echo "Library Artifacts:"
+	@echo "Build Artifacts:"
 	@if [ -f "./lib/libfunctional.a" ]; then \
 		echo "  Library: $$(ls -lh ./lib/libfunctional.a 2>/dev/null | awk '{print $$5}')"; \
 	else \
