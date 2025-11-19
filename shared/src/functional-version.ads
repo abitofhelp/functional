@@ -1,7 +1,7 @@
 pragma Ada_2022;
---  ==========================================================================
+--  =========================================================================
 --  Functional.Version - Application Version Information
---  ==========================================================================
+--  =========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --  See LICENSE file in the project root.
@@ -24,13 +24,13 @@ pragma Ada_2022;
 --    - Version follows Semantic Versioning 2.0.0 (semver.org)
 --    - Pre-release identifiers: -dev, -alpha.N, -beta.N, -rc.N
 --    - Build metadata: +build.N, +commit.HASH
---  ==========================================================================
+--  =========================================================================
 
 package Functional.Version is
 
    --  Semantic Version Components
    Major : constant Natural := 2;
-   Minor : constant Natural := 0;
+   Minor : constant Natural := 1;
    Patch : constant Natural := 0;
 
    --  Pre-release identifier (e.g., "dev", "alpha.1", "beta.2", "rc.1")
@@ -42,7 +42,7 @@ package Functional.Version is
    Build_Metadata : constant String := "";
 
    --  Full version string (e.g., "0.1.0-dev", "1.2.3", "2.0.0-rc.1+build.456")
-   Version : constant String := "2.0.0";
+   Version : constant String := "2.1.0";
 
    --  Short version (no build metadata): "MAJOR.MINOR.PATCH[-PRERELEASE]"
    Short_Version : constant String :=

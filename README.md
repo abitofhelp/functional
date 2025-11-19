@@ -1,11 +1,11 @@
 # Functional - Type-Safe Error Handling for Ada 2022
 
-**Version:** 2.0.0<br>
-**Date:** November 13, 2025<br>
+**Version:** 2.1.0  
+**Date:** November 18, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
-**Status:** Released
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
+**Status:** Released  
 
 A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
 
