@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Added
+- **Test Build Mode**: Added "test" mode to functional.gpr for compatibility with downstream projects that use `-Xmode=test`
+  - Supports test-specific compiler flags (debug info, assertions, validity checks)
+  - Enables symbolic tracebacks in test mode
 
 ### Removed
 
