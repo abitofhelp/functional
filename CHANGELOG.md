@@ -1,7 +1,7 @@
 # Changelog
 
-**Version:** 2.1.0  
-**Date:** November 18, 2025  
+**Version:** 2.1.1  
+**Date:** November 19, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause  
 **License File:** See the LICENSE file in the project root.  
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
@@ -17,13 +17,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Added
-- **Test Build Mode**: Added "test" mode to functional.gpr for compatibility with downstream projects that use `-Xmode=test`
-  - Supports test-specific compiler flags (debug info, assertions, validity checks)
-  - Enables symbolic tracebacks in test mode
 
 ### Removed
 
 ### Fixed
+
+---
+
+## [2.1.1] - 2025-11-19
+
+### Added
+- **Test Build Mode**: Added "test" mode to functional.gpr for compatibility with downstream projects that use `-Xmode=test`
+  - Supports test-specific compiler flags (debug info, assertions, validity checks)
+  - Enables symbolic tracebacks in test mode
 
 ---
 
