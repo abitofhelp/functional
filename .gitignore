@@ -1,8 +1,9 @@
 # Build artifacts
 /obj/
+obj/
 /lib/
-/tests/obj/
-/tests/bin/
+/test/obj/
+/test/bin/
 
 # Alire generated files
 /alire/
