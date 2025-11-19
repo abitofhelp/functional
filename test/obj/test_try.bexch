@@ -1,0 +1,23 @@
+[GENERATED OBJECT FILE]
+b__test_try.o
+[PROJECT FILES]
+/Users/mike/Ada/github.com/abitofhelp/functional/test/tests.gpr
+20251026025352 272c50ebf67c1085adc55df4f27914f6
+/Users/mike/Ada/github.com/abitofhelp/functional/config/functional_config.gpr
+20251117040737 f7ed110cbd4445c90112fe69b78e383b
+/Users/mike/Ada/github.com/abitofhelp/functional/functional.gpr
+20251030014528 ceb6dc35a944bedb4d930d56ab486117
+[BOUND OBJECT FILES]
+/Users/mike/Ada/github.com/abitofhelp/functional/test/obj/test_framework.o
+/Users/mike/Ada/github.com/abitofhelp/functional/test/obj/test_try.o
+[GENERATED SOURCE FILES]
+b__test_try.ads
+b__test_try.adb
+b__test_try.ali
+[RESULTING OPTIONS]
+-L/Users/mike/Ada/github.com/abitofhelp/functional/test/obj/
+-L/Users/mike/Ada/github.com/abitofhelp/functional/test/obj/
+-L/Users/mike/Ada/github.com/abitofhelp/functional/lib/
+-L/users/mike/.local/share/alire/toolchains/gnat_native_15.2.1_fffe07e8/lib/gcc/x86_64-apple-darwin22.6.0/15.2.0/adalib/
+-static
+/users/mike/.local/share/alire/toolchains/gnat_native_15.2.1_fffe07e8/lib/gcc/x86_64-apple-darwin22.6.0/15.2.0/adalib/libgnat.a

@@ -1,0 +1,170 @@
+V "GNAT Lib v15"
+M P W=8
+A -gnatA
+A -gnat2022
+A -gnatwa
+A -gnatw.Y
+A -gnatwl
+A -gnatwu
+A -gnatw.u
+A -gnatw.r
+A -gnatw.k
+A -gnatw.m
+A -gnatw.o
+A -gnatw.X
+A -gnatf
+A -gnatyy
+A -gnaty3
+A -gnatya
+A -gnatyb
+A -gnatyc
+A -gnatyd
+A -gnatye
+A -gnatyf
+A -gnatyh
+A -gnatyi
+A -gnatyk
+A -gnatyl
+A -gnatym
+A -gnatyn
+A -gnatyp
+A -gnatyr
+A -gnatys
+A -gnatyt
+A -gnatyu
+A -gnatyx
+A -gnatyM120
+A -gnatyN
+A -gnatyO
+A -gnatyS
+A -gnatW8
+A -g
+A -gnatVa
+A -gnateE
+A -gnata
+A -gnatU
+A -gnatd.n
+A -mmacosx-version-min=15.0.0
+A -mtune=core2
+A -fPIC
+A -feliminate-unused-debug-symbols
+P SS ZX
+
+RN
+RV NO_ACCESS_SUBPROGRAMS
+RV NO_EXCEPTION_HANDLERS
+RV NO_EXCEPTIONS
+RV NO_IO
+RV NO_STANDARD_STORAGE_POOLS
+RV NO_DYNAMIC_SIZED_OBJECTS
+RV NO_IMPLEMENTATION_PRAGMAS
+
+U test_runner%b		test_runner.adb		a9ca309f NE OO SU
+W ada%s			ada.ads			ada.ali
+W ada.command_line%s	a-comlin.adb		a-comlin.ali
+Z ada.strings.text_buffers%s  a-sttebu.adb	a-sttebu.ali
+W ada.text_io%s		a-textio.adb		a-textio.ali
+Z system.concat_2%s	s-conca2.adb		s-conca2.ali
+Z system.concat_5%s	s-conca5.adb		s-conca5.ali
+Z system.img_int%s	s-imgint.ads		s-imgint.ali
+W test_either%b		test_either.adb		test_either.ali
+W test_framework%s	test_framework.adb	test_framework.ali
+W test_option%b		test_option.adb		test_option.ali
+W test_result%b		test_result.adb		test_result.ali
+W test_try%b		test_try.adb		test_try.ali
+W test_try_option%b	test_try_option.adb	test_try_option.ali
+
+D ada.ads		20250808065140 76789da1 ada%s
+D a-comlin.ads		20250808065140 4aa66568 ada.command_line%s
+D a-except.ads		20250808065140 e7970cd9 ada.exceptions%s
+D a-ioexce.ads		20250808065140 40018c65 ada.io_exceptions%s
+D a-stream.ads		20250808065140 17477cbd ada.streams%s
+D a-string.ads		20250808065140 90ac6797 ada.strings%s
+D a-sttebu.ads		20250808065140 f1ad67a2 ada.strings.text_buffers%s
+D a-stuten.ads		20250808065140 c6ced0ae ada.strings.utf_encoding%s
+D a-tags.ads		20250808065140 fbca0ad5 ada.tags%s
+D a-textio.ads		20250808065140 34ef47de ada.text_io%s
+D a-unccon.ads		20250808065140 0e9b276f ada.unchecked_conversion%s
+D functional.ads	20251119055805 9cd3a69c functional%s
+D functional-either.ads	20251119055809 28decb8c functional.either%s
+D functional-option.ads	20251119055809 7c8ec57c functional.option%s
+D functional-result.ads	20251119055810 d7283182 functional.result%s
+D functional-try.ads	20251119055933 c440a566 functional.try%s
+D functional-try-to_option.ads  20251119055933 8cda586b functional.try.to_option%s
+D functional-try-to_result.ads  20251119055933 1a32ad14 functional.try.to_result%s
+D interfac.ads		20250808065140 9111f9c1 interfaces%s
+D i-cstrea.ads		20250808065140 ffd01b9d interfaces.c_streams%s
+D system.ads		20250808065140 70765b54 system%s
+D s-conca2.ads		20250808065140 b5fb73f7 system.concat_2%s
+D s-conca3.ads		20250808065140 8a7a19a2 system.concat_3%s
+D s-conca5.ads		20250808065140 4099d1db system.concat_5%s
+D s-crtl.ads		20250808065140 beb39b9e system.crtl%s
+D s-exctab.ads		20250808065140 91bef6ef system.exception_table%s
+D s-ficobl.ads		20250808065140 dc5161d4 system.file_control_block%s
+D s-imagei.ads		20250808065140 5e131ce0 system.image_i%s
+D s-imgint.ads		20250808065140 67e4edfb system.img_int%s
+D s-parame.ads		20250808065140 3597fc11 system.parameters%s
+D s-putima.ads		20250808065140 17291fe4 system.put_images%s
+D s-secsta.ads		20250808065140 578279f5 system.secondary_stack%s
+D s-soflin.ads		20250808065140 5d88fdea system.soft_links%s
+D s-stache.ads		20250808065140 0b81c1fe system.stack_checking%s
+D s-stalib.ads		20250808065140 1c9580f6 system.standard_library%s
+D s-stoele.ads		20250808065140 ccded4e8 system.storage_elements%s
+D s-traent.ads		20250808065140 c81cbf8c system.traceback_entries%s
+D s-unstyp.ads		20250808065140 fa2a7f59 system.unsigned_types%s
+D s-valint.ads		20250808065140 8bab724f system.val_int%s
+D s-valspe.ads		20250808065140 f810d31c system.val_spec%s
+D s-valuns.ads		20250808065140 f7ddb71d system.val_uns%s
+D s-valuei.ads		20250808065140 d9377ca5 system.value_i%s
+D s-vaispe.ads		20250808065140 8280550e system.value_i_spec%s
+D s-valueu.ads		20250808065140 a38d32a6 system.value_u%s
+D s-vauspe.ads		20250808065140 89269ba5 system.value_u_spec%s
+D s-vs_int.ads		20250808065140 06b6b724 system.vs_int%s
+D s-vs_uns.ads		20250808065140 e7f47a27 system.vs_uns%s
+D s-wchcon.ads		20250808065140 d9032363 system.wch_con%s
+D test_either.adb	20251119055813 1e61c867 test_either%b
+D test_framework.ads	20251119055812 247bcf50 test_framework%s
+D test_option.adb	20251119055813 d6e9b571 test_option%b
+D test_result.adb	20251119055814 c405757d test_result%b
+D test_runner.adb	20251119055812 b966819e test_runner%b
+D test_try.adb		20251119055811 47512801 test_try%b
+D test_try_option.adb	20251119055814 01427c8d test_try_option%b
+G a e
+G c Z b b [test_runner standard 23 11 none]
+G r c none [test_runner standard 23 11 none] [reset test_framework 21 14 none]
+G r c none [test_runner standard 23 11 none] [grand_total_tests test_framework 17 13 none]
+G r c none [test_runner standard 23 11 none] [grand_total_passed test_framework 18 13 none]
+X 1 ada.ads
+18K9*Ada 22e8 53|12r6 12r23 13r6 74r7 83r7
+X 2 a-comlin.ads
+40K13*Command_Line 148e21 53|13w10 74r11 83r11
+79U14*Set_Exit_Status 53|74s24 83s24
+X 10 a-textio.ads
+58K13*Text_IO 785e16 53|12w10 12r27
+284U14*New_Line 53|30s7 64s4
+565U14*Put_Line 53|31s7 32s7 33s7 38s13 44s4 45s4 46s4 47s4 65s4 67s7 73s7
+. 76s7 82s7
+X 49 test_either.adb
+17U11*Test_Either 53|19w6 55r30
+X 50 test_framework.ads
+11K9*Test_Framework 23e19 53|14w6 50r4 60r19 61r20
+17V13*Grand_Total_Tests{natural} 53|60s34
+18V13*Grand_Total_Passed{natural} 53|61s35
+21U14*Reset 53|50s19
+X 51 test_option.adb
+17U11*Test_Option 53|18w6 54r30
+X 52 test_result.adb
+17U11*Test_Result 53|17w6 53r30
+X 53 test_runner.adb
+23U11*Test_Runner 23b11 85l5 85t16
+24b4 Overall_Failed{boolean} 39m13 66r47
+25i4 Grand_Total{natural} 60m4 66r22 71r12 80r12
+26i4 Grand_Passed{natural} 61m4 66r7 69r12 78r12
+28U14 Run_Test 28b14 28>24 28^39 41l8 41t16 53s4 54s4 55s4 56s4 57s4
+28a24 Name{string} 32r33
+28p39 Test 35r10
+X 54 test_try.adb
+19U11*Test_Try 53|20w6 56r37
+X 55 test_try_option.adb
+18U11*Test_Try_Option 53|21w6 57r37
+

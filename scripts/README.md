@@ -1,113 +1,220 @@
 # Project Scripts
 
-**Version:** 2.0.0
-**Date:** November 13, 2025
-**SPDX-License-Identifier:** BSD-3-Clause
-**License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
-**Status:** Released
-
-**Python automation scripts for development tasks**
+**Organized automation scripts for development, testing, and release management**
 
 ---
 
-## Overview
+## Directory Structure
 
-This directory contains Python scripts that automate complex development tasks. Using Python instead of complex shell scripts in the Makefile provides:
-
-- **Better readability** - Easier to understand for educational purposes
-- **Cross-platform compatibility** - Works on macOS, Linux, and Windows
-- **Error handling** - Proper exception handling and user feedback
-- **Testability** - Scripts can be unit tested
-- **Maintainability** - Easier to modify and extend
+```
+scripts/
+├── makefile/          # Scripts invoked by Makefile targets
+├── release/           # Release management and version control
+└── [utilities]        # General-purpose helper scripts
+```
 
 ---
 
-## Available Scripts
+## 📁 Makefile Scripts (`scripts/makefile/`)
 
-### `common.py`
+Scripts directly invoked by Makefile targets for build, test, and quality workflows.
 
-**Purpose:** Shared utilities and helper functions for all scripts
+### `arch_guard.py`
 
-**Features:**
-- Terminal color output (ANSI codes)
-- OS detection (macOS, Linux, Windows)
-- Command existence checking
-- Package manager detection
-- Common print functions (success, error, warning, info)
+**Purpose:** Validate hexagonal architecture boundaries
 
-**Usage:** Import by other scripts
-```python
-from common import print_success, command_exists, is_macos
+**What it does:**
+- Enforces layer dependency rules (Domain → Application → Infrastructure → Presentation)
+- Detects illegal imports that violate architecture boundaries
+- Validates that Domain layer has zero external dependencies
+
+**Usage:**
+```bash
+# Via Makefile (recommended)
+make check-arch
+
+# Direct execution
+python3 scripts/makefile/arch_guard.py
+```
+
+**Makefile Target:** `check-arch`
+
+**Exit Codes:**
+- `0` - Architecture is clean (or warnings only)
+- `1` - Critical architecture violations found
+
+---
+
+### `coverage.sh`
+
+**Purpose:** Run GNATcoverage source-trace analysis workflow
+
+**What it does:**
+1. Locates GNATcoverage runtime (vendored in external/gnatcov_rts/)
+2. Instruments unit and integration test projects
+3. Builds instrumented tests with coverage runtime
+4. Executes all test runners
+5. Generates coverage reports (HTML, DHTML, text)
+
+**Usage:**
+```bash
+# Via Makefile (recommended)
+make test-coverage
+
+# Direct execution
+bash scripts/makefile/coverage.sh
+```
+
+**Makefile Target:** `test-coverage`
+
+**Output:**
+- `coverage/index.html` - Main coverage dashboard
+- `coverage/dhtml/` - Interactive DHTML reports
+- Terminal summary with percentage coverage
+
+**Requirements:**
+- GNATcoverage (via Alire: `alr exec -- gnatcov`)
+- Vendored gnatcov_rts in external/
+
+---
+
+### `run_coverage.py`
+
+**Purpose:** Alternative Python-based coverage runner
+
+**What it does:**
+- Simplified coverage workflow using gcov/gcovr
+- Cleans previous coverage artifacts
+- Builds tests with coverage instrumentation
+- Generates HTML coverage reports
+
+**Usage:**
+```bash
+python3 scripts/makefile/run_coverage.py
+```
+
+**Requirements:**
+- gcovr (`pip3 install gcovr`)
+
+---
+
+### `run_gnatcov.sh`
+
+**Purpose:** Complete GNATcoverage workflow automation
+
+**What it does:**
+1. Instruments test projects for source-trace coverage
+2. Builds instrumented tests
+3. Runs test suite
+4. Generates coverage reports with line/branch info
+
+**Usage:**
+```bash
+bash scripts/makefile/run_gnatcov.sh
 ```
 
 ---
 
 ### `install_tools.py`
 
-**Purpose:** Install all required development dependencies
+**Purpose:** Install development dependencies and tools
 
 **What it installs:**
-- **GMP library** - Required math library for GNAT
-  - macOS: via Homebrew (`brew install gmp`)
-  - Linux: via apt/yum (`libgmp-dev` or `gmp-devel`)
-- **gcovr** - Coverage report generator (via pip3)
-- **gnatformat** - Ada code formatter (via Alire)
+- **GMP library** - Required for GNAT math operations
+  - macOS: `brew install gmp`
+  - Linux: `apt-get install libgmp-dev` or `yum install gmp-devel`
+- **gcovr** - Coverage report generator (`pip3 install gcovr`)
+- **gnatformat** - Ada code formatter (`alr get gnatformat`)
 
 **Usage:**
 ```bash
-# Via Makefile
+# Via Makefile (recommended)
 make install-tools
 
 # Direct execution
-python3 scripts/install_tools.py
-./scripts/install_tools.py
+python3 scripts/makefile/install_tools.py
 ```
 
-**Features:**
-- Automatically detects OS and package manager
-- Checks if tools are already installed (no unnecessary reinstalls)
-- Provides helpful error messages
-- Verifies installations after completion
+**Makefile Target:** `install-tools`
 
-**Exit Codes:**
-- `0` - All critical tools installed successfully
-- `1` - One or more critical installations failed
+**Features:**
+- Auto-detects OS and package manager
+- Checks existing installations before installing
+- Verifies successful installation
+- Provides helpful error messages
 
 ---
 
-### `run_coverage.py`
+### `ada_formatter_pipeline.donotuse.py`
 
-**Purpose:** Run test suite with coverage analysis and generate HTML reports
+**Status:** ⚠️  DISABLED - Awaiting adafmt tool
+
+**Purpose:** Ada source code formatting pipeline
+
+**Why disabled:**
+- Current implementation has issues with comment formatting
+- Being replaced by custom adafmt tool (in development)
+- Commented out in Makefile format targets
+
+**Do not use this script** - It will be replaced when adafmt is ready.
+
+---
+
+## 📁 Release Scripts (`scripts/release/`)
+
+Automated release management, version synchronization, and GitHub release creation.
+
+### `release.py`
+
+**Purpose:** Complete release orchestration and workflow automation
 
 **What it does:**
-1. Cleans previous coverage artifacts (`.gcda`, `.gcno`, `.gcov`)
-2. Builds test suite with coverage instrumentation using `tests-coverage.gpr`
-3. Runs the test suite (`tests/bin/test_runner`)
-4. Generates HTML coverage report using `gcovr`
-5. Provides instructions for viewing the report
+
+**Prepare Command:** (`python scripts/release/release.py prepare 1.0.0`)
+1. Cleans temporary files (.bak, .o, .ali, __pycache__)
+2. Updates root alire.toml version
+3. Syncs all layer alire.toml files to match
+4. Generates Simple_Hybrid.Version Ada package
+5. ~~Generates Ada docstrings~~ (disabled - tzif-specific)
+6. Formats code (`make format`) if available
+7. ~~Rebuilds formal documentation~~ (disabled - tzif-specific)
+8. Updates markdown file versions and dates
+9. Updates CHANGELOG.md (creates for v0.1.0, updates for later)
+10. Generates PlantUML diagrams to SVG
+11. Runs build verification
+12. Runs test suite
+
+**Release Command:** (`python scripts/release/release.py release 1.0.0`)
+1. Verifies clean git working tree
+2. Creates annotated git tag (v1.0.0)
+3. Pushes changes and tag to origin
+4. Creates GitHub release with CHANGELOG notes
+
+**Diagrams Command:** (`python scripts/release/release.py diagrams`)
+1. Generates all PlantUML diagrams to SVG format
 
 **Usage:**
 ```bash
-# Via Makefile
-make test-coverage
+# Prepare release (updates versions, runs tests)
+python3 scripts/release/release.py prepare 1.0.0
 
-# Direct execution
-python3 scripts/run_coverage.py
-./scripts/run_coverage.py
+# Create release (tags and publishes to GitHub)
+python3 scripts/release/release.py release 1.0.0
+
+# Just regenerate diagrams
+python3 scripts/release/release.py diagrams
 ```
 
-**Output:**
-- `coverage/coverage.html` - Main coverage report (click to view)
-- `coverage/*.html` - Detailed per-file coverage reports
-- Terminal summary of coverage statistics
+**Semantic Versioning Support:**
+- Stable: `1.0.0`, `2.3.4`
+- Pre-release: `1.0.0-dev`, `1.0.0-alpha.1`, `1.0.0-rc.1`
+- With build metadata: `1.0.0+build.123`
 
 **Requirements:**
-- Python 3
-- gcovr (`pip3 install gcovr`)
-- GNAT toolchain with gcov support
-
-**Fallback:** If gcovr is not installed, basic `.gcov` files are still generated
+- Python 3.7+
+- gh CLI (for GitHub releases)
+- plantuml (for diagram generation)
+- Clean git working tree (for release command)
 
 ---
 
@@ -116,8 +223,8 @@ python3 scripts/run_coverage.py
 **Purpose:** Synchronize version numbers across all alire.toml files
 
 **What it does:**
-1. Reads the version from root `alire.toml` (single source of truth)
-2. Updates version in all layer `alire.toml` files to match:
+1. Reads version from root alire.toml (single source of truth)
+2. Updates version in all layer alire.toml files:
    - application/alire.toml
    - bootstrap/alire.toml
    - domain/alire.toml
@@ -127,20 +234,11 @@ python3 scripts/run_coverage.py
 
 **Usage:**
 ```bash
-# Via Makefile
-make sync-versions
-
-# Direct execution
-python3 scripts/sync_versions.py
-python3 scripts/sync_versions.py --dry-run
-python3 scripts/sync_versions.py --verbose
+# Called by release.py, or standalone:
+python3 scripts/release/sync_versions.py 1.0.0
 ```
 
-**Options:**
-- `--dry-run` - Show what would be changed without modifying files
-- `--verbose` - Show detailed information about each file processed
-
-**Use Case:** Ensures all crates in the hybrid architecture have synchronized version numbers
+**Use Case:** Ensures version consistency across hexagonal architecture layers
 
 ---
 
@@ -149,214 +247,214 @@ python3 scripts/sync_versions.py --verbose
 **Purpose:** Generate Ada version package from alire.toml
 
 **What it does:**
-1. Extracts version from `alire.toml`
+1. Extracts version from alire.toml
 2. Parses semantic version (MAJOR.MINOR.PATCH-PRERELEASE+BUILD)
-3. Generates `shared/src/hybrid-version.ads` with version constants
-4. Provides version checking functions (Is_Prerelease, Is_Development, Is_Stable)
+3. Generates `shared/src/simple_hybrid-version.ads` with constants
 
 **Usage:**
 ```bash
-# Via Makefile
-make generate-version
-
-# Direct execution
-python3 scripts/generate_version.py alire.toml shared/src/hybrid-version.ads
+# Called by release.py, or standalone:
+python3 scripts/release/generate_version.py alire.toml shared/src/simple_hybrid-version.ads
 ```
 
 **Generated Package:**
 ```ada
-package Hybrid.Version is
-   Major : constant Natural := 0;
-   Minor : constant Natural := 1;
+package Simple_Hybrid.Version is
+   Major : constant Natural := 1;
+   Minor : constant Natural := 0;
    Patch : constant Natural := 0;
-   Version : constant String := "0.1.0-dev";
-   function Is_Prerelease return Boolean;
-   function Is_Development return Boolean;
-   function Is_Stable return Boolean;
-end Hybrid.Version;
+   Version : constant String := "1.0.0";
+   -- ... version checking functions
+end Simple_Hybrid.Version;
 ```
-
-**Use Case:** Single source of truth for version info accessible from Ada code
-
----
-
-### `add_md_headers.py`
-
-**Purpose:** Add or update standard metadata headers in markdown files
-
-**What it does:**
-1. Finds all `.md` files in project (docs/, root)
-2. Adds standard header with Version, Date, Copyright, Status
-3. Updates existing headers to current version/date
-4. Preserves file content below header
-
-**Usage:**
-```bash
-# Via Makefile
-make add-md-headers
-
-# Direct execution
-python3 scripts/add_md_headers.py
-```
-
-**Header Format:**
-```markdown
----
-**Version:** 1.0.0  
-**Date:** October 28, 2025  
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
-**License:** BSD-3-Clause
-**Status:** Released  
----
-```
-
-**Use Case:** Maintain consistent metadata across all documentation files
-
----
-
-### `release.py`
-
-**Purpose:** Complete release management and orchestration
-
-**What it does:**
-
-**Prepare Command:**
-1. Ensures markdown files have standard headers
-2. Updates root alire.toml version
-3. Syncs all layer alire.toml files
-4. Generates Hybrid.Version Ada package
-5. Updates Ada source file copyright years
-6. Updates markdown file versions and dates
-7. Updates CHANGELOG.md
-8. Generates PlantUML diagrams
-9. Runs build verification
-10. Runs test suite
-
-**Release Command:**
-1. Verifies clean git working tree
-2. Creates annotated git tag
-3. Pushes changes and tag to GitHub
-4. Creates GitHub release with notes from CHANGELOG
-
-**Diagrams Command:**
-1. Generates all PlantUML diagrams to SVG format
-
-**Usage:**
-```bash
-# Via Makefile
-make release-prepare    # prompts for version
-make release-create     # prompts for version
-
-# Direct execution
-python3 scripts/release.py prepare 1.0.0
-python3 scripts/release.py release 1.0.0
-python3 scripts/release.py diagrams
-```
-
-**Semantic Versioning Support:**
-- Stable: `1.0.0`, `2.3.4`
-- Pre-release: `1.0.0-dev`, `1.0.0-alpha.1`, `1.0.0-beta.2`, `1.0.0-rc.1`
-- With build: `1.0.0+build.123`, `1.0.0-rc.1+commit.abc123`
-
-**Use Case:** Automated, consistent release process with zero manual errors
 
 ---
 
 ### `validate_release.py`
 
-**Purpose:** Comprehensive release validation scan (RELEASE_CHECKLIST Step 3)
+**Purpose:** Comprehensive pre-release validation checks
 
 **What it does:**
-
-Automates all validation checks from the release checklist:
-1. **File Headers** - Verifies all Ada source (.ads/.adb) and test files have copyright © 2025 and SPDX-License-Identifier
-2. **Markdown Status** - Checks Status fields are "Released" (not "Pre-release")
-3. **Build Warnings** - Runs `make build` and verifies zero warnings
-4. **Test Suite** - Runs `make test` and verifies all 9 test suites pass
-5. **TODOs/FIXMEs** - Searches source code for remaining TODO/FIXME comments
-6. **Diagrams** - Verifies all .puml files have corresponding .svg exports
-7. **Guides** - Checks all required architecture guides are present
-8. **Temporary Files** - Finds .tmp, .bak, ~, .backup files that should be cleaned
+1. Verifies Ada source file headers (copyright, SPDX)
+2. Checks markdown Status fields (Released vs Pre-release)
+3. Runs build and checks for warnings
+4. Runs test suite and verifies all pass
+5. Searches for TODO/FIXME comments
+6. Verifies PlantUML diagrams have SVG exports
+7. Checks required architecture guides exist
+8. Finds temporary files that should be cleaned
 
 **Usage:**
 ```bash
-# Full validation (includes build and tests - ~2 minutes)
-python3 scripts/validate_release.py
+# Full validation (includes build/tests ~2 min)
+python3 scripts/release/validate_release.py
 
-# Verbose output with detailed checks
-python3 scripts/validate_release.py --verbose
+# Quick validation (skip build/tests ~10 sec)
+python3 scripts/release/validate_release.py --quick
 
-# Quick validation (skip slow build/tests - ~10 seconds)
-python3 scripts/validate_release.py --quick
-
-# Verbose + quick
-python3 scripts/validate_release.py --verbose --quick
+# Verbose output
+python3 scripts/release/validate_release.py --verbose
 ```
 
 **Exit Codes:**
 - `0` - All validations passed (ready for release)
-- `1` - One or more validations failed (needs fixing)
-- `2` - Script error or missing dependencies
+- `1` - One or more validations failed
+- `2` - Script error
 
-**Output:**
-```
-======================================================================
-RELEASE VALIDATION SCAN - v1.0.0
-======================================================================
+**Use Case:** Pre-flight checks before creating a release
 
-🔍 Verifying Ada source file headers (.ads, .adb)...
-✅ All 87 Ada source files have proper headers
+---
 
-🔍 Verifying test file headers...
-✅ All 15 test files have proper headers
+## 📄 General Utilities (Root `scripts/`)
 
-🔍 Verifying markdown Status fields...
-✅ Markdown Status fields correct
+### `common.py`
 
-🔍 Building project and checking for warnings...
-✅ Build completed with ZERO warnings
+**Purpose:** Shared utilities and helper functions
 
-🔍 Running complete test suite...
-✅ All tests passed (9/9 suites)
+**Features:**
+- Terminal color output (ANSI codes)
+- OS detection (macOS, Linux, Windows)
+- Command existence checking
+- Package manager detection
+- Print functions (success, error, warning, info)
 
-🔍 Checking for TODO/FIXME comments...
-✅ No TODOs or FIXMEs found
-
-🔍 Verifying diagrams are up-to-date...
-✅ All 12 diagrams have SVG exports
-
-🔍 Verifying architecture guides...
-✅ All 5 required guides present (15 total)
-
-🔍 Checking for temporary files...
-✅ No temporary files found
-
-======================================================================
-VALIDATION SUMMARY
-======================================================================
-
-PASS - Ada Source Headers
-PASS - Test File Headers
-PASS - Markdown Status
-PASS - Build Warnings
-PASS - Test Suite
-PASS - TODOs/FIXMEs
-PASS - Diagrams
-PASS - Guides
-PASS - Temporary Files
-
-Results: 9/9 checks passed
-
-✅ 🎉 ALL VALIDATIONS PASSED - READY FOR RELEASE!
+**Usage:** Import by other scripts
+```python
+from common import print_success, command_exists, is_macos
 ```
 
-**Integration:**
-- Called automatically by `release.py prepare` command
-- Can be run standalone during development
-- Suitable for CI/CD pipeline integration
-- Referenced in RELEASE_CHECKLIST.md Step 3
+---
 
-**Use Case:** Automated validation that ensures release quality and consistency
+### `cleanup_temp_files.py`
+
+**Purpose:** Remove temporary build artifacts and backup files
+
+**What it removes:**
+- `.bak`, `.backup` files
+- `.o`, `.ali` object files
+- `.DS_Store` (macOS)
+- `__pycache__/` directories
+
+**Usage:**
+```bash
+# Called by release.py, or standalone:
+python3 scripts/cleanup_temp_files.py
+```
+
+---
+
+### `cleanup_markdown_docs.py`
+
+**Purpose:** Clean and normalize markdown documentation
+
+**What it does:**
+- Removes trailing whitespace
+- Normalizes line endings
+- Fixes markdown formatting issues
+
+**Usage:**
+```bash
+python3 scripts/cleanup_markdown_docs.py
+```
+
+---
+
+### `add_md_headers.py`
+
+**Purpose:** Add/update standard metadata headers in markdown files
+
+**What it does:**
+1. Finds all `.md` files in project
+2. Adds standard header with Version, Date, Copyright, Status
+3. Updates existing headers to current version/date
+
+**Header Format:**
+```markdown
+**Version:** 1.0.0
+**Date:** November 18, 2025
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
+**SPDX-License-Identifier:** BSD-3-Clause
+**Status:** Released
+```
+
+**Usage:**
+```bash
+python3 scripts/add_md_headers.py
+```
+
+---
+
+### `fix_markdown_headers.py`
+
+**Purpose:** Fix malformed markdown headers
+
+**Usage:**
+```bash
+python3 scripts/fix_markdown_headers.py
+```
+
+---
+
+### `curate_guides.py`
+
+**Purpose:** Organize and maintain architecture guide documentation
+
+**Usage:**
+```bash
+python3 scripts/curate_guides.py
+```
+
+---
+
+### `fix_warnings.py`
+
+**Purpose:** Automated fixes for common Ada compiler warnings
+
+**Usage:**
+```bash
+python3 scripts/fix_warnings.py
+```
+
+---
+
+### `rename_packages.py`
+
+**Purpose:** Bulk rename Ada packages (for refactoring)
+
+**Usage:**
+```bash
+python3 scripts/rename_packages.py
+```
+
+---
+
+## Integration with Makefile
+
+Scripts are organized by purpose and invoked through clean Makefile targets:
+
+```makefile
+# Architecture validation
+check-arch:
+	@python3 scripts/makefile/arch_guard.py
+
+# Coverage analysis
+test-coverage:
+	@bash scripts/makefile/coverage.sh
+
+# Tool installation
+install-tools:
+	@python3 scripts/makefile/install_tools.py
+
+# Release preparation
+prepare-release:
+	@python3 scripts/release/release.py prepare $(version)
+```
+
+This organization provides:
+- ✅ **Clear separation of concerns** - Makefile scripts vs release scripts
+- ✅ **Easy to navigate** - Find scripts by their purpose
+- ✅ **Maintainable** - Related scripts grouped together
+- ✅ **Professional** - Industry-standard structure
 
 ---
 
@@ -364,17 +462,22 @@ Results: 9/9 checks passed
 
 ### Adding New Scripts
 
-When adding new automation scripts:
+When creating new automation scripts:
 
-1. **Use Python 3** - Maximize portability and readability
-2. **Import from common.py** - Reuse utilities for consistency
-3. **Add docstrings** - Document purpose and usage
-4. **Handle errors gracefully** - Provide helpful error messages
-5. **Make executable** - `chmod +x scripts/your_script.py`
-6. **Add shebang** - `#!/usr/bin/env python3`
-7. **Document here** - Update this README
+1. **Choose the right location:**
+   - `scripts/makefile/` - If invoked by a Makefile target
+   - `scripts/release/` - If part of release workflow
+   - `scripts/` root - If general-purpose utility
 
-### Script Structure Template
+2. **Use Python 3** - Maximize portability and readability
+3. **Import from common.py** - Reuse utilities
+4. **Add docstrings** - Document purpose and usage
+5. **Handle errors gracefully** - Helpful error messages
+6. **Make executable** - `chmod +x scripts/your_script.py`
+7. **Add shebang** - `#!/usr/bin/env python3`
+8. **Update this README** - Document your script
+
+### Script Template
 
 ```python
 #!/usr/bin/env python3
@@ -389,7 +492,7 @@ import sys
 from pathlib import Path
 
 # Add scripts directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from common import print_success, print_error, print_info
 
@@ -409,96 +512,34 @@ if __name__ == '__main__':
     sys.exit(main())
 ```
 
-### Testing Scripts
-
-Test scripts manually before committing:
-
-```bash
-# Test on clean system
-python3 scripts/your_script.py
-
-# Test with --help (if you add argparse)
-python3 scripts/your_script.py --help
-
-# Test error handling
-# (Temporarily rename dependencies to trigger errors)
-```
-
----
-
-## Integration with Makefile
-
-Scripts are invoked from Makefile targets:
-
-```makefile
-# Development tools
-install-tools:
-	@python3 scripts/install_tools.py
-
-test-coverage:
-	@python3 scripts/run_coverage.py
-
-# Version management
-sync-versions:
-	@python3 scripts/sync_versions.py
-
-generate-version:
-	@python3 scripts/generate_version.py alire.toml shared/src/hybrid-version.ads
-
-add-md-headers:
-	@python3 scripts/add_md_headers.py
-
-# Release management
-release-prepare:
-	@python3 scripts/release.py prepare $$version
-
-release-create:
-	@python3 scripts/release.py release $$version
-```
-
-This keeps the Makefile clean and delegates complex logic to testable Python code.
-
----
-
-## Future Script Candidates
-
-Complex Makefile targets that could be converted to scripts:
-
-- **format.py** - Code formatting with gnatformat/gnatpp
-- **check_links.py** - Documentation link validation
-- **stats.py** - Project statistics (LOC, test count, etc.)
-- **setup_hooks.py** - Git pre-commit hook installation
-- **watch.py** - File watching and auto-rebuild
-
 ---
 
 ## Dependencies
 
 ### Required
-- **Python 3.7+** - All scripts use modern Python features
-- **pathlib** - File path operations (built-in)
-- **subprocess** - Running external commands (built-in)
-- **shutil** - File operations (built-in)
+- **Python 3.7+** - All scripts require modern Python
+- **pathlib** - File operations (built-in)
+- **subprocess** - External commands (built-in)
 
 ### Optional
-- **gcovr** - Required for `run_coverage.py` HTML reports
-- **pip3** - Required for installing Python packages
+- **gcovr** - HTML coverage reports (`pip3 install gcovr`)
+- **plantuml** - Diagram generation (`brew install plantuml`)
+- **gh** - GitHub CLI (`brew install gh`)
 
 ---
 
 ## Educational Value
 
-These scripts demonstrate:
+This script organization demonstrates:
 
-1. **Professional project organization** - Scripts separated from build logic
-2. **Cross-platform development** - OS detection and adaptation
-3. **Error handling** - Proper exception handling and user feedback
-4. **Code reuse** - Shared utilities in `common.py`
-5. **Documentation** - Clear docstrings and comments
-6. **Python best practices** - Type hints, descriptive names, modular design
+1. **Professional project structure** - Purpose-driven organization
+2. **Separation of concerns** - Build vs release vs utilities
+3. **Maintainability** - Easy to find and modify scripts
+4. **Best practices** - Clear naming, documentation, error handling
+5. **Cross-platform support** - OS detection and adaptation
 
 ---
 
-**Last Updated:** 2025-10-28
+**Last Updated:** November 18, 2025
 **Python Version:** 3.7+
 **License:** BSD-3-Clause

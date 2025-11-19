@@ -42,13 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added examples showing safe parameter passing without `Unchecked_Access`
   - Documented indefinite type support (`type Param (<>) is private`)
   - Updated architecture notes explaining exception boundary conversion
+- **Build Infrastructure**: Modernized build system with standardized tooling
+  - Adopted Makefile from simple_hybrid with architecture validation (`check-arch`)
+  - Added cleanup utilities (`clean-clutter`), Python testing (`test-python`), and tool installation targets
+  - Renamed `tests/` directory to `test/` for consistency with project standards
+  - Updated test infrastructure to work with relocated `scripts/makefile/arch_guard.py`
+  - Professional colored test output with bordered success/failure banners
 
 ### Fixed
 - **Type Safety**: Generic formal parameters now support indefinite types (String, unconstrained arrays)
 - **Thread Safety**: Parameterized approach eliminates module-level mutable state in client code
 
 ### Technical Details
-- All 83 tests passing (Result: 35, Option: 22, Either: 12, Try: 14)
+- All 83 Ada tests passing (Result: 35, Option: 22, Either: 12, Try: 14)
+- All 35 Python tests passing (arch_guard validation suite)
 - Zero unsafe code patterns required for using Try functions with parameters
 - Fully backwards compatible with 2.0.0 API
 
