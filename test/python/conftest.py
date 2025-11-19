@@ -22,7 +22,8 @@ import pytest
 # Add scripts directory to Python path for importing modules under test
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
-sys.path.insert(0, str(SCRIPTS_DIR))
+SCRIPTS_MAKEFILE_DIR = SCRIPTS_DIR / "makefile"
+sys.path.insert(0, str(SCRIPTS_MAKEFILE_DIR))
 
 
 @pytest.fixture

@@ -35,11 +35,6 @@ from pathlib import Path
 from typing import List, Set, Dict
 import shutil
 
-# Add scripts directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
-
-from common import print_success, print_error, print_info, print_warning
-
 
 class TempFileCleaner:
     def __init__(self, project_root: Path, dry_run: bool = False,
@@ -151,13 +146,13 @@ class TempFileCleaner:
 
         return results
 
-    def cleanup(self) -> None:
+    def cleanup(self):
         """Find and remove temporary files."""
-        print_info(f"Scanning for temporary files in {self.project_root}...")
+        print(f"🔍 Scanning for temporary files in {self.project_root}...")
         print(f"   Skipping: {', '.join(sorted(self.skip_dirs))}")
 
         if self.aggressive:
-            print_warning(f"AGGRESSIVE MODE: Will also remove {', '.join(sorted(self.aggressive_dirs))} directories")
+            print(f"   ⚠️  AGGRESSIVE MODE: Will also remove {', '.join(sorted(self.aggressive_dirs))} directories")
 
         # Find all temp files
         temp_files = self.find_temp_files()
@@ -168,8 +163,7 @@ class TempFileCleaner:
         total_count = total_files + total_dirs
 
         if total_count == 0:
-            print()
-            print_success("No temporary files found - project is clean!")
+            print(f"\n✅ No temporary files found - project is clean!")
             return
 
         # Report findings
@@ -227,8 +221,7 @@ class TempFileCleaner:
                     except Exception as e:
                         print(f"    ⚠️  Could not remove {temp_file}: {e}")
 
-            print()
-            print_success(f"Successfully removed {removed_count} items")
+            print(f"\n✅ Successfully removed {removed_count} items")
 
         else:
             print(f"\n💡 Run without --dry-run to remove these {total_count} items")
@@ -245,7 +238,7 @@ class TempFileCleaner:
                     try:
                         if f.exists():
                             total_size += f.stat().st_size
-                    except Exception:
+                    except:
                         pass
 
             if total_size > 0:
@@ -253,8 +246,7 @@ class TempFileCleaner:
                 print(f"   💾 Approximate space to reclaim: {size_mb:.2f} MB")
 
 
-def main() -> int:
-    """Main entry point."""
+def main():
     parser = argparse.ArgumentParser(
         description="Remove temporary files and build artifacts"
     )
@@ -281,8 +273,7 @@ def main() -> int:
 
     cleaner = TempFileCleaner(project_root, args.dry_run, args.verbose, args.aggressive)
     cleaner.cleanup()
-    return 0
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

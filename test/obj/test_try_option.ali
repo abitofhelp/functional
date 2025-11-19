@@ -1,0 +1,196 @@
+V "GNAT Lib v15"
+M P W=8
+A -gnatA
+A -gnat2022
+A -gnatwa
+A -gnatw.Y
+A -gnatwl
+A -gnatwu
+A -gnatw.u
+A -gnatw.r
+A -gnatw.k
+A -gnatw.m
+A -gnatw.o
+A -gnatw.X
+A -gnatf
+A -gnatyy
+A -gnaty3
+A -gnatya
+A -gnatyb
+A -gnatyc
+A -gnatyd
+A -gnatye
+A -gnatyf
+A -gnatyh
+A -gnatyi
+A -gnatyk
+A -gnatyl
+A -gnatym
+A -gnatyn
+A -gnatyp
+A -gnatyr
+A -gnatys
+A -gnatyt
+A -gnatyu
+A -gnatyx
+A -gnatyM120
+A -gnatyN
+A -gnatyO
+A -gnatyS
+A -gnatW8
+A -g
+A -gnatVa
+A -gnateE
+A -gnata
+A -gnatU
+A -gnatd.n
+A -mmacosx-version-min=15.0.0
+A -mtune=core2
+A -fPIC
+A -feliminate-unused-debug-symbols
+P ZX
+
+RN
+RV NO_EXCEPTION_HANDLERS
+RV NO_EXCEPTIONS
+RV NO_IO
+RV NO_IMPLICIT_CONDITIONALS
+RV NO_STANDARD_STORAGE_POOLS
+RV NO_DYNAMIC_SIZED_OBJECTS
+RV NO_IMPLEMENTATION_PRAGMAS
+
+U test_try_option%b	test_try_option.adb	ab240c7c NE OO SU
+W ada%s			ada.ads			ada.ali
+W ada.command_line%s	a-comlin.adb		a-comlin.ali
+Z ada.exceptions%s	a-except.adb		a-except.ali
+Z ada.strings.text_buffers%s  a-sttebu.adb	a-sttebu.ali
+W ada.text_io%s		a-textio.adb		a-textio.ali
+W functional%s		functional.ads		functional.ali
+W functional.option%s	functional-option.adb	functional-option.ali
+W functional.try%s	functional-try.adb	functional-try.ali
+W functional.try.to_option%s  functional-try-to_option.adb  functional-try-to_option.ali
+Z system.assertions%s	s-assert.adb		s-assert.ali
+Z system.concat_2%s	s-conca2.adb		s-conca2.ali
+Z system.concat_5%s	s-conca5.adb		s-conca5.ali
+Z system.img_int%s	s-imgint.ads		s-imgint.ali
+Z system.val_int%s	s-valint.ads		s-valint.ali
+W test_framework%s	test_framework.adb	test_framework.ali
+
+D ada.ads		20250808065140 76789da1 ada%s
+D a-assert.ads		20250808065140 ba465f5c ada.assertions%s
+D a-comlin.ads		20250808065140 4aa66568 ada.command_line%s
+D a-except.ads		20250808065140 e7970cd9 ada.exceptions%s
+D a-ioexce.ads		20250808065140 40018c65 ada.io_exceptions%s
+D a-stream.ads		20250808065140 17477cbd ada.streams%s
+D a-string.ads		20250808065140 90ac6797 ada.strings%s
+D a-sttebu.ads		20250808065140 f1ad67a2 ada.strings.text_buffers%s
+D a-stuten.ads		20250808065140 c6ced0ae ada.strings.utf_encoding%s
+D a-tags.ads		20250808065140 fbca0ad5 ada.tags%s
+D a-textio.ads		20250808065140 34ef47de ada.text_io%s
+D a-unccon.ads		20250808065140 0e9b276f ada.unchecked_conversion%s
+D functional.ads	20251119055805 9cd3a69c functional%s
+D functional-option.ads	20251119055809 7c8ec57c functional.option%s
+D functional-option.adb	20251119055806 deb6457a functional.option%b
+D functional-result.ads	20251119055810 d7283182 functional.result%s
+D functional-try.ads	20251119055933 c440a566 functional.try%s
+D functional-try.adb	20251119055933 00a749ed functional.try%b
+D functional-try-to_option.ads  20251119055933 8cda586b functional.try.to_option%s
+D functional-try-to_option.adb  20251119055933 da5f0f2b functional.try.to_option%b
+D interfac.ads		20250808065140 9111f9c1 interfaces%s
+D i-cstrea.ads		20250808065140 ffd01b9d interfaces.c_streams%s
+D system.ads		20250808065140 70765b54 system%s
+D s-assert.ads		20250808065140 9c4520c7 system.assertions%s
+D s-conca2.ads		20250808065140 b5fb73f7 system.concat_2%s
+D s-conca5.ads		20250808065140 4099d1db system.concat_5%s
+D s-crtl.ads		20250808065140 beb39b9e system.crtl%s
+D s-exctab.ads		20250808065140 91bef6ef system.exception_table%s
+D s-ficobl.ads		20250808065140 dc5161d4 system.file_control_block%s
+D s-imagei.ads		20250808065140 5e131ce0 system.image_i%s
+D s-imgint.ads		20250808065140 67e4edfb system.img_int%s
+D s-parame.ads		20250808065140 3597fc11 system.parameters%s
+D s-putima.ads		20250808065140 17291fe4 system.put_images%s
+D s-secsta.ads		20250808065140 578279f5 system.secondary_stack%s
+D s-soflin.ads		20250808065140 5d88fdea system.soft_links%s
+D s-stache.ads		20250808065140 0b81c1fe system.stack_checking%s
+D s-stalib.ads		20250808065140 1c9580f6 system.standard_library%s
+D s-stoele.ads		20250808065140 ccded4e8 system.storage_elements%s
+D s-traent.ads		20250808065140 c81cbf8c system.traceback_entries%s
+D s-unstyp.ads		20250808065140 fa2a7f59 system.unsigned_types%s
+D s-valint.ads		20250808065140 8bab724f system.val_int%s
+D s-valspe.ads		20250808065140 f810d31c system.val_spec%s
+D s-valuns.ads		20250808065140 f7ddb71d system.val_uns%s
+D s-valuei.ads		20250808065140 d9377ca5 system.value_i%s
+D s-vaispe.ads		20250808065140 8280550e system.value_i_spec%s
+D s-valueu.ads		20250808065140 a38d32a6 system.value_u%s
+D s-vauspe.ads		20250808065140 89269ba5 system.value_u_spec%s
+D s-vs_int.ads		20250808065140 06b6b724 system.vs_int%s
+D s-vs_uns.ads		20250808065140 e7f47a27 system.vs_uns%s
+D s-wchcon.ads		20250808065140 d9032363 system.wch_con%s
+D test_framework.ads	20251119055812 247bcf50 test_framework%s
+D test_try_option.adb	20251119055814 01427c8d test_try_option%b
+G a e
+G c Z b b [test_try_option standard 18 11 none]
+G r i none [test_try_option standard 18 11 none] [option functional 25 20 none]
+G r i none [test_try_option standard 18 11 none] [to_option functional__try 22 24 none]
+G r i none [test_try_option standard 18 11 none] [try_to_functional_option functional__try 81 13 none]
+G r c none [test_try_option standard 18 11 none] [register_results test_framework 14 14 none]
+X 1 ada.ads
+18K9*Ada 22e8 52|12r6 12r23 13r6 161r7
+X 3 a-comlin.ads
+40K13*Command_Line 148e21 52|13w10 161r11
+79U14*Set_Exit_Status 52|161s24
+X 11 a-textio.ads
+58K13*Text_IO 785e16 52|12w10 12r27
+284U14*New_Line 52|139s4 146s4
+565U14*Put_Line 52|30s10 32s10 52s7 78s7 103s7 127s7 135s4 136s4 137s4 138s4
+. 147s4 148s4 151s7 153s7 155s4
+X 13 functional.ads
+16K9*Functional 20e15 52|14r6 15r6 20r30 45r9 71r9 96r9 120r9
+X 14 functional-option.ads
+24+9 T 52|20r49
+25k20*Option 112e22 52|14w17 20r41
+29R9 Option 52|50r36[20] 76r36[20] 101r36[20] 125r36[20]
+52V13 Is_Some{boolean} 52|54s21[20] 129s21[20]
+54V13 Is_None{boolean} 52|80s21[20] 104s26[20]
+61V13 Value{integer} 52|56s26[20] 131s21[20]
+X 17 functional-try.ads
+34K20*Try 115e19 52|15r17 45r20 71r20 96r20 120r20
+X 19 functional-try-to_option.ads
+19+9 T 52|46r12 72r12 97r12 121r12
+20K17 T_Option 52|47r12 73r12 98r12 122r12
+21V18 Action{19+9} 52|48r12 74r12 99r12 123r12
+22k24*To_Option 27e29 52|15w21 45r24 71r24 96r24 120r24
+25V13 Run{14|29R9[52|20]} 52|50s54[44] 76s56[70] 101s56[95] 125s56[119]
+X 20 functional-try-to_option.adb
+13V16 Try_Impl[17|81]{14|29R9[52|20]} 18|56b13[52|70]
+X 51 test_framework.ads
+11K9*Test_Framework 23e19 52|16w6 158r4
+14U14*Register_Results 52|158s19
+X 52 test_try_option.adb
+18U11*Test_Try_Option 18b11 163l5 163t20
+20K12 Int_Option[14|25] 47r24 50r25 54r10 56r15 73r24 76r25 80r10 98r24 101r25
+. 104r15 122r24 125r25 129r10 131r10
+22i4 Test_Count{natural} 27m7 27r21 149r49 150r20 158r37 160r21
+23i4 Pass_Count{natural} 29m10 29r24 149r23 150r7 158r49 160r7
+25U14 Assert 25b14 25>22 25>43 34l8 34t14 53s7 56s7 79s7 104s7 128s7 130s7
+25b22 Condition{boolean} 28r10
+25a43 Test_Name{string} 30r32 32r32
+40U14 Test_Try_Success 40b14 57l8 57t24 141s4
+41V16 Get_Value{integer} 41b16 48r24
+44K15 Get_Try[19|22] 50r46
+50r7 Result{14|29R9[20]} 54r30 56r33
+63U14 Test_Try_Exception 63b14 81l8 81t26 142s4
+64V16 Raise_Error{integer} 64b16 68l11 68t22 74r24
+70K15 Raise_Try[19|22] 76r46
+76r7 Result{14|29R9[20]} 80r30
+87U14 Test_Try_Parse_Int 87b14 105l8 105t26 143s4
+88a7 Input{string} 92r32
+90V16 Parse{integer} 90b16 93l11 93t16 99r24
+95K15 Parse_Try[19|22] 101r46
+101r7 Result{14|29R9[20]} 104r35
+111U14 Test_Try_Parse_Success 111b14 132l8 132t30 144s4
+112a7 Input{string} 116r32
+114V16 Parse{integer} 114b16 117l11 117t16 123r24
+119K15 Parse_Try[19|22] 125r46
+125r7 Result{14|29R9[20]} 129r30 131r28
+
