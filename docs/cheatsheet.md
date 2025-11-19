@@ -1,7 +1,7 @@
 # Functional Library — Quick Reference
 
-**Version:** 2.0.0  
-**Date:** November 13, 2025  
+**Version:** 2.1.0  
+**Date:** November 18, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
@@ -118,7 +118,9 @@ end Parse_Or_Keep;
 
 ---
 
-## Try.To_Result — Exception Boundaries
+## Try — Exception Boundaries
+
+### Try.To_Result (No Parameters)
 
 Convert exception-based code to Result:
 
@@ -134,6 +136,45 @@ package Load_Try is new Functional.Try.To_Result
 R : constant Str_Result.Result := Load_Try.Run;
 -- Never raises! Always returns Ok or Err
 ```
+
+### Try_To_Result_With_Param (With Parameters)
+
+**NEW in 2.1.0**: Convert exception-based code that needs input parameters:
+
+```ada
+with Ada.Text_IO;
+with Ada.Exceptions; use Ada.Exceptions;
+
+-- Action that takes a parameter and may raise
+function Write_Action (Message : String) return Unit is
+begin
+   Ada.Text_IO.Put_Line (Message);
+   return Unit_Value;
+end Write_Action;
+
+-- Map exceptions to domain errors
+function Map_Exception (Occ : Exception_Occurrence) return Error is
+  ((IO_Error, Exception_Message (Occ)));
+
+-- Instantiate parameterized Try bridge
+function Write_With_Try is new Functional.Try.Try_To_Result_With_Param
+  (T             => Unit,
+   E             => Error,
+   Param         => String,           -- ← Parameter type (supports indefinite types!)
+   Result_Pkg    => Unit_Result,
+   Map_Exception => Map_Exception,
+   Action        => Write_Action);
+
+-- Use it - pass parameter directly
+R : constant Unit_Result.Result := Write_With_Try ("Hello, World!");
+-- Never raises! Safe, thread-safe, no global state
+```
+
+**Why use With_Param?**
+- ✅ **Thread-safe** - No module-level mutable state
+- ✅ **Type-safe** - No `Unchecked_Access` needed
+- ✅ **Flexible** - Supports indefinite types (String, unconstrained arrays)
+- ✅ **Clean** - Direct parameter passing
 
 ---
 
@@ -183,8 +224,12 @@ R := Str_Result.Fallback (Try_Primary, Try_Backup);
 | **Result** | Fallible operations | Parsing, I/O, validation, DB queries |
 | **Option** | Optional values (absence is OK) | Config values, search results, nullable fields |
 | **Either** | Neutral disjunction | Union types, "this OR that" data |
+| **Try** | Exception boundaries (no params) | File I/O, network operations |
+| **Try_With_Param** | Exception boundaries (with params) | Console output, parameterized I/O, logging |
 
-**Rule of thumb:** If absence/failure is an **error**, use **Result**. If it's **expected**, use **Option**.
+**Rule of thumb:**
+- If absence/failure is an **error**, use **Result**. If it's **expected**, use **Option**.
+- If your exception-prone code needs **input parameters**, use **Try_With_Param** instead of module-level state.
 
 ---
 

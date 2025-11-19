@@ -638,6 +638,43 @@ _Initial alpha release of Simple_Hybrid library._
             print(f"Exception: {e}")
             return None
 
+    def prompt_user_continue(self, message: str, allow_skip: bool = False) -> bool:
+        """
+        Prompt user to perform a manual task and continue.
+
+        Args:
+            message: Instructions for the user
+            allow_skip: If True, user can skip this step
+
+        Returns:
+            True if user wants to continue, False to abort
+        """
+        print(f"\n{'='*70}")
+        print(f"⏸️  MANUAL STEP REQUIRED")
+        print(f"{'='*70}")
+        print(f"\n{message}\n")
+
+        while True:
+            if allow_skip:
+                response = input("Press ENTER to continue, 's' to skip, or 'q' to quit: ").strip().lower()
+                if response == '':
+                    return True
+                elif response == 's':
+                    print("⏭️  Skipping this step...")
+                    return True
+                elif response == 'q':
+                    print("🛑 Release process aborted by user")
+                    return False
+            else:
+                response = input("Press ENTER to continue, or 'q' to quit: ").strip().lower()
+                if response == '':
+                    return True
+                elif response == 'q':
+                    print("🛑 Release process aborted by user")
+                    return False
+
+            print("Invalid input. Please try again.")
+
     def verify_clean_working_tree(self) -> bool:
         """Verify git working tree is clean."""
         result = self.run_command(["git", "status", "--porcelain"], capture_output=True)
@@ -807,8 +844,39 @@ _Initial alpha release of Simple_Hybrid library._
         print(f"PREPARING RELEASE {version}")
         print(f"{'='*70}\n")
 
+        # Pre-flight check: Ensure CHANGELOG.md has release notes
+        changelog_file = self.project_root / "CHANGELOG.md"
+        if changelog_file.exists():
+            try:
+                with open(changelog_file, 'r') as f:
+                    content = f.read()
+                    unreleased_match = re.search(
+                        r'## \[Unreleased\]\s*\n(.*?)(?=\n## |\Z)',
+                        content,
+                        re.DOTALL
+                    )
+                    if unreleased_match:
+                        unreleased_content = unreleased_match.group(1).strip()
+                        # Check if unreleased section is mostly empty (only has section headers)
+                        if not unreleased_content or unreleased_content.count('\n') < 10:
+                            message = f"""📝 CHANGELOG.md appears to have minimal content in [Unreleased] section.
+
+Please:
+1. Edit CHANGELOG.md
+2. Add your release notes under the [Unreleased] section
+3. Commit your changes:
+   git add CHANGELOG.md
+   git commit -m "docs: Add release notes for {version}"
+4. Press ENTER to continue with release preparation
+
+The script will automatically move [Unreleased] → [{version}] when you continue."""
+                            if not self.prompt_user_continue(message):
+                                return False
+            except Exception:
+                pass
+
         # Step 1: Clean up temporary files
-        print("🧹 Step 1: Cleaning up temporary files...")
+        print("\n🧹 Step 1: Cleaning up temporary files...")
         if not self.cleanup_temp_files():
             print("  ⚠️  Warning: Could not clean up temporary files")
             # Not fatal - continue with release
@@ -834,53 +902,78 @@ _Initial alpha release of Simple_Hybrid library._
         #     print("  ⚠️  Warning: Could not generate Ada docstrings")
         #     # Not fatal - continue with release
 
-        # Step 5: Format code (renumbered from Step 6)
-        print("\n📋 Step 5: Formatting code...")
-        self.run_format()
+        # FIXME: Step 5 DISABLED - format target not available until adafmt tool is ready
+        # print("\n📋 Step 5: Formatting code...")
+        # self.run_format()
 
-        # FIXME: Step 6 DISABLED - rebuild_formal_documentation.py was removed (tzif-specific)
-        # print("\n📝 Step 6: Rebuilding formal documentation...")
+        # FIXME: Step 5 DISABLED - rebuild_formal_documentation.py was removed (tzif-specific)
+        # print("\n📝 Step 5: Rebuilding formal documentation...")
         # if not self.rebuild_formal_documentation():
         #     print("  ⚠️  Warning: Could not rebuild formal documentation")
         #     # Not fatal - continue with release
 
-        # Step 6: Update remaining markdown files
-        print("\n📝 Step 6: Updating markdown documentation...")
+        # Step 5: Update remaining markdown files
+        print("\n📝 Step 5: Updating markdown documentation...")
         self.update_all_markdown_files(version)
 
-        # Step 7: Update CHANGELOG.md (create for 0.1.0, update for later versions)
-        print("\n📝 Step 7: Updating CHANGELOG.md...")
+        # Step 6: Update CHANGELOG.md (create for 0.1.0, update for later versions)
+        print("\n📝 Step 6: Updating CHANGELOG.md...")
         if not self.update_changelog(version):
             return False
 
-        # Step 8: Generate diagrams
-        print("\n📝 Step 8: Generating diagrams...")
+        # Step 7: Generate diagrams
+        print("\n📝 Step 7: Generating diagrams...")
         if not self.generate_diagrams():
             return False
 
-        # Step 9: Build verification
-        print("\n🔨 Step 9: Running build...")
+        # Checkpoint: Review and commit changes
+        message = f"""✅ All files have been updated for release {version}
+
+IMPORTANT: Review and commit changes NOW (before build/test):
+
+1. Review what changed:
+   git diff
+
+2. Commit the prepared release:
+   git add -A
+   git commit -m "chore: Prepare release {version}"
+
+WHY COMMIT NOW?
+- If build/tests fail, you can easily rollback (git reset HEAD~1)
+- Clean separation between preparation and verification
+- Safe fallback position
+
+After committing, press ENTER to continue with build and test verification."""
+        if not self.prompt_user_continue(message):
+            return False
+
+        # Step 8: Build verification
+        print("\n🔨 Step 8: Running build...")
         if not self.run_build():
             print("❌ Build failed")
             return False
         print("  ✓ Build successful")
 
-        # Step 10: Test verification
-        print("\n🧪 Step 10: Running tests...")
+        # Step 9: Test verification
+        print("\n🧪 Step 9: Running tests...")
         if not self.run_tests():
             print("❌ Tests failed")
             return False
 
         print(f"\n{'='*70}")
-        print(f"✅ RELEASE {version} PREPARED SUCCESSFULLY!")
+        print(f"✅ RELEASE {version} PREPARED AND VERIFIED SUCCESSFULLY!")
         print(f"{'='*70}\n")
-        print("Next steps:")
-        print("1. Review the changes:")
-        print("   git diff")
-        print("2. Commit the changes:")
-        print(f"   git add -A && git commit -m 'Prepare release {version}'")
-        print("3. Create the release:")
+        print("✓ All files updated")
+        print("✓ Build passing")
+        print("✓ Tests passing")
+        print()
+        print("Next step:")
         print(f"   python3 scripts/release/release.py release {version}")
+        print()
+        print("This will:")
+        print(f"  - Create git tag v{version}")
+        print("  - Push to GitHub")
+        print("  - Create GitHub release with release notes")
         print()
 
         return True
@@ -955,7 +1048,7 @@ def main():
 
     # Find project root
     script_dir = Path(__file__).parent
-    project_root = script_dir.parent
+    project_root = script_dir.parent.parent
 
     release_manager = AdaReleaseManager(str(project_root))
 
