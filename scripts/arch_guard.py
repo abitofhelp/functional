@@ -90,7 +90,7 @@ Strategy Implemented in This Project:
    - Cannot detect indirect access through Application interfaces
    - Should be run in CI/CD pipeline for continuous validation
 
-Recommendation for tzif library (and other libraries):
+Recommendation for library (and other libraries):
 - Use strategy #1: Separate GPR projects per layer
 - Document in README that Application must not expose Domain types to Presentation
 - Run this script in CI/CD to catch direct dependency violations
@@ -128,8 +128,23 @@ class ArchitectureGuard:
         'domain': set(),  # ZERO dependencies (innermost core)
         'application': {'domain'},  # Middle sphere - depends on core only
         'infrastructure': {'application', 'domain'},  # Outer half-sphere - center-seeking
+        'api': {'application', 'domain'},  # API/Facade layer - can use Application and Domain
         'presentation': {'application'},  # Outer half-sphere - depends ONLY on Application (NOT Domain)
-        'bootstrap': {'domain', 'application', 'infrastructure', 'presentation'}  # Outermost
+        'bootstrap': {'domain', 'application', 'infrastructure', 'presentation', 'api'}  # Outermost
+    }
+
+    # Forbidden test framework imports in production code
+    FORBIDDEN_TEST_IMPORTS = ['test_framework', 'aunit', 'ahven', 'gnattest']
+
+    # Pragmas that should be aspects instead
+    PRAGMA_TO_ASPECT = {
+        'Pure': 'with Pure',
+        'Preelaborate': 'with Preelaborate',
+        'Elaborate_Body': 'with Elaborate_Body',
+        'Pack': 'with Pack',
+        'Inline': 'with Inline',
+        'Volatile': 'with Volatile',
+        'Atomic': 'with Atomic',
     }
 
     # No layer can depend on bootstrap
@@ -307,6 +322,166 @@ class ArchitectureGuard:
 
         return valid
 
+    def _validate_no_test_imports(self, file_path: Path) -> None:
+        """
+        Ensure production code doesn't import test frameworks
+
+        Test code should stay in test/ directory only
+        """
+        # Skip if this is a test file
+        if 'test' in str(file_path).lower():
+            return
+
+        with_clauses = self._extract_with_clauses(file_path)
+
+        for line_num, package_name in with_clauses:
+            pkg_lower = package_name.lower()
+            for forbidden in self.FORBIDDEN_TEST_IMPORTS:
+                if forbidden in pkg_lower:
+                    self.violations.append(ArchitectureViolation(
+                        file_path=str(file_path),
+                        line_number=line_num,
+                        violation_type='TEST_CODE_IN_PRODUCTION',
+                        details=f"Production code cannot import test framework: {package_name}"
+                    ))
+
+    def _validate_pragma_usage(self, file_path: Path) -> None:
+        """
+        Check that aspects are used instead of pragmas where applicable
+
+        Ada 2012+ style prefers aspects over pragmas
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            for line_num, line in enumerate(content.split('\n'), start=1):
+                # Check for pragma usage
+                for pragma, aspect in self.PRAGMA_TO_ASPECT.items():
+                    # Match pragma statement (not in comments)
+                    if re.match(rf'^\s*pragma\s+{pragma}\s*[;\(]', line, re.IGNORECASE):
+                        # Skip if it's in a comment
+                        if '--' in line and line.index('--') < line.lower().index('pragma'):
+                            continue
+
+                        self.violations.append(ArchitectureViolation(
+                            file_path=str(file_path),
+                            line_number=line_num,
+                            violation_type='PRAGMA_INSTEAD_OF_ASPECT',
+                            details=f"Use {aspect} instead of pragma {pragma}"
+                        ))
+        except Exception as e:
+            print(f"Warning: Could not validate pragma usage in {file_path}: {e}")
+
+    def _validate_file_naming(self, file_path: Path) -> None:
+        """
+        Validate file naming conventions for TOP-LEVEL packages only
+
+        Checks:
+        1. File name should match top-level package name
+        2. Consistent namespace prefixes across project
+
+        IGNORES (not violations):
+        - Package instantiations (package X is new Y)
+        - Nested package declarations (indented or inside parent)
+        - Generic packages declared inside parent packages
+
+        Only top-level package declarations need their own files.
+        """
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+                lines = content.split('\n')
+
+                nesting_level = 0
+                in_generic_declaration = False
+
+                for line_num, line in enumerate(lines, start=1):
+                    stripped = line.strip()
+
+                    # Track generic declarations (nested packages inside generics are not top-level)
+                    if stripped.startswith('generic'):
+                        in_generic_declaration = True
+                        continue
+
+                    # Check for package declaration
+                    if stripped.startswith('package'):
+                        # SKIP: Package instantiations (is new) - these don't need separate files
+                        if ' is new ' in line or '\tis new ' in line:
+                            continue
+
+                        # SKIP: Nested packages (indented) - not top-level declarations
+                        if line != line.lstrip() and 'package' in line:
+                            continue
+
+                        # Track nesting level
+                        if 'is new' not in stripped:
+                            nesting_level += 1
+
+                            # ONLY CHECK top-level packages (nesting_level == 1)
+                            # AND not inside a generic declaration
+                            if nesting_level == 1 and not in_generic_declaration:
+                                # Match package declaration (handles aspects like "with Pure")
+                                match = re.match(r'package\s+(body\s+)?([A-Za-z0-9_.]+)', stripped, re.IGNORECASE)
+                                if match:
+                                    package_name = match.group(2)
+
+                                    # Convert package name to expected file name
+                                    # Package.Name -> package-name.ads
+                                    expected_filename = package_name.lower().replace('.', '-')
+                                    actual_filename = file_path.stem.lower()
+
+                                    # Check if filename matches top-level package name
+                                    if actual_filename != expected_filename:
+                                        self.violations.append(ArchitectureViolation(
+                                            file_path=str(file_path),
+                                            line_number=line_num,
+                                            violation_type='INCONSISTENT_FILE_NAMING',
+                                            details=f"File name '{file_path.name}' doesn't match package '{package_name}' (expected: {expected_filename}{file_path.suffix})"
+                                        ))
+
+                            # Reset generic flag after processing the package declaration
+                            if in_generic_declaration:
+                                in_generic_declaration = False
+
+                    # Track end of packages to maintain correct nesting level
+                    if stripped.startswith('end') and ';' in stripped:
+                        nesting_level = max(0, nesting_level - 1)
+
+        except Exception as e:
+            print(f"Warning: Could not validate file naming for {file_path}: {e}")
+
+    def _validate_bounded_strings_for_errors(self, file_path: Path) -> None:
+        """
+        Ensure error types use bounded strings, not unbounded String
+
+        For embedded safety and predictable memory usage
+        """
+        # Only check error-related files
+        if 'error' not in str(file_path).lower():
+            return
+
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            # Look for record types with Message : String field
+            # This is a heuristic - might need refinement
+            for line_num, line in enumerate(content.split('\n'), start=1):
+                # Skip comments
+                code_part = line.split('--')[0] if '--' in line else line
+
+                # Match: Message : String (but not Bounded_String in the code part)
+                if re.search(r'\bMessage\s*:\s*String\s*;', code_part) and 'Bounded_String' not in code_part:
+                    self.violations.append(ArchitectureViolation(
+                        file_path=str(file_path),
+                        line_number=line_num,
+                        violation_type='UNBOUNDED_STRING_IN_ERROR',
+                        details="Error message field should use Bounded_String, not String (for embedded safety)"
+                    ))
+        except Exception as e:
+            print(f"Warning: Could not validate bounded strings in {file_path}: {e}")
+
     def validate_file(self, file_path: Path) -> None:
         """
         Validate a single Ada file against architecture rules
@@ -314,13 +489,19 @@ class ArchitectureGuard:
         Args:
             file_path: Path to .ads or .adb file
         """
+        # Run all validation checks
+        self._validate_no_test_imports(file_path)
+        self._validate_pragma_usage(file_path)
+        self._validate_file_naming(file_path)
+        self._validate_bounded_strings_for_errors(file_path)
+
         current_layer = self._get_file_layer(file_path)
         if not current_layer:
-            # File not in a known layer, skip
+            # File not in a known layer, skip dependency checks
             return
 
         if current_layer not in self.layers_present:
-            # Layer not present in project, skip
+            # Layer not present in project, skip dependency checks
             return
 
         allowed_deps = self.LAYER_RULES[current_layer]
@@ -421,6 +602,37 @@ class ArchitectureGuard:
             self.validate_file(ada_file)
 
         return self.gpr_config_valid and len(self.violations) == 0
+
+    def has_violations(self) -> bool:
+        """
+        Check if any violations were detected.
+
+        Returns:
+            True if violations exist, False otherwise
+        """
+        return len(self.violations) > 0
+
+    def get_violations(self) -> List[ArchitectureViolation]:
+        """
+        Get list of detected violations.
+
+        Returns:
+            List of ArchitectureViolation objects
+        """
+        return self.violations.copy()
+
+    def get_violation_count(self) -> int:
+        """
+        Get count of detected violations.
+
+        Returns:
+            Number of violations
+        """
+        return len(self.violations)
+
+    def clear_violations(self) -> None:
+        """Clear all recorded violations (useful for testing)."""
+        self.violations.clear()
 
     def report_violations(self) -> None:
         """Print violation report to stdout"""

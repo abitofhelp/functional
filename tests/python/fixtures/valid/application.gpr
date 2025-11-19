@@ -1,0 +1,18 @@
+-- Valid Application layer GPR with proper Library_Interface
+with "../../shared_config.gpr";
+with "../domain/domain.gpr";
+
+library project Application is
+   for Library_Name use "application";
+   for Library_Kind use "static";
+   for Library_Standalone use "standard";
+
+   -- ✅ Properly excludes Domain packages
+   for Library_Interface use
+     ("Application",
+      "Application.Port",
+      "Application.Port.Inbound",
+      "Application.Usecase");
+
+   package Compiler renames Shared_Config.Compiler;
+end Application;

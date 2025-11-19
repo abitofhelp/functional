@@ -1,25 +1,29 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Try
+--  Functional.Try - Exception-to-Result/Option Bridges
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Try interface and type definitions.
+--    Bridges exception-based APIs to Result/Option-based error handling.
+--    Use at I/O boundaries to convert exception-prone operations into
+--    railway-oriented programming flow.
 --
---  Key Types:
---    T
---    E
---    Result_Type
---    T
---    E
---    ... and 1 more
+--  Functions:
+--    Try_To_Result                - No-param Result bridge
+--    Try_To_Functional_Result     - Convenience wrapper for Functional.Result
+--    Try_To_Functional_Option     - Convenience wrapper for Functional.Option
+--    Try_To_Result_With_Param     - Parameterized Result bridge (NEW)
+--    Try_To_Option_With_Param     - Parameterized Option bridge (NEW)
+--
+--  Design Pattern:
+--    Exception handling at boundaries only. Domain/Application layers use
+--    Result/Option types throughout. Infrastructure/Presentation use Try
+--    to convert external APIs.
 --
 --  Dependencies:
---    Functional.Result
---    Functional.Option
---    function Ok (Value : T) return Result_Type is <>
+--    Ada.Exceptions, Functional.Result, Functional.Option
 --
 --  ===========================================================================
 
@@ -75,5 +79,37 @@ package Functional.Try is
       with package Option_Pkg is new Functional.Option (T => T);
       with function Action return T;
    function Try_To_Functional_Option return Option_Pkg.Option;
+
+   --  ========================================================================
+   --  Try_To_Result_With_Param - Parameterized Result bridge
+   --  ========================================================================
+   --  Use when the action needs input context (e.g., console message,
+   --  file configuration, user ID, etc.).
+   --  Supports indefinite types like String via type Param (<>) is private.
+
+   generic
+      type T is private;
+      type E is private;
+      type Param (<>) is private;
+      with package Result_Pkg is new Functional.Result (T => T, E => E);
+      with
+        function Map_Exception
+          (Occ : Ada.Exceptions.Exception_Occurrence) return E;
+      with function Action (P : Param) return T;
+   function Try_To_Result_With_Param (P : Param) return Result_Pkg.Result;
+
+   --  ========================================================================
+   --  Try_To_Option_With_Param - Parameterized Option bridge
+   --  ========================================================================
+   --  Use when the action needs input context and you only care about
+   --  success/failure (not error details).
+   --  Returns Some(value) on success, None on any exception.
+
+   generic
+      type T is private;
+      type Param (<>) is private;
+      with package Option_Pkg is new Functional.Option (T => T);
+      with function Action (P : Param) return T;
+   function Try_To_Option_With_Param (P : Param) return Option_Pkg.Option;
 
 end Functional.Try;
