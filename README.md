@@ -1,7 +1,7 @@
 # Functional - Type-Safe Error Handling for Ada 2022
 
-**Version:** 2.1.0  
-**Date:** November 18, 2025  
+**Version:** 2.1.1  
+**Date:** November 19, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
