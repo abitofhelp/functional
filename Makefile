@@ -303,7 +303,7 @@ check:
 
 check-arch: ## Validate architecture boundaries
 	@echo "$(GREEN)Validating architecture boundaries...$(NC)"
-	-@$(PYTHON3) scripts/makefile/arch_guard.py
+	-@PYTHONPATH=scripts $(PYTHON3) -m arch_guard
 	@echo "$(YELLOW)⚠ Architecture validation complete (violations are warnings, not errors)$(NC)"
 
 # FIXME: REPLACE WITH THE ADAFMT TOOL WE ARE CREATING WHEN IT IS COMPLETED.

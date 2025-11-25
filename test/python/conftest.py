@@ -10,8 +10,8 @@ Pytest configuration and shared fixtures for Python script testing.
 
 Provides:
 - Path configuration to import scripts under test
-- Shared fixtures for temporary directories and files
-- Common test utilities
+- Shared fixtures for temporary Go project directories
+- Common test utilities for Go architecture validation
 """
 
 import sys
@@ -22,8 +22,8 @@ import pytest
 # Add scripts directory to Python path for importing modules under test
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 SCRIPTS_DIR = PROJECT_ROOT / "scripts"
-SCRIPTS_MAKEFILE_DIR = SCRIPTS_DIR / "makefile"
-sys.path.insert(0, str(SCRIPTS_MAKEFILE_DIR))
+# Add scripts dir for arch_guard package (unified multi-language version)
+sys.path.insert(0, str(SCRIPTS_DIR))
 
 
 @pytest.fixture
@@ -57,44 +57,49 @@ def invalid_fixtures_dir(fixtures_dir) -> Path:
 
 
 @pytest.fixture
-def temp_ada_project(tmp_path):
+def temp_go_project(tmp_path):
     """
-    Create a temporary Ada project structure for testing.
+    Create a temporary Go project structure for testing.
 
     Returns a dictionary with paths:
         - root: Project root
-        - src: Source directory
         - domain: Domain layer
         - application: Application layer
         - infrastructure: Infrastructure layer
         - presentation: Presentation layer
+        - bootstrap: Bootstrap layer
     """
-    # Create directory structure
-    root = tmp_path / "project"  # Changed from "test_project" to avoid 'test' in path
-    src = root / "src"
+    root = tmp_path / "project"
 
     dirs = {
         "root": root,
-        "src": src,
-        "domain": src / "domain",
-        "application": src / "application",
-        "infrastructure": src / "infrastructure",
-        "presentation": src / "presentation",
-        "api": src / "api",
-        "test": root / "test",
+        "domain": root / "domain",
+        "application": root / "application",
+        "infrastructure": root / "infrastructure",
+        "presentation": root / "presentation",
+        "bootstrap": root / "bootstrap",
+        "cmd": root / "cmd" / "greeter",
     }
 
     # Create all directories
     for directory in dirs.values():
         directory.mkdir(parents=True, exist_ok=True)
 
+    # Create root go.mod
+    (root / "go.mod").write_text("module github.com/test/project\n\ngo 1.23\n")
+
+    # Create layer go.mod files
+    for layer in ["domain", "application", "infrastructure", "presentation", "bootstrap"]:
+        layer_gomod = dirs[layer] / "go.mod"
+        layer_gomod.write_text(f"module github.com/test/project/{layer}\n\ngo 1.23\n")
+
     return dirs
 
 
 @pytest.fixture
-def prod_ada_project(tmp_path):
+def prod_go_project(tmp_path):
     """
-    Create a production Ada project structure WITHOUT 'test' in path.
+    Create a production Go project structure WITHOUT 'test' in path.
 
     This is specifically for testing validations that skip test paths.
     Uses a temporary directory that doesn't contain 'test' in the path.
@@ -112,37 +117,48 @@ def prod_ada_project(tmp_path):
             shutil.rmtree(temp_dir)
     atexit.register(cleanup)
 
-    src = temp_dir / "src"
-
     dirs = {
         "root": temp_dir,
-        "src": src,
-        "domain": src / "domain",
-        "application": src / "application",
-        "infrastructure": src / "infrastructure",
-        "presentation": src / "presentation",
-        "api": src / "api",
+        "domain": temp_dir / "domain",
+        "application": temp_dir / "application",
+        "infrastructure": temp_dir / "infrastructure",
+        "presentation": temp_dir / "presentation",
+        "bootstrap": temp_dir / "bootstrap",
     }
 
     # Create all directories
     for directory in dirs.values():
         directory.mkdir(parents=True, exist_ok=True)
 
+    # Create root go.mod
+    (temp_dir / "go.mod").write_text("module github.com/test/project\n\ngo 1.23\n")
+
+    # Create layer go.mod files
+    for layer in ["domain", "application", "infrastructure", "presentation", "bootstrap"]:
+        layer_gomod = dirs[layer] / "go.mod"
+        layer_gomod.write_text(f"module github.com/test/project/{layer}\n\ngo 1.23\n")
+
     return dirs
 
 
-def create_ada_file(path: Path, content: str) -> None:
-    """Helper to create an Ada file with given content."""
+def create_go_file(path: Path, content: str) -> None:
+    """Helper to create a Go file with given content."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
 
 
-def create_gpr_file(path: Path, content: str) -> None:
-    """Helper to create a GPR file with given content."""
+def create_gomod_file(path: Path, module: str, requires: list = None) -> None:
+    """Helper to create a go.mod file with given module and requirements."""
     path.parent.mkdir(parents=True, exist_ok=True)
+    content = f"module {module}\n\ngo 1.23\n"
+    if requires:
+        content += "\nrequire (\n"
+        for req in requires:
+            content += f"\t{req}\n"
+        content += ")\n"
     path.write_text(content)
 
 
 # Make helpers available to tests
-pytest.create_ada_file = create_ada_file
-pytest.create_gpr_file = create_gpr_file
+pytest.create_go_file = create_go_file
+pytest.create_gomod_file = create_gomod_file
