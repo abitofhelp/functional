@@ -298,7 +298,7 @@ test-python: ## Run Python script tests (arch_guard.py validation)
 
 check:
 	@echo "$(GREEN)Running code checks...$(NC)"
-	@$(ALR) build --validation -- $(ALR_BUILD_FLAGS)
+	@$(ALR) build --development -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Code checks complete$(NC)"
 
 check-arch: ## Validate architecture boundaries

@@ -1,11 +1,8 @@
-# Functional - Type-Safe Error Handling for Ada 2022
+# Type-Safe Error Handling
 
-**Version:** 2.1.1  
-**Date:** November 19, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause<br>
-**License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
+
+## Overview
 
 A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
 
@@ -22,7 +19,9 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 - ✅ **Zero dependencies** - Just Ada 2022 standard library
 - ✅ **Production ready** - Comprehensive compiler checks and style enforcement
 
-## Installation
+## Quick Start
+
+### Installation
 
 Add to your `alire.toml`:
 
@@ -36,7 +35,17 @@ Then run:
 alr build
 ```
 
-## Quick Start
+### Building
+
+```bash
+# Build the library
+alr build
+
+# Run tests
+make test
+```
+
+## Usage
 
 ### Result<T,E> - For Error Handling
 
@@ -115,16 +124,14 @@ end Parse_Or_Default;
 
 ### Try Module - Exception Boundaries
 
-The Try module bridges exception-based code to functional Result/Option types. Use at infrastructure boundaries where exceptions occur (I/O, FFI, external libraries).
+The Try module bridges exception-based code to functional Result/Option types:
 
 ```ada
 with Functional.Try;
 with Ada.Exceptions;
 
---  Example: Bridge stream I/O to Result
 function Read_Int32 (Stream : Stream_Access) return Int32_Result.Result is
 
-   --  Raw I/O that may raise exceptions
    function Raw_Read return Integer_32 is
       Value : Integer_32;
    begin
@@ -132,17 +139,11 @@ function Read_Int32 (Stream : Stream_Access) return Int32_Result.Result is
       return Value;
    end Raw_Read;
 
-   --  Map exception to error type
    function From_Exception (Occ : Exception_Occurrence) return Error_Type is
    begin
-      if Exception_Identity (Occ) = End_Error'Identity then
-         return (IO_Error, "Unexpected end of stream");
-      else
-         return (IO_Error, Exception_Message (Occ));
-      end if;
+      return (IO_Error, Exception_Message (Occ));
    end From_Exception;
 
-   --  Bridge: exceptions → Result
    function Try_Read is new Functional.Try.Try_To_Result
      (T             => Integer_32,
       E             => Error_Type,
@@ -156,189 +157,98 @@ begin
 end Read_Int32;
 ```
 
-**Key Points:**
-- Use `Try_To_Result` for custom Result types (e.g., domain-specific)
-- Use `Try_To_Functional_Result` for `Functional.Result` types
-- Use `Try_To_Functional_Option` when exceptions represent absence
-- Keep exception handling at infrastructure boundaries only
-
-## API Reference
-
-### Result<T,E>
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `Ok(v)`, `Err(e)` | Constructors | `Str_Result.Ok("success")` |
-| `Is_Ok`, `Is_Err` | Check state | `if Is_Ok(r) then ...` |
-| `Value`, `Error` | Extract values | `Str_Result.Value(r)` |
-| `Unwrap_Or` | Get value or default | `Unwrap_Or(r, "default")` |
-| `And_Then` | Chain operations | See examples below |
-| `Fallback` | Try alternative on error | `Fallback(primary, backup)` |
-| `Recover` | Turn error into value | `Recover(r)` |
-| `Ensure` | Validate with predicate | `Ensure(r)` |
-| `With_Context` | Add error breadcrumbs | `With_Context(r, "in function X")` |
-
-### Option<T>
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `New_Some(v)`, `None` | Constructors | `Int_Option.New_Some(42)` |
-| `Is_Some`, `Is_None` | Check presence | `if Is_Some(opt) then ...` |
-| `Value` | Extract value | `Int_Option.Value(opt)` |
-| `Unwrap_Or` | Get value or default | `Unwrap_Or(opt, 0)` |
-| `And_Then` | Chain operations | See examples below |
-| `Filter` | Keep if predicate holds | `Filter(opt)` |
-| `Or_Else` | Try alternative | `Or_Else(primary, backup)` |
-
-### Either<L,R>
-
-| Function | Purpose | Example |
-|----------|---------|---------|
-| `Left(v)`, `Right(v)` | Constructors | `Str_Int_Either.Left("error")` |
-| `Is_Left`, `Is_Right` | Check side | `if Is_Left(e) then ...` |
-| `Left_Value`, `Right_Value` | Extract values | `Left_Value(e)` |
-
-## Patterns
-
-### Chaining with And_Then
-
-```ada
---  Chain fallible operations
-function Load_And_Parse (Path : String) return Int_Result.Result is
-   function Load_File (P : String) return Str_Result.Result is ...;
-   function Parse_Int (S : String) return Int_Result.Result is ...;
-
-   --  Instantiate And_Then
-   function Chain is new Str_Result.And_Then (F => Parse_Int);
-begin
-   return Chain (Load_File (Path));
-end Load_And_Parse;
-```
-
-### Validation with Ensure
-
-```ada
-function Is_Positive (X : Integer) return Boolean is (X > 0);
-function Not_Positive_Error (X : Integer) return Error is
-  ((Validation_Error, "Must be positive"));
-
-function Validate is new Int_Result.Ensure
-  (Pred => Is_Positive, To_Error => Not_Positive_Error);
-
-Result := Validate (Int_Result.Ok (-5));  --  Returns Err
-```
-
-### Error Context Breadcrumbs
-
-```ada
-function Add_Context (E : Error; Msg : String) return Error is
-   (E.Kind, E.Message & " :: " & Msg);
-
-function With_File_Context is new Str_Result.With_Context
-  (Append => Add_Context);
-
-R := With_File_Context (R, "reading config.yaml");
-```
-
-## Integration with Hybrid Architecture
-
-This library works seamlessly with clean/hexagonal architecture patterns. Since Functional uses package-level generics, you can use it directly or wrap it in domain-specific adapters.
-
-### Direct Usage (Recommended)
-
-```ada
---  In your application/domain layer
-with Functional.Result;
-
---  Define your domain error type
-type Domain_Error is record
-   Kind    : Error_Kind;
-   Message : String (1 .. 200);
-end record;
-
---  Instantiate directly for your domain types
-package User_Result is new Functional.Result
-  (T => User, E => Domain_Error);
-
---  Use in domain services
-function Find_User (ID : String) return User_Result.Result;
-```
-
-### Adapter Pattern (For Decoupling)
-
-If you want to completely decouple from Functional library:
-
-```ada
---  Domain layer defines its own generic Result
---  domain/src/model/result.ads
-generic
-   type T is private;
-   type E is private;
-package Domain.Result is
-   type Result is private;
-   function Ok (V : T) return Result;
-   function Is_Ok (R : Result) return Boolean;
-   --  ... only the functions your domain needs
-private
-   --  No implementation details exposed
-end Domain.Result;
-
---  Infrastructure provides implementation using Functional
---  infrastructure/adapters/functional_adapter.adb
-with Functional.Result;
-package body Domain.Result is
-   package FR is new Functional.Result (T => T, E => E);
-   type Result is new FR.Result;  --  Derive from Functional's type
-
-   function Ok (V : T) return Result is (Result (FR.Ok (V)));
-   function Is_Ok (R : Result) return Boolean is (FR.Is_Ok (FR.Result (R)));
-end Domain.Result;
-```
-
-**Benefits:**
-- Domain depends only on its own interfaces
-- Functional library can be swapped without changing domain code
-- Infrastructure layer handles the adaptation
-
-## Design Decisions
-
-### Map Functions
-
-Package-level generics enable same-type `Map` functions (`T -> T`) for Result and Option, and `Map_Left`/`Map_Right` for Either. Use `And_Then` for type-changing transformations.
-
-### Why New_Some?
-
-Following Ada naming conventions for constructors (New_*). Note: `some` and `or` are reserved keywords in Ada 2022.
-
-### Why No Swap for Either?
-
-`Swap` is impossible for `Either<L,R>` when L and R are different types - you can't put an L value into an R slot. Use pattern matching instead.
-
 ## Testing
 
-Run the test suite:
 ```bash
+# Run the test suite
 make test
-```
 
-Or directly:
-```bash
+# Or directly
 alr run test_runner
 ```
 
+## Documentation
+
+### API Reference
+
+**Result<T,E>:**
+
+| Function | Purpose |
+|----------|---------|
+| `Ok(v)`, `Err(e)` | Constructors |
+| `Is_Ok`, `Is_Err` | Check state |
+| `Value`, `Error` | Extract values |
+| `Unwrap_Or` | Get value or default |
+| `And_Then` | Chain operations |
+| `Fallback` | Try alternative on error |
+| `Recover` | Turn error into value |
+| `Ensure` | Validate with predicate |
+| `With_Context` | Add error breadcrumbs |
+
+**Option<T>:**
+
+| Function | Purpose |
+|----------|---------|
+| `New_Some(v)`, `None` | Constructors |
+| `Is_Some`, `Is_None` | Check presence |
+| `Value` | Extract value |
+| `Unwrap_Or` | Get value or default |
+| `And_Then` | Chain operations |
+| `Filter` | Keep if predicate holds |
+| `Or_Else` | Try alternative |
+
+**Either<L,R>:**
+
+| Function | Purpose |
+|----------|---------|
+| `Left(v)`, `Right(v)` | Constructors |
+| `Is_Left`, `Is_Right` | Check side |
+| `Left_Value`, `Right_Value` | Extract values |
+
+## Code Standards
+
+This project follows:
+- **Ada Agent** (`~/.claude/agents/ada.md`)
+- **Functional Agent** (`~/.claude/agents/functional.md`)
+
 ## Contributing
 
-Contributions welcome! Please:
-1. Follow Ada 2022 style guide (enforced by gnatformat)
-2. Add tests for new features
-3. Keep the API minimal and focused
+This project is not open to external contributions at this time.
+
+## AI Assistance & Authorship
+
+This project — including its source code, tests, documentation, and other deliverables — is designed, implemented, and maintained by human developers, with Michael Gardner as the Principal Software Engineer and project lead.
+
+We use AI coding assistants (such as OpenAI GPT models and Anthropic Claude Code) as part of the development workflow to help with:
+
+- drafting and refactoring code and tests,
+- exploring design and implementation alternatives,
+- generating or refining documentation and examples,
+- and performing tedious and error-prone chores.
+
+AI systems are treated as tools, not authors. All changes are reviewed, adapted, and integrated by the human maintainers, who remain fully responsible for the architecture, correctness, and licensing of this project.
 
 ## License
 
-BSD-3-Clause - See LICENSE file
+Copyright © 2025 Michael Gardner, A Bit of Help, Inc.
 
-## Credits
+Licensed under the BSD-3-Clause License. See [LICENSE](LICENSE) for details.
 
-Created by [Michael Gardner, A Bit of Help, Inc.](https://abitofhelp.com)
+## Author
 
-Part of the Ada 2022 Hybrid Architecture ecosystem.
+Michael Gardner
+A Bit of Help, Inc.
+https://github.com/abitofhelp
+
+## Project Status
+
+**Status**: Production Ready (v2.1.1)
+
+- ✅ Result<T,E> with 17 operations
+- ✅ Option<T> with 11 operations
+- ✅ Either<L,R> with 8 operations
+- ✅ Try module for exception bridging
+- ✅ Pure packages (no side effects)
+- ✅ Zero external dependencies
+- ✅ Comprehensive test suite
+- ✅ Production ready
