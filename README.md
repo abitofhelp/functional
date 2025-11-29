@@ -1,6 +1,13 @@
-# Type-Safe Error Handling
+# Type-Safe Functional Error Handling
 
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
+
+**Version:** 2.1.1
+**Date:** 2025-11-29
+**SPDX-License-Identifier:** BSD-3-Clause
+**License File:** See the LICENSE file in the project root
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 ## Overview
 
