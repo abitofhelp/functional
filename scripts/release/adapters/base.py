@@ -26,6 +26,12 @@ import re
 import subprocess
 import sys
 
+# Support both direct script execution and module import
+try:
+    from ..models import Language
+except ImportError:
+    from models import Language
+
 
 class BaseReleaseAdapter(ABC):
     """
@@ -1258,7 +1264,6 @@ class BaseReleaseAdapter(ABC):
         # File patterns to scan based on language
         file_patterns = []
         if hasattr(config, 'language'):
-            from ..models import Language
             if config.language == Language.ADA:
                 file_patterns = ['**/*.ads', '**/*.adb']
             elif config.language == Language.GO:
