@@ -91,7 +91,7 @@ LAYER_DEPENDENCY_CASES = [
         to_layer="application",
         should_violate=True,
         violation_type="ILLEGAL_LAYER_DEPENDENCY",
-        description="Domain is innermost - no outward dependencies",
+        description="Domain is innermost - no outbound dependencies",
     ),
     LayerDependencyCase(
         id="domain_cannot_import_infrastructure",
@@ -752,12 +752,12 @@ end Infrastructure.Adapter;
 """
             ),
             "presentation": (
-                "presentation-cli.ads",
+                "presentation-adapter-cli.ads",
                 """with Application.Use_Case;
 
-package Presentation.CLI is
+package Presentation.Adapter.CLI is
    procedure Run;
-end Presentation.CLI;
+end Presentation.Adapter.CLI;
 """
             ),
         }

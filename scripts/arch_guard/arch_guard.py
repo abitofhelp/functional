@@ -126,6 +126,28 @@ class ArchitectureGuard:
             pass
         return None
 
+    def _is_api_composition_root(self, file_path: Path) -> bool:
+        """
+        Check if file is in an API composition root directory.
+
+        For LIBRARIES (not applications), api/desktop/ and api/adapter/desktop/
+        serve as composition roots and are allowed to import Infrastructure.
+        This follows the 4-layer library architecture where API sub-packages
+        fill the Bootstrap role.
+        """
+        try:
+            relative_path = file_path.relative_to(self.source_root)
+            parts = relative_path.parts
+            # Check for api/desktop/ or api/adapter/desktop/
+            if len(parts) >= 2 and parts[0] == 'api':
+                if parts[1] == 'desktop':
+                    return True
+                if len(parts) >= 3 and parts[1] == 'adapter' and parts[2] == 'desktop':
+                    return True
+        except ValueError:
+            pass
+        return False
+
     def _validate_no_test_imports(self, file_path: Path) -> None:
         """Ensure production code doesn't import test frameworks."""
         # Skip test files
@@ -209,13 +231,15 @@ class ArchitectureGuard:
                 continue
 
             # Lateral: API ↔ Infrastructure forbidden
+            # EXCEPTION: api/desktop/ is a composition root for libraries
             if current_layer == 'api' and dependency_layer == 'infrastructure':
-                self.violations.append(ArchitectureViolation(
-                    file_path=str(file_path),
-                    line_number=line_num,
-                    violation_type='FORBIDDEN_LATERAL_DEPENDENCY',
-                    details=f"API cannot depend on Infrastructure (import: {import_path})"
-                ))
+                if not self._is_api_composition_root(file_path):
+                    self.violations.append(ArchitectureViolation(
+                        file_path=str(file_path),
+                        line_number=line_num,
+                        violation_type='FORBIDDEN_LATERAL_DEPENDENCY',
+                        details=f"API cannot depend on Infrastructure (import: {import_path})"
+                    ))
                 continue
 
             if current_layer == 'infrastructure' and dependency_layer == 'api':

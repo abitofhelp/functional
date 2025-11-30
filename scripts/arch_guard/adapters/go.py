@@ -135,11 +135,24 @@ class GoAdapter(LanguageAdapter):
                     content = f.read()
 
                     module_path = self._get_module_path(project_root)
-                    for match in re.finditer(r'require\s+([^\s]+)', content):
+
+                    # Match single-line require: require github.com/... v0.0.0
+                    for match in re.finditer(r'^\s*require\s+([^\s(]+)\s+v', content, re.MULTILINE):
                         dep = match.group(1)
                         dep_layer = self.get_layer_from_import(dep, project_root)
                         if dep_layer:
                             layer_deps.add(dep_layer)
+
+                    # Match multi-line require block: require ( ... )
+                    require_block = re.search(r'require\s*\((.*?)\)', content, re.DOTALL)
+                    if require_block:
+                        block_content = require_block.group(1)
+                        # Match each package line in the block
+                        for match in re.finditer(r'^\s*([^\s]+)\s+v', block_content, re.MULTILINE):
+                            dep = match.group(1)
+                            dep_layer = self.get_layer_from_import(dep, project_root)
+                            if dep_layer:
+                                layer_deps.add(dep_layer)
 
             except Exception as e:
                 messages.append(f"  ❌ {layer:15} - error reading go.mod: {e}")

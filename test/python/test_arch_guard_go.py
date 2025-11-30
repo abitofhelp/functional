@@ -62,7 +62,7 @@ LAYER_DEPENDENCY_CASES = [
         to_layer="application",
         should_violate=True,
         violation_type="ILLEGAL_LAYER_DEPENDENCY",
-        description="Domain is innermost - no outward dependencies",
+        description="Domain is innermost - no outbound dependencies",
     ),
     LayerDependencyCase(
         id="domain_cannot_import_infrastructure",

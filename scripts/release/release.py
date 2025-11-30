@@ -1,479 +1,132 @@
 #!/usr/bin/env python3
 # ==============================================================================
-# release.py - Release management for Ada Hybrid Architecture Project
+# release.py - Unified Release Management Script
 # ==============================================================================
 # Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 # SPDX-License-Identifier: BSD-3-Clause
 # See LICENSE file in the project root.
+#
+# Purpose:
+#   Unified release management for Go and Ada projects.
+#   Auto-detects project language and applies appropriate release workflow.
+#
+# Usage:
+#   python scripts/release/release.py prepare <version>
+#   python scripts/release/release.py release <version>
+#   python scripts/release/release.py diagrams
+#   python scripts/release/release.py validate <version>
+#
+# Examples:
+#   python scripts/release/release.py prepare 1.0.0
+#   python scripts/release/release.py release 1.0.0
+#   python scripts/release/release.py diagrams
+#
+# Design Notes:
+#   Uses adapter pattern for language-specific operations.
+#   Follows same patterns as arch_guard and brand_project.
+#   Supports Go (go.mod) and Ada (alire.toml) projects.
+#
 # ==============================================================================
-"""
-Release management script for the project.
-
-This script handles the complete release process including:
-- Temporary file cleanup (.bak, .o, .ali, .DS_Store, __pycache__)
-- Version synchronization across all alire.toml files
-- Version package generation (Simple_Hybrid.Version)
-- Ada source file docstring generation (Copyright year, documentation)
-- Formal documentation rebuild (SRS, SDS, Test Guide)
-- Markdown file metadata updates (version, date, copyright)
-- CHANGELOG.md maintenance
-- Build verification and testing
-- Git tagging and GitHub release creation
-- PlantUML diagram generation
-
-Usage:
-    python scripts/release/release.py prepare <version>
-    python scripts/release/release.py release <version>
-    python scripts/release/release.py diagrams
-
-Examples:
-    python scripts/release/release.py prepare 1.0.0
-    python scripts/release/release.py release 1.0.0
-    python scripts/release/release.py diagrams
-"""
 
 import argparse
-import os
 import re
-import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Optional
+
+# Support both direct script execution and module import
+try:
+    from .models import ReleaseConfig, Language, ReleaseAction
+    from .adapters import GoReleaseAdapter, AdaReleaseAdapter
+except ImportError:
+    from models import ReleaseConfig, Language, ReleaseAction
+    from adapters import GoReleaseAdapter, AdaReleaseAdapter
+
+# Add parent directory to path for common imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from common import print_success, print_error, print_warning, print_info, print_section
 
 
-class AdaReleaseManager:
-    def __init__(self, project_root: str):
-        self.project_root = Path(project_root)
-        self.date_str = datetime.now().strftime("%B %d, %Y")
-        self.year = datetime.now().year
-        self.project_name = None
-        self.project_url = None
-        self._load_project_info()
+def detect_language(project_root: Path) -> Optional[Language]:
+    """
+    Detect the project language from source directory.
 
-    def _load_project_info(self):
-        """Load project name and URL from alire.toml."""
-        alire_toml = self.project_root / "alire.toml"
-        try:
-            with open(alire_toml, 'r') as f:
-                for line in f:
-                    # Extract name field
-                    name_match = re.match(r'^name\s*=\s*"([^"]+)"', line)
-                    if name_match:
-                        self.project_name = name_match.group(1)
-                    # Extract website field
-                    website_match = re.match(r'^website\s*=\s*"([^"]+)"', line)
-                    if website_match:
-                        url = website_match.group(1)
-                        # Remove .git suffix if present
-                        if url.endswith('.git'):
-                            url = url[:-4]
-                        self.project_url = url
+    Args:
+        project_root: Path to project directory
 
-            # Validate required fields were found
-            if not self.project_name:
-                raise ValueError("No 'name' field found in alire.toml")
-            if not self.project_url:
-                raise ValueError("No 'website' field found in alire.toml")
+    Returns:
+        Detected Language or None
+    """
+    if GoReleaseAdapter.detect(project_root):
+        return Language.GO
+    if AdaReleaseAdapter.detect(project_root):
+        return Language.ADA
+    return None
 
-        except Exception as e:
-            print(f"❌ Error loading project info from alire.toml: {e}")
-            sys.exit(1)
 
-    # =========================================================================
-    # Version Management
-    # =========================================================================
+def get_adapter(language: Language):
+    """
+    Get the appropriate adapter for a language.
 
-    def update_root_alire_version(self, new_version: str) -> bool:
-        """Update version in root alire.toml (single source of truth)."""
-        root_toml = self.project_root / "alire.toml"
+    Args:
+        language: Target language
 
-        try:
-            with open(root_toml, 'r') as f:
-                content = f.read()
+    Returns:
+        Language adapter instance
+    """
+    adapters = {
+        Language.GO: GoReleaseAdapter(),
+        Language.ADA: AdaReleaseAdapter(),
+    }
+    return adapters.get(language)
 
-            # Check if version is already correct
-            current_version_match = re.search(
-                r'^version\s*=\s*"([^"]+)"',
-                content,
-                flags=re.MULTILINE
-            )
 
-            if current_version_match:
-                current_version = current_version_match.group(1)
-                if current_version == new_version:
-                    print(f"  ✓ Root alire.toml already has version = \"{new_version}\"")
-                    return True
+def prompt_user_continue(message: str, allow_skip: bool = False) -> bool:
+    """
+    Prompt user to perform a manual task and continue.
 
-            # Update version line
-            old_content = content
-            content = re.sub(
-                r'^(\s*version\s*=\s*")[^"]+(").*$',
-                rf'\g<1>{new_version}\g<2>',
-                content,
-                flags=re.MULTILINE
-            )
+    Args:
+        message: Instructions for the user
+        allow_skip: If True, user can skip this step
 
-            if content == old_content:
-                print(f"  ✗ Error: Version field not found in {root_toml}")
+    Returns:
+        True if user wants to continue, False to abort
+    """
+    print(f"\n{'='*70}")
+    print(f"MANUAL STEP REQUIRED")
+    print(f"{'='*70}")
+    print(f"\n{message}\n")
+
+    while True:
+        if allow_skip:
+            response = input("Press ENTER to continue, 's' to skip, or 'q' to quit: ").strip().lower()
+            if response == '':
+                return True
+            elif response == 's':
+                print("Skipping this step...")
+                return True
+            elif response == 'q':
+                print("Release process aborted by user")
+                return False
+        else:
+            response = input("Press ENTER to continue, or 'q' to quit: ").strip().lower()
+            if response == '':
+                return True
+            elif response == 'q':
+                print("Release process aborted by user")
                 return False
 
-            with open(root_toml, 'w') as f:
-                f.write(content)
+        print("Invalid input. Please try again.")
 
-            print(f"  ✓ Updated root alire.toml: version = \"{new_version}\"")
-            return True
 
-        except Exception as e:
-            print(f"Error updating root alire.toml: {e}")
-            return False
+def create_initial_changelog(config) -> str:
+    """Create a clean Common Changelog format CHANGELOG.md for initial release."""
+    today = datetime.now().strftime("%Y-%m-%d")
 
-    def sync_layer_versions(self, version: str) -> bool:
-        """Synchronize versions across all layer alire.toml files."""
-        print("Syncing versions across all layer alire.toml files...")
-        result = self.run_command(
-            [sys.executable, "scripts/release/sync_versions.py", version],
-            capture_output=True
-        )
-        return result is not None
+    return f"""# Changelog
 
-    def generate_version_package(self) -> bool:
-        """Generate Version Ada package from alire.toml."""
-        # Convert project name to proper Ada casing (simple_hybrid -> Simple_Hybrid)
-        if self.project_name.lower() == "simple_hybrid":
-            package_name = "Simple_Hybrid"
-        else:
-            # Capitalize first letter and after underscores
-            parts = self.project_name.split('_')
-            package_name = '_'.join(part.capitalize() for part in parts)
-
-        file_name = f"{self.project_name}-version.ads"
-        file_path = f"shared/src/{file_name}"
-
-        print(f"Generating {package_name}.Version package...")
-        result = self.run_command(
-            [sys.executable, "scripts/release/generate_version.py",
-             "alire.toml", file_path],
-            capture_output=True
-        )
-        if result:
-            print(f"  ✓ Generated {file_path}")
-        return result is not None
-
-    # =========================================================================
-    # Documentation Generation
-    # =========================================================================
-
-    # FIXME: DISABLED - generate_docstrings.py was removed (tzif-specific)
-    # def generate_docstrings(self) -> bool:
-    #     """Generate docstring headers for all Ada source files."""
-    #     print("Generating Ada source code docstrings...")
-    #     result = self.run_command(
-    #         [sys.executable, "scripts/generate_docstrings.py"],
-    #         capture_output=True
-    #     )
-    #     if result:
-    #         print("  ✓ Ada docstrings generated")
-    #     return result is not None
-
-    # =========================================================================
-    # Documentation Updates
-    # =========================================================================
-
-    def find_markdown_files(self) -> List[Path]:
-        """Find all markdown files with version headers."""
-        md_files = []
-
-        # Search in docs and root
-        for pattern in ["docs/**/*.md", "*.md"]:
-            md_files.extend(self.project_root.glob(pattern))
-
-        # Filter to only files with version headers
-        # Matches:
-        #   - "Version: 1.0.0" or "version: 1.0.0" (with colon)
-        #   - "**Version 1.0.0**" or "**version 1.0.0**" (bold without colon)
-        #   - "Copyright © 2025" (copyright year pattern)
-        versioned_files = []
-        for md_file in md_files:
-            try:
-                with open(md_file, 'r') as f:
-                    content = f.read()
-                    # Match version patterns OR copyright patterns
-                    if re.search(r'Version\s*[:)]|version\s*[:)]|\*\*Version\s+\d+\.\d+|Copyright\s*©\s*\d{4}',
-                                content, re.IGNORECASE):
-                        versioned_files.append(md_file)
-            except Exception:
-                pass
-
-        return versioned_files
-
-    def update_markdown_version(self, file_path: Path, new_version: str) -> bool:
-        """
-        Update version and metadata in markdown file headers.
-
-        Handles these patterns:
-        - **Version:** 1.0.0
-        - **Date:** October 24, 2025
-        - **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
-        - **Status:** Unreleased / Released
-        """
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
-
-            old_content = content
-
-            # Pattern 1: **Version:** 1.0.0 (bold with colon)
-            content = re.sub(
-                r'(\*\*Version:\*\*\s+)[^\s\n]+',
-                rf'\g<1>{new_version}',
-                content,
-                flags=re.IGNORECASE
-            )
-
-            # Pattern 2: Version: 1.0.0 (plain with colon)
-            content = re.sub(
-                r'^(Version:\s+)[^\s\n]+',
-                rf'\g<1>{new_version}',
-                content,
-                flags=re.IGNORECASE | re.MULTILINE
-            )
-
-            # Pattern 3: **Version 1.0.0** (bold without colon - used in cover.md)
-            content = re.sub(
-                r'(\*\*Version\s+)\d+\.\d+\.\d+(\*\*)',
-                rf'\g<1>{new_version}\g<2>',
-                content,
-                flags=re.IGNORECASE
-            )
-
-            # Pattern 3: **Date:** October 24, 2025 (bold)
-            content = re.sub(
-                r'(\*\*Date:\*\*\s+)[^\n]+',
-                rf'\g<1>{self.date_str}',
-                content,
-                flags=re.IGNORECASE
-            )
-
-            # Pattern 4: Date: October 24, 2025 (plain)
-            content = re.sub(
-                r'^(Date:\s+)[^\n]+',
-                rf'\g<1>{self.date_str}',
-                content,
-                flags=re.IGNORECASE | re.MULTILINE
-            )
-
-            # Pattern 5: **Copyright:** © 2024 -> © 2025 (update year only)
-            content = re.sub(
-                r'(\*\*Copyright:\*\*\s+©\s*)\d{4}',
-                rf'\g<1>{self.year}',
-                content,
-                flags=re.IGNORECASE
-            )
-
-            # Pattern 6: Copyright: © 2024 -> © 2025 (plain)
-            content = re.sub(
-                r'^(Copyright:\s+©\s*)\d{4}',
-                rf'\g<1>{self.year}',
-                content,
-                flags=re.IGNORECASE | re.MULTILINE
-            )
-
-            # Pattern 7: **Status:** Unreleased/Pre-release -> Released (for releases)
-            # Only update if this is NOT a pre-release version
-            is_prerelease = '-' in new_version  # e.g., "1.0.0-dev", "1.0.0-alpha.1"
-            if not is_prerelease:
-                # For stable releases, mark as Released
-                # Handle "Unreleased"
-                content = re.sub(
-                    r'(\*\*Status:\*\*\s+)Unreleased',
-                    r'\g<1>Released',
-                    content,
-                    flags=re.IGNORECASE
-                )
-                content = re.sub(
-                    r'^(Status:\s+)Unreleased',
-                    r'\g<1>Released',
-                    content,
-                    flags=re.IGNORECASE | re.MULTILINE
-                )
-                # Handle "Pre-release" and "Pre-release (vX.X.X)"
-                content = re.sub(
-                    r'(\*\*Status:\*\*\s+)Pre-release(?:\s+\([^)]+\))?',
-                    r'\g<1>Released',
-                    content,
-                    flags=re.IGNORECASE
-                )
-                content = re.sub(
-                    r'^(Status:\s+)Pre-release(?:\s+\([^)]+\))?',
-                    r'\g<1>Released',
-                    content,
-                    flags=re.IGNORECASE | re.MULTILINE
-                )
-            else:
-                # For pre-releases, keep as Unreleased
-                content = re.sub(
-                    r'(\*\*Status:\*\*\s+)Released',
-                    r'\g<1>Unreleased',
-                    content,
-                    flags=re.IGNORECASE
-                )
-                content = re.sub(
-                    r'^(Status:\s+)Released',
-                    r'\g<1>Unreleased',
-                    content,
-                    flags=re.IGNORECASE | re.MULTILINE
-                )
-
-            # Add trailing spaces for proper GitHub markdown rendering
-            # GitHub needs two spaces at end of line for line breaks
-            lines = content.split('\n')
-            new_lines = []
-            for line in lines:
-                # Add trailing spaces to metadata header lines
-                if re.match(r'^\*\*(Version|Date|SPDX|License|Copyright|Status):', line):
-                    if not line.endswith('  '):
-                        line = line.rstrip() + '  '
-                new_lines.append(line)
-            content = '\n'.join(new_lines)
-
-            # Check if any changes were made
-            if content != old_content:
-                with open(file_path, 'w') as f:
-                    f.write(content)
-                return True
-
-            return False
-
-        except Exception as e:
-            print(f"Error updating {file_path}: {e}")
-            return False
-
-    def add_markdown_header(self, file_path: Path, version: str) -> bool:
-        """Add metadata header to markdown file if missing."""
-        try:
-            with open(file_path, 'r') as f:
-                content = f.read()
-                lines = content.splitlines(keepends=True)
-
-            # Find first # heading
-            title_idx = None
-            for i, line in enumerate(lines):
-                if re.match(r'^#\s+\S', line):
-                    title_idx = i
-                    break
-
-            if title_idx is None:
-                return False  # No title found
-
-            # Create header with trailing spaces for line breaks
-            is_prerelease = '-' in version
-            status = "Unreleased" if is_prerelease else "Released"
-            # Note: Each line ends with two spaces for proper markdown line breaks
-            header = (
-                "\n"
-                f"**Version:** {version}  \n"
-                f"**Date:** {self.date_str}  \n"
-                f"**SPDX-License-Identifier:** BSD-3-Clause  \n"
-                f"**License File:** See the LICENSE file in the project root.  \n"
-                f"**Copyright:** © {self.year} Michael Gardner, A Bit of Help, Inc.  \n"
-                f"**Status:** {status}  \n"
-                "\n"
-            )
-
-            # Insert after title
-            lines.insert(title_idx + 1, header)
-            new_content = ''.join(lines)
-
-            with open(file_path, 'w') as f:
-                f.write(new_content)
-
-            return True
-
-        except Exception as e:
-            print(f"  ⚠️  Error adding header to {file_path}: {e}")
-            return False
-
-    def update_all_markdown_files(self, version: str) -> int:
-        """Update version in all markdown files (or add headers if missing). Returns count of updated files."""
-        # Skip files generated by rebuild_formal_documentation.py
-        skip_files = {
-            "software_requirements_specification.md",
-            "software_design_specification.md",
-            "software_test_guide.md"
-        }
-
-        # Find all markdown files
-        all_md_files = []
-        for pattern in ["docs/**/*.md", "*.md"]:
-            all_md_files.extend(self.project_root.glob(pattern))
-
-        updated_count = 0
-        added_count = 0
-
-        print(f"Processing markdown files...")
-        for md_file in all_md_files:
-            # Skip auto-generated formal docs
-            if md_file.name in skip_files:
-                continue
-
-            try:
-                with open(md_file, 'r') as f:
-                    content = f.read()
-
-                # Check if file has metadata
-                has_metadata = bool(re.search(
-                    r'Version\s*[:)]|version\s*[:)]|\*\*Version\s+\d+\.\d+|Copyright\s*©\s*\d{4}',
-                    content, re.IGNORECASE
-                ))
-
-                if has_metadata:
-                    # Update existing metadata
-                    if self.update_markdown_version(md_file, version):
-                        rel_path = md_file.relative_to(self.project_root)
-                        print(f"  ✓ Updated {rel_path}")
-                        updated_count += 1
-                else:
-                    # Add new metadata header
-                    if self.add_markdown_header(md_file, version):
-                        rel_path = md_file.relative_to(self.project_root)
-                        print(f"  ✓ Added header to {rel_path}")
-                        added_count += 1
-
-            except Exception as e:
-                print(f"  ⚠️  Error processing {md_file}: {e}")
-
-        if added_count > 0:
-            print(f"  → Added headers to {added_count} file(s)")
-        if updated_count > 0:
-            print(f"  → Updated {updated_count} file(s)")
-
-        return updated_count + added_count
-
-    # =========================================================================
-    # CHANGELOG Management
-    # =========================================================================
-
-    def is_initial_release(self, version: str) -> bool:
-        """
-        Check if this is an initial release.
-
-        An initial release is any version <= 1.0.0 (0.1.0, 0.9.0, 1.0.0, etc.)
-        """
-        from packaging import version as pkg_version
-        try:
-            return pkg_version.parse(version) <= pkg_version.parse("1.0.0")
-        except Exception:
-            # If version parsing fails, fall back to string comparison
-            return version in ["0.1.0", "1.0.0"] or version.startswith("0.")
-
-    def create_initial_changelog(self, version: str) -> str:
-        """Create a clean Common Changelog format CHANGELOG.md for initial release."""
-        today = datetime.now().strftime("%Y-%m-%d")
-
-        return f"""# Changelog
-
-All notable changes to Simple_Hybrid - IANA Timezone Information Library for Ada 2022 will be documented in this file.
+All notable changes to this project will be documented in this file.
 
 The format is based on [Common Changelog](https://common-changelog.org),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -492,102 +145,145 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [{version}] - {today}
+## [{config.version}] - {today}
 
-_Initial alpha release of Simple_Hybrid library._
+_Initial release of {config.project_name}._
 
 ### Added
 
-- Parse Simple_Hybrid binary files (versions 1, 2, and 3)
-- Query timezone information by ID
-- Access timezone transition times and rules
-- Discover timezone sources from filesystem paths
-- Export and import zone caches
-- Use Railway-oriented programming with Result/Option monads
-- Implement Hexagonal architecture (Domain, Application, Infrastructure layers)
-- Add comprehensive test suite (118 integration + 86 unit tests)
-- Add 13 working examples demonstrating library usage
-- Support thread-safe repository operations
-- Support POSIX platforms (Linux, macOS, BSD)
+- Initial implementation with hexagonal architecture
+- Domain layer with core business logic
+- Application layer with use cases
+- Infrastructure layer with adapters
+- Presentation layer with CLI
+- Comprehensive test suite
 
 ---
 
 ## License & Copyright
 
 - **License**: BSD-3-Clause
-- **Copyright**: © {self.year} Michael Gardner, A Bit of Help, Inc.
+- **Copyright**: (c) {config.year} Michael Gardner, A Bit of Help, Inc.
 - **SPDX-License-Identifier**: BSD-3-Clause
 """
 
-    def update_changelog(self, new_version: str) -> bool:
-        """
-        Update or create CHANGELOG.md with new version.
 
-        Behavior:
-        - For 0.1.0 (initial release): Create or overwrite with clean template
-        - For versions > 0.1.0: Must exist, update [Unreleased] to new version
-        """
-        changelog_file = self.project_root / "CHANGELOG.md"
-        is_initial = self.is_initial_release(new_version)
+def has_meaningful_content(section_content: str) -> bool:
+    """
+    Check if a CHANGELOG section has meaningful content.
 
-        # Handle initial release (0.1.0)
-        if is_initial:
-            # Create or replace with clean initial changelog
-            content = self.create_initial_changelog(new_version)
+    Returns True if the section contains actual bullet points with content,
+    not just placeholder text like "_Initial release._" or "TBD".
 
-            if changelog_file.exists():
-                # Backup existing file
-                backup_file = self.project_root / "CHANGELOG.md.backup"
-                changelog_file.rename(backup_file)
-                print(f"  ⚠️  Backed up existing CHANGELOG.md to {backup_file.name}")
+    Args:
+        section_content: The content of a version section
 
-            with open(changelog_file, 'w') as f:
-                f.write(content)
+    Returns:
+        True if section has meaningful content (bullet points with text)
+    """
+    # Look for bullet points with actual content (- followed by text)
+    has_bullets = bool(re.search(r'^-\s+\S', section_content, re.MULTILINE))
 
-            print(f"  ✓ Created CHANGELOG.md for initial release {new_version}")
-            return True
+    # Check for placeholder text patterns
+    placeholder_patterns = [
+        r'^\s*_[^_]+_\s*$',  # Single italic line like "_Initial release._"
+        r'TBD',
+        r'placeholder',
+        r'TODO',
+    ]
+    is_placeholder = any(
+        re.search(pattern, section_content, re.IGNORECASE | re.MULTILINE)
+        for pattern in placeholder_patterns
+    )
 
-        # Handle subsequent releases (> 0.1.0)
-        if not changelog_file.exists():
-            print(f"❌ ERROR: CHANGELOG.md not found!")
-            print(f"   For releases after 0.1.0, CHANGELOG.md must exist.")
-            print(f"   Please ensure you have a valid CHANGELOG.md before preparing release {new_version}")
-            return False
+    return has_bullets or (not is_placeholder and len(section_content.strip()) > 50)
 
-        try:
-            with open(changelog_file, 'r') as f:
-                content = f.read()
 
-            # Check if this version already exists
-            version_already_exists = re.search(
-                rf'## \[{re.escape(new_version)}\]',
-                content
-            )
-            if version_already_exists:
-                print(f"⚠️  WARNING: Version [{new_version}] already exists in CHANGELOG.md")
-                print(f"   Skipping CHANGELOG update (appears to be already prepared)")
+def update_changelog(config) -> bool:
+    """
+    Update or create CHANGELOG.md with new version.
+
+    Behavior:
+    - For initial releases: Create or overwrite with clean template
+    - For later versions: Update [Unreleased] to new version
+    - If version section exists but is placeholder, check [Unreleased] for content
+    """
+    changelog_file = config.project_root / "CHANGELOG.md"
+
+    # Check if version already exists in CHANGELOG
+    if changelog_file.exists():
+        existing_content = changelog_file.read_text(encoding='utf-8')
+        version_match = re.search(
+            rf'## \[{re.escape(config.version)}\]\s*-?\s*[^\n]*\n(.*?)(?=\n## |\Z)',
+            existing_content,
+            re.DOTALL
+        )
+        if version_match:
+            version_content = version_match.group(1).strip()
+            if has_meaningful_content(version_content):
+                print(f"  Version [{config.version}] already exists with content")
+                print(f"  Skipping CHANGELOG update (already prepared)")
+                return True
+            else:
+                print_warning(f"Version [{config.version}] exists but has placeholder content")
+                print_info("Checking [Unreleased] section for content to merge...")
+
+    # Handle initial release - only create template if CHANGELOG doesn't exist
+    # or is essentially empty/template-only
+    if config.is_initial_release:
+        if changelog_file.exists():
+            existing_content = changelog_file.read_text(encoding='utf-8')
+            # Check if existing CHANGELOG has substantial content (not just a template)
+            # Look for actual content beyond headers and empty sections
+            has_content = bool(re.search(r'###\s+\w+.*\n\s*-\s+\S', existing_content, re.DOTALL))
+            if has_content:
+                print(f"  CHANGELOG.md has existing content - preserving it")
+                print(f"  Skipping template generation for initial release")
                 return True
 
-            # Find the [Unreleased] section
-            unreleased_pattern = r'## \[Unreleased\]\s*\n(.*?)(?=\n## |\Z)'
-            match = re.search(unreleased_pattern, content, re.DOTALL)
+        content = create_initial_changelog(config)
 
-            if not match:
-                print(f"❌ ERROR: Could not find [Unreleased] section in CHANGELOG.md")
-                print(f"   Your CHANGELOG.md must have an [Unreleased] section following Common Changelog format.")
-                return False
+        if config.dry_run:
+            print(f"  [DRY-RUN] Would create CHANGELOG.md for initial release {config.version}")
+            return True
 
-            unreleased_content = match.group(1).strip()
+        if changelog_file.exists():
+            backup_file = config.project_root / "CHANGELOG.md.backup"
+            changelog_file.rename(backup_file)
+            print(f"  Backed up existing CHANGELOG.md to {backup_file.name}")
 
-            # Check if unreleased section has any content
-            if not unreleased_content or unreleased_content.count('\n') < 5:
-                print(f"⚠️  WARNING: [Unreleased] section appears empty")
-                print(f"   Consider adding changes to the [Unreleased] section before release.")
-                # Continue anyway - not fatal
+        changelog_file.write_text(content, encoding='utf-8')
+        print(f"  Created CHANGELOG.md for initial release {config.version}")
+        return True
 
-            # Create new release section with proper Common Changelog format
-            today = datetime.now().strftime("%Y-%m-%d")
-            release_section = f"""## [Unreleased]
+    # Handle subsequent releases
+    if not changelog_file.exists():
+        print_error("CHANGELOG.md not found!")
+        print_info("For releases after 1.0.0, CHANGELOG.md must exist.")
+        return False
+
+    try:
+        content = changelog_file.read_text(encoding='utf-8')
+
+        # Check if this version already exists
+        if re.search(rf'## \[{re.escape(config.version)}\]', content):
+            print_warning(f"Version [{config.version}] already exists in CHANGELOG.md")
+            print_info("Skipping CHANGELOG update (appears to be already prepared)")
+            return True
+
+        # Find the [Unreleased] section
+        unreleased_pattern = r'## \[Unreleased\]\s*\n(.*?)(?=\n## |\Z)'
+        match = re.search(unreleased_pattern, content, re.DOTALL)
+
+        if not match:
+            print_error("Could not find [Unreleased] section in CHANGELOG.md")
+            return False
+
+        unreleased_content = match.group(1).strip()
+
+        # Create new release section
+        today = datetime.now().strftime("%Y-%m-%d")
+        release_section = f"""## [Unreleased]
 
 ### Changed
 
@@ -599,340 +295,169 @@ _Initial alpha release of Simple_Hybrid library._
 
 ---
 
-## [{new_version}] - {today}
+## [{config.version}] - {today}
 
 {unreleased_content}
 
 """
 
-            # Replace the unreleased section
-            content = re.sub(
-                r'## \[Unreleased\]\s*\n.*?(?=\n## |\Z)',
-                release_section,
-                content,
-                flags=re.DOTALL,
-                count=1
-            )
-
-            with open(changelog_file, 'w') as f:
-                f.write(content)
-
-            print(f"  ✓ Updated CHANGELOG.md with release {new_version}")
-            return True
-
-        except Exception as e:
-            print(f"❌ Error updating changelog: {e}")
-            return False
-
-    # =========================================================================
-    # Build and Test Verification
-    # =========================================================================
-
-    def run_command(self, cmd: List[str], capture_output: bool = False) -> Optional[str]:
-        """Run a shell command."""
-        try:
-            result = subprocess.run(
-                cmd,
-                cwd=self.project_root,
-                capture_output=capture_output,
-                text=True
-            )
-            if result.returncode != 0:
-                print(f"❌ Command failed: {' '.join(cmd)}")
-                if result.stderr:
-                    print(f"Error: {result.stderr}")
-                return None
-            return result.stdout if capture_output else "SUCCESS"
-        except Exception as e:
-            print(f"❌ Command exception: {' '.join(cmd)}")
-            print(f"Exception: {e}")
-            return None
-
-    def prompt_user_continue(self, message: str, allow_skip: bool = False) -> bool:
-        """
-        Prompt user to perform a manual task and continue.
-
-        Args:
-            message: Instructions for the user
-            allow_skip: If True, user can skip this step
-
-        Returns:
-            True if user wants to continue, False to abort
-        """
-        print(f"\n{'='*70}")
-        print(f"⏸️  MANUAL STEP REQUIRED")
-        print(f"{'='*70}")
-        print(f"\n{message}\n")
-
-        while True:
-            if allow_skip:
-                response = input("Press ENTER to continue, 's' to skip, or 'q' to quit: ").strip().lower()
-                if response == '':
-                    return True
-                elif response == 's':
-                    print("⏭️  Skipping this step...")
-                    return True
-                elif response == 'q':
-                    print("🛑 Release process aborted by user")
-                    return False
-            else:
-                response = input("Press ENTER to continue, or 'q' to quit: ").strip().lower()
-                if response == '':
-                    return True
-                elif response == 'q':
-                    print("🛑 Release process aborted by user")
-                    return False
-
-            print("Invalid input. Please try again.")
-
-    def verify_clean_working_tree(self) -> bool:
-        """Verify git working tree is clean."""
-        result = self.run_command(["git", "status", "--porcelain"], capture_output=True)
-        if result is None:
-            return False
-        return len(result.strip()) == 0
-
-    def run_build(self) -> bool:
-        """Run full build."""
-        print("Running build...")
-        return self.run_command(["make", "clean"]) is not None and \
-               self.run_command(["make", "build"]) is not None
-
-    def run_tests(self) -> bool:
-        """Run all tests."""
-        print("Running tests...")
-        # Check if test target exists
-        result = self.run_command(["make", "test"], capture_output=True)
-        if result is None:
-            print("  ⚠️  No tests found or test target not available")
-            return True  # Not a fatal error for now
-        print("  ✓ All tests passed")
-        return True
-
-    def run_format(self) -> bool:
-        """Format code using gnatpp."""
-        print("Formatting code...")
-        result = self.run_command(["make", "format"], capture_output=True)
-        if result is None:
-            print("  ⚠️  Format target not available")
-            return True  # Not fatal
-        print("  ✓ Code formatted")
-        return True
-
-    def generate_diagrams(self) -> bool:
-        """Generate PlantUML diagrams."""
-        print("Generating UML diagrams...")
-
-        # Check if plantuml is available
-        try:
-            subprocess.run(
-                ["plantuml", "-version"],
-                capture_output=True,
-                check=True
-            )
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("  ⚠️  plantuml not found, skipping diagram generation")
-            return True  # Not fatal
-
-        diagrams_dir = self.project_root / "docs" / "diagrams"
-        if not diagrams_dir.exists():
-            print("  ⚠️  No diagrams directory found")
-            return True
-
-        # Find all .puml files and generate SVGs
-        puml_files = list(diagrams_dir.glob("*.puml"))
-        if not puml_files:
-            print("  ⚠️  No PlantUML files found")
-            return True
-
-        for puml_file in puml_files:
-            result = self.run_command(
-                ["plantuml", "-tsvg", str(puml_file)],
-                capture_output=True
-            )
-            if result is None:
-                print(f"  ⚠️  Failed to generate {puml_file.stem}.svg")
-
-        print(f"  ✓ Generated {len(puml_files)} diagram(s)")
-        return True
-
-    # =========================================================================
-    # Git Operations
-    # =========================================================================
-
-    def create_git_tag(self, version: str) -> bool:
-        """Create annotated git tag."""
-        tag_name = f"v{version}"
-        message = f"Release version {version}"
-
-        result = self.run_command([
-            "git", "tag", "-a", tag_name, "-m", message
-        ])
-
-        if result:
-            print(f"  ✓ Created tag {tag_name}")
-        return result is not None
-
-    def push_changes(self, version: str) -> bool:
-        """Push changes and tags to origin."""
-        commands = [
-            (["git", "push", "origin", "main"], "Pushed to main"),
-            (["git", "push", "origin", f"v{version}"], f"Pushed tag v{version}")
-        ]
-
-        for cmd, success_msg in commands:
-            if self.run_command(cmd) is None:
-                return False
-            print(f"  ✓ {success_msg}")
-
-        return True
-
-    def create_github_release(self, version: str) -> bool:
-        """Create GitHub release using gh CLI."""
-        # Extract release notes from CHANGELOG.md
-        changelog_file = self.project_root / "CHANGELOG.md"
-        release_notes = f"Release version {version}"
-
-        if changelog_file.exists():
-            try:
-                with open(changelog_file, 'r') as f:
-                    content = f.read()
-
-                version_pattern = rf'## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## |\Z)'
-                match = re.search(version_pattern, content, re.DOTALL)
-
-                if match:
-                    release_notes = match.group(1).strip()
-            except Exception as e:
-                print(f"Warning: Could not extract release notes: {e}")
-
-        # Create release
-        cmd = [
-            "gh", "release", "create", f"v{version}",
-            "--title", f"Release {version}",
-            "--notes", release_notes
-        ]
-
-        # Note: Diagrams are in the repo, no need to attach as assets
-        # Users can view them in docs/diagrams/ or rendered in the book
-
-        result = self.run_command(cmd)
-        if result:
-            print(f"  ✓ Created GitHub release v{version}")
-        return result is not None
-
-    # =========================================================================
-    # Release Workflow
-    # =========================================================================
-
-    # FIXME: DISABLED - rebuild_formal_documentation.py was removed (tzif-specific)
-    # def rebuild_formal_documentation(self) -> bool:
-    #     """Rebuild formal documentation (SRS, SDS, Test Guide) from codebase."""
-    #     print("Rebuilding formal documentation...")
-    #     result = self.run_command(
-    #         [sys.executable, "scripts/rebuild_formal_documentation.py"],
-    #         capture_output=True
-    #     )
-    #     if result:
-    #         print("  ✓ Formal documentation rebuilt")
-    #     return result is not None
-
-    def cleanup_temp_files(self) -> bool:
-        """Remove temporary files and build artifacts."""
-        print("Cleaning up temporary files...")
-        result = self.run_command(
-            [sys.executable, "scripts/cleanup_temp_files.py"],
-            capture_output=True
+        # Replace the unreleased section
+        content = re.sub(
+            r'## \[Unreleased\]\s*\n.*?(?=\n## |\Z)',
+            release_section,
+            content,
+            flags=re.DOTALL,
+            count=1
         )
-        if result:
-            print("  ✓ Temporary files cleaned")
-        return result is not None
 
-    def prepare_release(self, version: str) -> bool:
-        """Prepare release by updating versions and running checks."""
-        print(f"\n{'='*70}")
-        print(f"PREPARING RELEASE {version}")
-        print(f"{'='*70}\n")
+        if config.dry_run:
+            print(f"  [DRY-RUN] Would update CHANGELOG.md with release {config.version}")
+            return True
+
+        changelog_file.write_text(content, encoding='utf-8')
+        print(f"  Updated CHANGELOG.md with release {config.version}")
+        return True
+
+    except Exception as e:
+        print_error(f"Error updating changelog: {e}")
+        return False
 
 
-        # Step 1: Clean up temporary files
-        print("\n🧹 Step 1: Cleaning up temporary files...")
-        if not self.cleanup_temp_files():
-            print("  ⚠️  Warning: Could not clean up temporary files")
-            # Not fatal - continue with release
+def prepare_release(config, adapter) -> bool:
+    """Prepare release by updating versions and running checks."""
+    print_section(f"\n{'='*70}")
+    print_section(f"PREPARING RELEASE {config.version} ({adapter.name})")
+    print_section(f"{'='*70}\n")
 
-        # Step 2: Update root alire.toml version
-        print("\n📝 Step 2: Updating root alire.toml version...")
-        if not self.update_root_alire_version(version):
+    # Step 0a: Validate Makefile targets
+    print_info("\nStep 0a: Validating Makefile targets...")
+    if not adapter.validate_makefile(config):
+        print_error("Makefile validation failed - fix targets before release")
+        return False
+
+    # Step 0b: Validate documentation links
+    print_info("\nStep 0b: Validating documentation links...")
+    if not adapter.validate_links(config):
+        print_error("Link validation failed - fix broken links before release")
+        return False
+
+    # Step 0c: Validate documentation consistency
+    print_info("\nStep 0c: Validating documentation consistency...")
+    has_discrepancies, discrepancies = adapter.validate_documentation(config)
+    if has_discrepancies:
+        message = f"""Documentation validation found {len(discrepancies)} potential discrepancy(ies).
+
+Please review the items listed above.
+
+These may be:
+- Incorrect terminology for project type (library vs application)
+- References to non-existent files
+- Outdated directory structures in documentation
+
+You can:
+- Press ENTER to acknowledge and continue (if they are false positives)
+- Press 'q' to quit and fix the issues before releasing"""
+        if not prompt_user_continue(message):
             return False
 
-        # Step 3: Sync all layer alire.toml files
-        print("\n📝 Step 3: Syncing layer versions...")
-        if not self.sync_layer_versions(version):
+    # Step 0d: Validate AI Assistance & Authorship section (LEGALLY CRITICAL)
+    print_info("\nStep 0d: Validating AI Assistance & Authorship section...")
+    is_valid, ai_errors = adapter.validate_ai_assistance_section(config)
+    if not is_valid:
+        print_error("AI Assistance & Authorship section validation FAILED")
+        print_error("This is a LEGALLY CRITICAL requirement for all releases")
+        print_info("")
+        print_info("Required section in README.md:")
+        print_info("  ### AI Assistance & Authorship")
+        print_info("")
+        print_info("  This project — including its source code, tests, documentation,")
+        print_info("  and other deliverables — is designed, implemented, and maintained")
+        print_info("  by human developers, with Michael Gardner as the Principal Software")
+        print_info("  Engineer and project lead.")
+        print_info("")
+        print_info("  [... see documentation agent for full required content ...]")
+        print_info("")
+        print_info("Placement: After project description, BEFORE installation instructions")
+        return False
+
+    # Step 0e: Scan git history for AI markers (CRITICAL - git hygiene)
+    print_info("\nStep 0e: Scanning git history for AI assistant markers...")
+    is_clean, git_violations = adapter.scan_git_history_for_ai_markers(config)
+    if not is_clean:
+        print_warning(f"Found {len(git_violations)} AI marker(s) in git history")
+        message = f"""Git history contains {len(git_violations)} AI attribution marker(s).
+
+These MUST be removed before release per our git attribution policy.
+
+Options to clean git history:
+1. For recent commits: git rebase -i HEAD~N and edit messages
+2. For older commits: git filter-branch or BFG Repo-Cleaner
+3. Contact the maintainer for assistance
+
+You can:
+- Press ENTER to acknowledge and continue (if cleanup is planned)
+- Press 'q' to quit and clean history before releasing"""
+        if not prompt_user_continue(message):
             return False
 
-        # Step 4: Generate Simple_Hybrid.Version package
-        print("\n📝 Step 4: Generating Simple_Hybrid.Version package...")
-        if not self.generate_version_package():
-            return False
+    # Step 1: Clean up temporary files
+    print_info("\nStep 1: Cleaning up temporary files...")
+    if not adapter.cleanup_temp_files(config):
+        print_warning("Could not clean up temporary files (continuing)")
 
-        # FIXME: Step 5 DISABLED - generate_docstrings.py was removed (tzif-specific)
-        # print("\n📝 Step 5: Generating Ada source docstrings...")
-        # if not self.generate_docstrings():
-        #     print("  ⚠️  Warning: Could not generate Ada docstrings")
-        #     # Not fatal - continue with release
+    # Step 2: Update version in config files
+    print_info(f"\nStep 2: Updating {adapter.name} version...")
+    if not adapter.update_version(config):
+        return False
 
-        # FIXME: Step 5 DISABLED - format target not available until adafmt tool is ready
-        # print("\n📋 Step 5: Formatting code...")
-        # self.run_format()
+    # Step 3: Sync versions (if applicable)
+    print_info("\nStep 3: Syncing layer versions...")
+    if not adapter.sync_versions(config):
+        print_warning("Could not sync layer versions (continuing)")
 
-        # FIXME: Step 5 DISABLED - rebuild_formal_documentation.py was removed (tzif-specific)
-        # print("\n📝 Step 5: Rebuilding formal documentation...")
-        # if not self.rebuild_formal_documentation():
-        #     print("  ⚠️  Warning: Could not rebuild formal documentation")
-        #     # Not fatal - continue with release
+    # Step 4: Generate version file (if applicable)
+    print_info("\nStep 4: Generating version file...")
+    if not adapter.generate_version_file(config):
+        print_warning("Could not generate version file (continuing)")
 
-        # Step 5: Update remaining markdown files
-        print("\n📝 Step 5: Updating markdown documentation...")
-        self.update_all_markdown_files(version)
+    # Step 5: Update markdown documentation
+    print_info("\nStep 5: Updating markdown documentation...")
+    adapter.update_all_markdown_files(config)
 
-        # Checkpoint: Final chance to edit CHANGELOG before script modifies it
-        changelog_file = self.project_root / "CHANGELOG.md"
-        if changelog_file.exists():
-            # Check if version already exists
-            with open(changelog_file, 'r') as f:
-                content = f.read()
-                if not re.search(rf'## \[{re.escape(version)}\]', content):
-                    # Version doesn't exist yet - give user final chance to edit
-                    message = f"""📝 FINAL CHECKPOINT: CHANGELOG.md Review
+    # Step 6: CHANGELOG checkpoint
+    changelog_file = config.project_root / "CHANGELOG.md"
+    if changelog_file.exists():
+        content = changelog_file.read_text(encoding='utf-8')
+        if not re.search(rf'## \[{re.escape(config.version)}\]', content):
+            message = f"""FINAL CHECKPOINT: CHANGELOG.md Review
 
 The script is about to modify CHANGELOG.md:
-- It will move [Unreleased] content → [{version}] section
+- It will move [Unreleased] content -> [{config.version}] section
 - It will create a fresh [Unreleased] section
 
 LAST CHANCE to edit CHANGELOG.md if needed:
 1. Edit CHANGELOG.md (add/modify release notes in [Unreleased])
 2. If you made changes, commit them:
    git add CHANGELOG.md
-   git commit -m "docs: Update release notes for {version}"
+   git commit -m "docs: Update release notes for {config.version}"
 3. Press ENTER to let the script process CHANGELOG.md
 
 If CHANGELOG is already correct, just press ENTER to continue."""
-                    if not self.prompt_user_continue(message):
-                        return False
+            if not prompt_user_continue(message):
+                return False
 
-        # Step 6: Update CHANGELOG.md (create for 0.1.0, update for later versions)
-        print("\n📝 Step 6: Updating CHANGELOG.md...")
-        if not self.update_changelog(version):
-            return False
+    # Step 7: Update CHANGELOG.md
+    print_info("\nStep 6: Updating CHANGELOG.md...")
+    if not update_changelog(config):
+        return False
 
-        # Step 7: Generate diagrams
-        print("\n📝 Step 7: Generating diagrams...")
-        if not self.generate_diagrams():
-            return False
+    # Step 7: Generate diagrams
+    print_info("\nStep 7: Generating diagrams...")
+    if not adapter.generate_diagrams(config):
+        print_warning("Could not generate diagrams (continuing)")
 
-        # Checkpoint: Review and commit changes
-        message = f"""✅ All files have been updated for release {version}
+    # Checkpoint: Review and commit changes
+    message = f"""All files have been updated for release {config.version}
 
 IMPORTANT: Review and commit changes NOW (before build/test):
 
@@ -941,7 +466,7 @@ IMPORTANT: Review and commit changes NOW (before build/test):
 
 2. Commit the prepared release:
    git add -A
-   git commit -m "chore: Prepare release {version}"
+   git commit -m "chore: Prepare release {config.version}"
 
 WHY COMMIT NOW?
 - If build/tests fail, you can easily rollback (git reset HEAD~1)
@@ -949,136 +474,217 @@ WHY COMMIT NOW?
 - Safe fallback position
 
 After committing, press ENTER to continue with build and test verification."""
-        if not self.prompt_user_continue(message):
-            return False
+    if not prompt_user_continue(message):
+        return False
 
-        # Step 8: Build verification
-        print("\n🔨 Step 8: Running build...")
-        if not self.run_build():
-            print("❌ Build failed")
-            return False
-        print("  ✓ Build successful")
+    # Step 8: Build verification
+    print_info("\nStep 8: Running build...")
+    if not adapter.run_build(config):
+        print_error("Build failed")
+        return False
 
-        # Step 9: Test verification
-        print("\n🧪 Step 9: Running tests...")
-        if not self.run_tests():
-            print("❌ Tests failed")
-            return False
+    # Step 9: Test verification
+    print_info("\nStep 9: Running tests...")
+    if not adapter.run_tests(config):
+        print_error("Tests failed")
+        return False
 
-        print(f"\n{'='*70}")
-        print(f"✅ RELEASE {version} PREPARED AND VERIFIED SUCCESSFULLY!")
-        print(f"{'='*70}\n")
-        print("✓ All files updated")
-        print("✓ Build passing")
-        print("✓ Tests passing")
-        print()
-        print("Next step:")
-        print(f"   python3 scripts/release/release.py release {version}")
-        print()
-        print("This will:")
-        print(f"  - Create git tag v{version}")
-        print("  - Push to GitHub")
-        print("  - Create GitHub release with release notes")
-        print()
+    print_section(f"\n{'='*70}")
+    print_success(f"RELEASE {config.version} PREPARED AND VERIFIED SUCCESSFULLY!")
+    print_section(f"{'='*70}\n")
+    print_info("All files updated")
+    print_info("Build passing")
+    print_info("Tests passing")
+    print()
+    print_info("Next step:")
+    print_info(f"   python3 scripts/release/release.py release {config.version}")
+    print()
+    print_info("This will:")
+    print_info(f"  - Create git tag v{config.version}")
+    print_info("  - Push to GitHub")
+    print_info("  - Create GitHub release with release notes")
+    print()
 
-        return True
+    return True
 
-    def create_release(self, version: str) -> bool:
-        """Create the actual release (tag and publish)."""
-        print(f"\n{'='*70}")
-        print(f"CREATING RELEASE {version}")
-        print(f"{'='*70}\n")
 
-        # Verify working tree is clean
-        print("🔍 Verifying clean working tree...")
-        if not self.verify_clean_working_tree():
-            print("❌ Working tree is not clean. Please commit changes first.")
-            print("   Run: git status")
-            return False
-        print("  ✓ Working tree is clean")
+def create_release(config, adapter) -> bool:
+    """Create the actual release (tag and publish)."""
+    print_section(f"\n{'='*70}")
+    print_section(f"CREATING RELEASE {config.version} ({adapter.name})")
+    print_section(f"{'='*70}\n")
 
-        # Create git tag
-        print("\n🏷️  Creating git tag...")
-        if not self.create_git_tag(version):
-            return False
+    # Verify working tree is clean
+    print_info("Verifying clean working tree...")
+    if not adapter.verify_clean_working_tree(config):
+        print_error("Working tree is not clean. Please commit changes first.")
+        print_info("   Run: git status")
+        return False
+    print_success("Working tree is clean")
 
-        # Push changes and tag
-        print("\n⬆️  Pushing to GitHub...")
-        if not self.push_changes(version):
-            return False
+    # Create git tag
+    print_info("\nCreating git tag...")
+    if not adapter.create_git_tag(config):
+        return False
 
-        # Create GitHub release
-        print("\n📦 Creating GitHub release...")
-        if not self.create_github_release(version):
-            return False
+    # Push changes and tag
+    print_info("\nPushing to GitHub...")
+    if not adapter.push_changes(config):
+        return False
 
-        print(f"\n{'='*70}")
-        print(f"🎉 RELEASE {version} CREATED SUCCESSFULLY!")
-        print(f"{'='*70}\n")
-        print("Release is now live on GitHub!")
-        release_url = f"{self.project_url}/releases/tag/v{version}"
-        print(f"View at: {release_url}")
-        print()
+    # Create GitHub release
+    print_info("\nCreating GitHub release...")
+    if not adapter.create_github_release(config):
+        return False
 
-        return True
+    print_section(f"\n{'='*70}")
+    print_success(f"RELEASE {config.version} CREATED SUCCESSFULLY!")
+    print_section(f"{'='*70}\n")
+    print_info("Release is now live on GitHub!")
+    if config.project_url:
+        release_url = f"{config.project_url}/releases/tag/v{config.version}"
+        print_info(f"View at: {release_url}")
+    print()
+
+    return True
+
+
+def generate_diagrams_only(config, adapter) -> bool:
+    """Generate diagrams without full release."""
+    print_section(f"\n{'='*70}")
+    print_section(f"GENERATING DIAGRAMS ({adapter.name})")
+    print_section(f"{'='*70}\n")
+
+    return adapter.generate_diagrams(config)
 
 
 def main():
+    """Main entry point."""
     parser = argparse.ArgumentParser(
-        description="Release management for Ada Hybrid Architecture Project"
+        description='Unified release management for Go and Ada projects',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s prepare 1.0.0     Prepare release (update files, build, test)
+  %(prog)s release 1.0.0     Create release (tag, push, GitHub release)
+  %(prog)s diagrams          Generate PlantUML diagrams only
+
+The script auto-detects the project language (Go/Ada) and applies
+the appropriate release workflow.
+        """
     )
+
     parser.add_argument(
-        "action",
-        choices=["prepare", "release", "diagrams"],
-        help="Action to perform"
+        'action',
+        choices=['prepare', 'release', 'diagrams', 'validate'],
+        help='Action to perform'
     )
+
     parser.add_argument(
-        "version",
+        'version',
         nargs='?',
-        help="Version to release (e.g., 1.0.0 or 1.0.0-dev) - required for prepare/release"
+        help='Version to release (e.g., 1.0.0) - required for prepare/release'
+    )
+
+    parser.add_argument(
+        '--project-root', '-p',
+        type=Path,
+        default=None,
+        help='Project root directory (default: auto-detect from script location)'
+    )
+
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        help='Show what would be done without making changes'
     )
 
     args = parser.parse_args()
 
     # Validate version is provided for prepare/release
-    if args.action in ["prepare", "release"] and not args.version:
-        print("❌ Error: Version is required for prepare/release actions")
+    if args.action in ['prepare', 'release', 'validate'] and not args.version:
+        print_error(f"Version is required for {args.action} action")
         parser.print_help()
-        sys.exit(1)
+        return 1
 
-    # Validate semantic version format (allows pre-release like -dev, -alpha.1)
-    if args.version and not re.match(r'^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$', args.version):
-        print("❌ Error: Version must follow semantic versioning (e.g., 1.0.0, 1.0.0-dev)")
-        sys.exit(1)
+    # Validate semantic version format
+    if args.version and not re.match(
+        r'^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?(\+[a-zA-Z0-9.]+)?$',
+        args.version
+    ):
+        print_error("Version must follow semantic versioning (e.g., 1.0.0, 1.0.0-dev)")
+        return 1
 
-    # Find project root
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent.parent
+    # Determine project root
+    if args.project_root:
+        project_root = args.project_root.resolve()
+    else:
+        # Auto-detect: go up from script location to find project root
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent.parent
 
-    release_manager = AdaReleaseManager(str(project_root))
+    if not project_root.exists():
+        print_error(f"Project root does not exist: {project_root}")
+        return 1
+
+    # Detect language
+    language = detect_language(project_root)
+    if not language:
+        print_error(f"Could not detect language in: {project_root}")
+        print_info("Supported languages: Go, Ada")
+        return 1
+
+    # Get adapter
+    adapter = get_adapter(language)
+    if not adapter:
+        print_error(f"No adapter available for language: {language.value}")
+        return 1
+
+    # Load project info
+    project_name, project_url = adapter.load_project_info(
+        type('Config', (), {'project_root': project_root})()
+    )
+
+    # Create config
+    config = ReleaseConfig(
+        project_root=project_root,
+        version=args.version or "0.0.0",
+        language=language,
+        dry_run=args.dry_run,
+    )
+    config.project_name = project_name
+    config.project_url = project_url
+
+    print_info(f"Project: {project_name}")
+    print_info(f"Language: {language.value}")
+    print_info(f"Root: {project_root}")
 
     try:
-        if args.action == "prepare":
-            success = release_manager.prepare_release(args.version)
-        elif args.action == "release":
-            success = release_manager.create_release(args.version)
-        elif args.action == "diagrams":
-            success = release_manager.generate_diagrams()
+        if args.action == 'prepare':
+            success = prepare_release(config, adapter)
+        elif args.action == 'release':
+            success = create_release(config, adapter)
+        elif args.action == 'diagrams':
+            success = generate_diagrams_only(config, adapter)
+        elif args.action == 'validate':
+            # Future: add validation-only mode
+            print_info("Validate action not yet implemented")
+            success = True
         else:
-            print(f"❌ Unknown action: {args.action}")
-            sys.exit(1)
+            print_error(f"Unknown action: {args.action}")
+            return 1
 
-        sys.exit(0 if success else 1)
+        return 0 if success else 1
 
     except KeyboardInterrupt:
-        print("\n\n❌ Release process interrupted by user")
-        sys.exit(1)
+        print("\n\nRelease process interrupted by user")
+        return 1
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
+        print_error(f"Unexpected error: {e}")
         import traceback
         traceback.print_exc()
-        sys.exit(1)
+        return 1
 
 
-if __name__ == "__main__":
-    main()
+if __name__ == '__main__':
+    sys.exit(main())
