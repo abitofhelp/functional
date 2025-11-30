@@ -2,7 +2,7 @@
 #ifndef FUNCTIONAL_CONFIG_H
 #define FUNCTIONAL_CONFIG_H
 
-#define CRATE_VERSION "2.1.1"
+#define CRATE_VERSION "2.2.0"
 #define CRATE_NAME "functional"
 
 #define ALIRE_HOST_OS "macos"
