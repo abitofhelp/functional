@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
+
 # =============================================================================
 # Git Attributes for Ada Project - GitHub Linguist Configuration
 # =============================================================================
@@ -48,7 +51,7 @@ obj/** linguist-generated
 lib/** linguist-generated
 bin/** linguist-generated
 alire/** linguist-generated
-config/functional_config.ads linguist-generated
+config/tzif_config.ads linguist-generated
 
 # Version control and IDE
 .git/** linguist-vendored
@@ -60,11 +63,14 @@ config/functional_config.ads linguist-generated
 # Line Ending Configuration
 # -----------------------------------------------------------------------------
 # Ensure consistent line endings across platforms
-*.ads text eol=lf
-*.adb text eol=lf
-*.gpr text eol=lf
-*.md text eol=lf
-*.sh text eol=lf
+*.ads  text eol=lf
+*.adb  text eol=lf
+*.gpr  text eol=lf
+*.md   text eol=lf
+*.sh   text eol=lf
+*.toml text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
 
 # -----------------------------------------------------------------------------
 # Diff Configuration
