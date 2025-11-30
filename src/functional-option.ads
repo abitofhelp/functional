@@ -22,7 +22,9 @@ pragma Ada_2022;
 
 generic
    type T is private;
-package Functional.Option is
+package Functional.Option with
+  Preelaborate
+is
 
    type Option_Kind is (K_Some, K_None);
 

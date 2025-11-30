@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 2.1.1  
-**Date:** November 19, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause  
-**License File:** See the LICENSE file in the project root.  
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
-**Status:** Released  
+**Version:** 2.2.0
+**Date:** November 30, 2025
+**SPDX-License-Identifier:** BSD-3-Clause
+**License File:** See the LICENSE file in the project root.
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 All notable changes to this project will be documented in this file.
 
@@ -21,6 +21,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ### Fixed
+
+---
+
+## [2.2.0] - 2025-11-30
+
+### Added
+- **Preelaborate pragma for Option**: Added `Preelaborate` categorization to `Functional.Option`
+  - Allows Option to be instantiated in preelaborable packages
+  - Enables use in domain/application layers with strict elaboration requirements
+  - Backwards compatible: only expands where Option can be used, no breaking changes
+
+### Technical Details
+- All 83 Ada tests passing
+- Zero breaking changes from 2.1.1
 
 ---
 
