@@ -25,12 +25,14 @@
 #   - Application: Depends ONLY on Domain (middle sphere)
 #   - Infrastructure: Depends on Application + Domain (outer half-sphere)
 #   - API: Depends on Application + Domain (library public facade - optional)
+#   - API sub-packages (api/adapter/desktop, api/web, etc.): Composition roots - CAN import ALL
 #   - Presentation: Depends ONLY on Application (NOT Domain directly!)
 #   - Bootstrap: Depends on all layers (outermost)
 #
 #   Critical Rules:
 #   - Presentation MUST NOT import Domain directly (use Application re-exports)
 #   - API CAN import Domain directly (it's the library's public facade)
+#   - API sub-packages are composition roots (like bootstrap for apps)
 #   - No lateral dependencies (Presentation ↔ Infrastructure)
 #
 # See Also:
@@ -133,22 +135,25 @@ class ArchitectureGuard:
 
     def _is_api_composition_root(self, file_path: Path) -> bool:
         """
-        Check if file is in an API composition root directory.
+        Check if file is in an API sub-package that acts as a composition root.
 
-        For LIBRARIES (not applications), api/desktop/ and api/adapter/desktop/
-        serve as composition roots and are allowed to import Infrastructure.
-        This follows the 4-layer library architecture where API sub-packages
-        fill the Bootstrap role.
+        In library architecture, api/adapter/desktop (or other api/* sub-packages) are
+        composition roots that wire infrastructure to application, similar to
+        bootstrap in application architecture. These sub-packages are allowed
+        to import infrastructure.
+
+        Examples:
+            api/api.go -> False (main API facade, cannot import infrastructure)
+            api/adapter/desktop/desktop.go -> True (composition root, CAN import infrastructure)
+            api/web/web.go -> True (composition root, CAN import infrastructure)
         """
         try:
             relative_path = file_path.relative_to(self.source_root)
             parts = relative_path.parts
-            # Check for api/desktop/ or api/adapter/desktop/
-            if len(parts) >= 2 and parts[0] == 'api':
-                if parts[1] == 'desktop':
-                    return True
-                if len(parts) >= 3 and parts[1] == 'adapter' and parts[2] == 'desktop':
-                    return True
+            # Must be api/<subpkg>/... (at least 3 parts: api, subpkg, file)
+            # Direct files in api/ (like api/api.go) are NOT composition roots
+            if len(parts) >= 3 and parts[0] == 'api':
+                return True
         except ValueError:
             pass
         return False
@@ -236,7 +241,8 @@ class ArchitectureGuard:
                 continue
 
             # Lateral: API ↔ Infrastructure forbidden
-            # EXCEPTION: api/desktop/ is a composition root for libraries
+            # EXCEPTION: api/* sub-packages (like api/adapter/desktop) are composition roots
+            # and ARE allowed to import infrastructure (they wire dependencies)
             if current_layer == 'api' and dependency_layer == 'infrastructure':
                 if not self._is_api_composition_root(file_path):
                     self.violations.append(ArchitectureViolation(
@@ -245,7 +251,7 @@ class ArchitectureGuard:
                         violation_type='FORBIDDEN_LATERAL_DEPENDENCY',
                         details=f"API cannot depend on Infrastructure (import: {import_path})"
                     ))
-                continue
+                    continue
 
             if current_layer == 'infrastructure' and dependency_layer == 'api':
                 self.violations.append(ArchitectureViolation(
@@ -287,7 +293,13 @@ class ArchitectureGuard:
                 continue
 
             # Check if inter-layer dependency is allowed
+            # EXCEPTION: API composition roots (api/adapter/desktop, api/web, etc.) can import infrastructure
             if dependency_layer not in allowed_deps:
+                # Skip if this is an API composition root importing infrastructure
+                if current_layer == 'api' and dependency_layer == 'infrastructure':
+                    if self._is_api_composition_root(file_path):
+                        continue  # API sub-packages can wire infrastructure
+
                 self.violations.append(ArchitectureViolation(
                     file_path=str(file_path),
                     line_number=line_num,
@@ -458,9 +470,9 @@ def main() -> int:
     if args.project_root:
         project_root = args.project_root.resolve()
     else:
-        # Script is in <root>/scripts/arch_guard/
+        # Script is in <root>/scripts/python/arch_guard/
         script_dir = Path(__file__).parent
-        project_root = script_dir.parent.parent
+        project_root = script_dir.parent.parent.parent
 
     print("=" * 70)
     print("Hexagonal Architecture Guard (Unified)")

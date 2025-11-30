@@ -185,7 +185,7 @@ clean-coverage:
 
 clean-clutter: ## Remove temporary files, backups, and clutter
 	@echo "$(CYAN)Cleaning temporary files and clutter...$(NC)"
-	@$(PYTHON3) scripts/cleanup_temp_files.py
+	@$(PYTHON3) scripts/python/makefile/cleanup_temp_files.py
 	@echo "$(GREEN)✓ Temporary files removed$(NC)"
 
 compress:
@@ -280,10 +280,10 @@ test-e2e: build build-tests
 
 test-coverage: clean build build-coverage-runtime
 	@echo "$(GREEN)Running tests with GNATcoverage analysis...$(NC)"
-	@if [ -f "scripts/makefile/coverage.sh" ]; then \
-		bash scripts/makefile/coverage.sh; \
+	@if [ -f "scripts/python/makefile/coverage.sh" ]; then \
+		bash scripts/python/makefile/coverage.sh; \
 	else \
-		echo "$(YELLOW)Coverage script not found at scripts/makefile/coverage.sh$(NC)"; \
+		echo "$(YELLOW)Coverage script not found at scripts/python/makefile/coverage.sh$(NC)"; \
 		exit 1; \
 	fi
 
@@ -303,15 +303,15 @@ check:
 
 check-arch: ## Validate architecture boundaries
 	@echo "$(GREEN)Validating architecture boundaries...$(NC)"
-	-@PYTHONPATH=scripts $(PYTHON3) -m arch_guard
+	-@PYTHONPATH=scripts/python $(PYTHON3) -m arch_guard
 	@echo "$(YELLOW)⚠ Architecture validation complete (violations are warnings, not errors)$(NC)"
 
 # FIXME: REPLACE WITH THE ADAFMT TOOL WE ARE CREATING WHEN IT IS COMPLETED.
 # THE CURRENT SCRIPT IS COMMENTING COMMENTS AND MESSING UP WITH INDEXED COMMENTS.
 # format-src:
 # 	@echo "$(GREEN)Formatting source code...$(NC)"
-# 	@if [ ! -f "scripts/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
-# 		echo "$(RED)Error: scripts/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
+# 	@if [ ! -f "scripts/python/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
+# 		echo "$(RED)Error: scripts/python/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
 # 		exit 1; \
 # 	fi
 # 	@for dir in $(SRC_DIR); do \
@@ -319,7 +319,7 @@ check-arch: ## Validate architecture boundaries
 # 			find "$$dir" -name "*.ads" -o -name "*.adb" | \
 # 			while read file; do \
 # 				echo "  Formatting $$file..."; \
-# 				$(PYTHON3) scripts/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(PROJECT_NAME).gpr" --include-path "$(PWD)/$$file" || true; \
+# 				$(PYTHON3) scripts/python/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(PROJECT_NAME).gpr" --include-path "$(PWD)/$$file" || true; \
 # 			done; \
 # 		fi; \
 # 	done
@@ -327,15 +327,15 @@ check-arch: ## Validate architecture boundaries
 
 # format-tests:
 # 	@echo "$(GREEN)Formatting test code...$(NC)"
-# 	@if [ ! -f "scripts/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
-# 		echo "$(RED)Error: scripts/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
+# 	@if [ ! -f "scripts/python/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
+# 		echo "$(RED)Error: scripts/python/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
 # 		exit 1; \
 # 	fi
 # 	@if [ -d "$(TEST_DIR)" ] && [ -f "$(TEST_DIR)/tests.gpr" ]; then \
 # 		find $(TEST_DIR) -name "*.ads" -o -name "*.adb" | \
 # 		while read file; do \
 # 			echo "  Formatting $$file..."; \
-# 			$(PYTHON3) scripts/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(TEST_DIR)/tests.gpr" --include-path "$(PWD)/$$file" || true; \
+# 			$(PYTHON3) scripts/python/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(TEST_DIR)/tests.gpr" --include-path "$(PWD)/$$file" || true; \
 # 		done; \
 # 		echo "$(GREEN)✓ Test formatting complete$(NC)"; \
 # 	fi
@@ -389,11 +389,11 @@ refresh: ## Refresh Alire dependencies
 
 install-tools: ## Install development tools (GMP, gcovr, gnatformat)
 	@echo "$(CYAN)Installing development tools...$(NC)"
-	@$(PYTHON3) scripts/makefile/install_tools.py
+	@$(PYTHON3) scripts/python/makefile/install_tools.py
 	@echo "$(GREEN)✓ Tool installation complete$(NC)"
 
 build-coverage-runtime: ## Build GNATcoverage runtime library
 	@echo "$(CYAN)Building GNATcoverage runtime...$(NC)"
-	@$(PYTHON3) scripts/makefile/build_gnatcov_runtime.py
+	@$(PYTHON3) scripts/python/makefile/build_gnatcov_runtime.py
 
 .DEFAULT_GOAL := help

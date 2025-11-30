@@ -786,7 +786,9 @@ class BaseReleaseAdapter(ABC):
         # Exclude common false positive locations
         exclude_patterns = [
             "vendor/", "node_modules/", ".git/",
+            "alire/cache/",  # Alire dependency cache (Ada)
             "CHANGELOG.md",  # Changelog may reference old versions
+            "architecture_enforcement.md",  # Generic architecture guide uses all layer terms
         ]
 
         for file_path in files_to_check:
@@ -949,16 +951,25 @@ class BaseReleaseAdapter(ABC):
             True if library, False if application
         """
         # Check for library indicators
+        # Go structure: api/, bootstrap/, cmd/ at root
+        # Ada structure: src/api/, src/bootstrap/, src/cmd/ under src/
         api_dir = project_root / "api"
+        api_dir_ada = project_root / "src" / "api"
         bootstrap_dir = project_root / "bootstrap"
+        bootstrap_dir_ada = project_root / "src" / "bootstrap"
         cmd_dir = project_root / "cmd"
+        cmd_dir_ada = project_root / "src" / "cmd"
+
+        has_api = api_dir.exists() or api_dir_ada.exists()
+        has_bootstrap = bootstrap_dir.exists() or bootstrap_dir_ada.exists()
+        has_cmd = cmd_dir.exists() or cmd_dir_ada.exists()
 
         # Libraries have api/ but not bootstrap/ or cmd/
-        if api_dir.exists() and not bootstrap_dir.exists() and not cmd_dir.exists():
+        if has_api and not has_bootstrap and not has_cmd:
             return True
 
         # Applications have bootstrap/ and/or cmd/
-        if bootstrap_dir.exists() or cmd_dir.exists():
+        if has_bootstrap or has_cmd:
             return False
 
         # Check project name as fallback
