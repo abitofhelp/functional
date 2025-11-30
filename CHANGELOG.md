@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 2.2.0
-**Date:** November 30, 2025
+**Version:** 2.2.0  
+**Date:** November 30, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
-**Status:** Released
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
+**Status:** Released  
 
 All notable changes to this project will be documented in this file.
 
