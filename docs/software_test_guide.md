@@ -61,25 +61,24 @@ This document covers:
 
 ```
 test/
-├── unit/              # Unit tests
-│   ├── test_zone_id.adb
-│   ├── test_iana_releases.adb
-│   └── unit_runner.adb
-├── integration/       # Integration tests
-│   ├── test_find_by_id.adb
-│   ├── test_discover_sources.adb
-│   └── integration_runner.adb
-├── support/           # Test utilities
-│   └── test_spies/    # Test spies for ports
-└── common/            # Shared test framework
-    └── test_framework.ads
+├── src/               # Test sources
+│   ├── test_result.adb      # Result<T,E> tests
+│   ├── test_option.adb      # Option<T> tests
+│   ├── test_either.adb      # Either<L,R> tests
+│   ├── test_try.adb         # Try_To_Result tests
+│   ├── test_try_option.adb  # Try_To_Option tests
+│   ├── test_framework.ads   # Test framework
+│   ├── test_framework.adb
+│   └── test_runner.adb      # Main test runner
+└── python/            # Architecture validation tests
+    └── test_arch_guard.py
 ```
 
 ### 3.2 Test Naming Convention
 
 - **Pattern**: `test_<component>.adb`
-- **Example**: `test_zone_id.adb` tests `Domain.Value_Object.Zone_Id`
-- **Runner**: Each level has a runner executable
+- **Example**: `test_result.adb` tests `Functional.Result`
+- **Runner**: Single runner executable runs all tests
 
 ---
 
@@ -104,11 +103,11 @@ make test-coverage
 ### 4.2 Individual Test Execution
 
 ```bash
-# Run specific unit test
-./test/bin/test_zone_id
+# Run all Ada tests via runner
+./test/bin/test_runner
 
-# Run specific integration test
-./test/bin/test_find_by_id
+# Run Python architecture tests
+make test-python
 ```
 
 ### 4.3 Test Output
