@@ -9,7 +9,12 @@ from pathlib import Path
 from typing import List, Tuple, Set
 
 from .base import LanguageAdapter
-from ..models import ArchitectureViolation
+
+# Support both direct script execution and module import
+try:
+    from ..models import ArchitectureViolation
+except ImportError:
+    from models import ArchitectureViolation
 
 
 class AdaAdapter(LanguageAdapter):

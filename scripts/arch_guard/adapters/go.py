@@ -9,7 +9,12 @@ from pathlib import Path
 from typing import List, Tuple, Set
 
 from .base import LanguageAdapter
-from ..models import ArchitectureViolation
+
+# Support both direct script execution and module import
+try:
+    from ..models import ArchitectureViolation
+except ImportError:
+    from models import ArchitectureViolation
 
 
 class GoAdapter(LanguageAdapter):
@@ -119,7 +124,10 @@ class GoAdapter(LanguageAdapter):
         messages = []
 
         # Import layer rules here to avoid circular import
-        from ..arch_guard import ArchitectureGuard
+        try:
+            from ..arch_guard import ArchitectureGuard
+        except ImportError:
+            from arch_guard import ArchitectureGuard
         layer_rules = ArchitectureGuard.LAYER_RULES
 
         for layer in sorted(layers_present):
