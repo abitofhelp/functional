@@ -11,10 +11,13 @@ abstract project Functional_Config is
    Ada_Compiler_Switches := External_As_List ("ADAFLAGS", " ");
    Ada_Compiler_Switches := Ada_Compiler_Switches &
           (
-            "-O3" -- Optimize for performance
-           ,"-gnatn" -- Enable inlining
+            "-Og" -- Optimize for debug
            ,"-ffunction-sections" -- Separate ELF section for each function
            ,"-fdata-sections" -- Separate ELF section for each variable
+           ,"-g" -- Generate debug info
+           ,"-gnatwa" -- Enable all warnings
+           ,"-gnatw.X" -- Disable warnings for No_Exception_Propagation
+           ,"-gnatVa" -- All validity checks
            ,"-gnaty3" -- Specify indentation level of 3
            ,"-gnatya" -- Check attribute casing
            ,"-gnatyA" -- Use of array index numbers in array attributes
@@ -43,6 +46,6 @@ abstract project Functional_Config is
           );
 
    type Build_Profile_Kind is ("release", "validation", "development");
-   Build_Profile : Build_Profile_Kind := "release";
+   Build_Profile : Build_Profile_Kind := "development";
 
 end Functional_Config;
