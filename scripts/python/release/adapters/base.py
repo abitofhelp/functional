@@ -1242,6 +1242,108 @@ class BaseReleaseAdapter(ABC):
 
         return is_clean, violations
 
+    def _extract_roadmap_description(
+        self, lines: List[str], marker_line_idx: int
+    ) -> str:
+        """
+        Extract a meaningful description for a ROADMAP marker.
+
+        Looks at the marker line and following lines to find descriptive
+        content like feature names, function stubs, or explanatory comments.
+
+        Args:
+            lines: All lines of the file
+            marker_line_idx: 0-indexed line number of the ROADMAP marker
+
+        Returns:
+            A concise description string, or empty string if none found
+        """
+        # First, check the marker line itself for inline description
+        # e.g., "ROADMAP: Strengthen postconditions (see roadmap.md)"
+        marker_line = lines[marker_line_idx].strip()
+        if 'ROADMAP:' in marker_line:
+            # Extract text after "ROADMAP:"
+            after_marker = marker_line.split('ROADMAP:', 1)[1].strip()
+            # Remove trailing references like "(see roadmap.md)" and trailing
+            # punctuation
+            after_marker = re.sub(r'\s*\(see\s+\S+\)\s*:?$', '', after_marker)
+            after_marker = after_marker.rstrip(':')
+            if after_marker and after_marker.lower() not in [
+                'deferred pending user demand',
+                'deferred',
+                'disabled'
+            ]:
+                return after_marker[:70]
+
+        # Look at up to 5 lines after the marker for context
+        max_look_ahead = 5
+
+        for i in range(marker_line_idx + 1,
+                       min(marker_line_idx + max_look_ahead + 1, len(lines))):
+            line = lines[i].strip()
+
+            # Skip empty lines and separator lines
+            if not line or line.startswith('--  ===') or line == '--':
+                continue
+
+            # Strip Ada comment prefix
+            if line.startswith('--'):
+                line = line[2:].strip()
+
+            # Skip if still just decoration or pragma
+            if (line.startswith('===') or line.startswith('---') or
+                    line.startswith('pragma ')):
+                continue
+
+            # Look for "with" imports (indicates feature ports)
+            if line.startswith('with '):
+                # Extract package name
+                pkg = line.replace('with ', '').rstrip(';')
+                if 'Import_Cache' in pkg:
+                    return "Import_Cache - Load timezone cache from file"
+                elif 'Export_Cache' in pkg:
+                    return "Export_Cache - Save timezone cache to file"
+                else:
+                    return f"Feature: {pkg.split('.')[-1]}"
+
+            # Look for subtype/function declarations (commented out)
+            if line.startswith('subtype ') or line.startswith('function '):
+                name = line.split()[1].rstrip('(').rstrip(';')
+                if 'Import' in name:
+                    return "Import_Cache types - Cache import path/result types"
+                elif 'Export' in name:
+                    return "Export_Cache types - Cache export path/result types"
+                return f"Stub: {name}"
+
+            # Skip Ada code artifacts
+            if (line.startswith('Buffer ') or line.startswith('end ') or
+                    line.startswith('procedure ') or line.startswith('package ')):
+                continue
+
+            # Look for descriptive comments
+            if any(kw in line.lower() for kw in
+                   ['cache', 'import', 'export', 'implement', 'windows',
+                    'postcondition', 'buffer', 'configurable', 'disabled',
+                    'parser', 'validation', 'management', 'strategy']):
+                # Capitalize first letter and truncate
+                desc = line[0].upper() + line[1:] if line else line
+                return desc[:60] + "..." if len(desc) > 60 else desc
+
+        # Fallback: return first meaningful line after marker (non-code)
+        for i in range(marker_line_idx + 1,
+                       min(marker_line_idx + 3, len(lines))):
+            line = lines[i].strip()
+            if line.startswith('--'):
+                line = line[2:].strip()
+            # Skip code-like lines
+            if (line and not line.startswith('===') and
+                    not line.startswith('Buffer ') and
+                    not line.startswith('pragma ') and
+                    not line.startswith('end ')):
+                return line[:60] + "..." if len(line) > 60 else line
+
+        return ""
+
     def scan_for_code_markers(self, config) -> Tuple[bool, List[str]]:
         """
         Scan source code for TODO, FIXME, STUB, XXX, HACK, and ROADMAP markers.
@@ -1264,13 +1366,14 @@ class BaseReleaseAdapter(ABC):
         findings = []
 
         # Patterns to search for (case-insensitive)
+        # Note: ROADMAP pattern excludes "roadmap.md" file references
         marker_patterns = [
             (r'\bTODO\b', 'TODO'),
             (r'\bFIXME\b', 'FIXME'),
             (r'\bSTUB\b', 'STUB'),
             (r'\bXXX\b', 'XXX'),
             (r'\bHACK\b', 'HACK'),
-            (r'\bROADMAP\b', 'ROADMAP'),
+            (r'\bROADMAP\b(?!\.\w)', 'ROADMAP'),
             (r'\bnot\s+implemented\b', 'NOT IMPLEMENTED'),
             (r'\bunimplemented\b', 'UNIMPLEMENTED'),
         ]
@@ -1320,10 +1423,21 @@ class BaseReleaseAdapter(ABC):
                             if len(line.strip()) > 70:
                                 context += "..."
 
-                            findings.append(
-                                f"  [{marker_name}] {rel_path}:{line_num}:\n"
-                                f"    {context}"
-                            )
+                            # For ROADMAP markers, extract description from
+                            # following lines
+                            description = ""
+                            if marker_name == 'ROADMAP':
+                                description = self._extract_roadmap_description(
+                                    lines, line_num - 1  # 0-indexed
+                                )
+
+                            finding = f"  [{marker_name}] {rel_path}:{line_num}:"
+                            if description:
+                                finding += f"\n    {description}"
+                            else:
+                                finding += f"\n    {context}"
+
+                            findings.append(finding)
                             break  # Only report first marker per line
 
             except Exception as e:
