@@ -1,6 +1,6 @@
 # Type-Safe Functional Error Handling
 
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Friendly-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
 **Version:** 2.2.0  
 **Date:** November 30, 2025  
@@ -25,6 +25,15 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 - ✅ **Pure packages** - No side effects, compile-time guarantees
 - ✅ **Zero dependencies** - Just Ada 2022 standard library
 - ✅ **Production ready** - Comprehensive compiler checks and style enforcement
+
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Desktop** | ✅ Full | Standard Ada runtime |
+| **Embedded** | ✅ Full | Pure packages, no heap allocation, no I/O |
+
+This is a pure library with no I/O dependencies. It works on any platform that supports Ada 2022, including embedded targets with restricted runtimes.
 
 ## Quick Start
 
@@ -52,43 +61,29 @@ alr build
 make test
 ```
 
-## Usage
+## Quick Snippets
 
 ### Result<T,E> - For Error Handling
 
 ```ada
 with Functional.Result;
 
---  Define your error type
-type Error_Kind is (Validation_Error, Parse_Error, IO_Error);
-type Error is record
-   Kind    : Error_Kind;
-   Message : String (1 .. 100);
-end record;
-
---  Instantiate Result for your types
+--  Instantiate for your types
 package Str_Result is new Functional.Result (T => String, E => Error);
 
---  Use it in functions
-function Parse_Config (Path : String) return Str_Result.Result is
-begin
-   if not File_Exists (Path) then
-      return Str_Result.Err ((IO_Error, "File not found"));
-   end if;
+--  Create results
+return Str_Result.Ok (Value);           --  Success
+return Str_Result.Err (Error_Info);     --  Failure
 
-   return Str_Result.Ok (Read_File (Path));
-end Parse_Config;
+--  Check and extract
+if Str_Result.Is_Ok (R) then
+   Put_Line (Str_Result.Value (R));
+else
+   Handle (Str_Result.Error (R));
+end if;
 
---  Handle results
-declare
-   Config : constant Str_Result.Result := Parse_Config ("app.conf");
-begin
-   if Str_Result.Is_Ok (Config) then
-      Put_Line ("Loaded: " & Str_Result.Value (Config));
-   else
-      Put_Line ("Error: " & Str_Result.Error (Config).Message);
-   end if;
-end;
+--  Get with default
+Val : constant String := Str_Result.Unwrap_Or (R, "default");
 ```
 
 ### Option<T> - For Optional Values
@@ -98,17 +93,12 @@ with Functional.Option;
 
 package Int_Option is new Functional.Option (T => Integer);
 
-function Find_User_Age (User_ID : String) return Int_Option.Option is
-begin
-   if User_Exists (User_ID) then
-      return Int_Option.New_Some (Get_Age (User_ID));
-   else
-      return Int_Option.None;
-   end if;
-end Find_User_Age;
+--  Create options
+return Int_Option.New_Some (42);        --  Has value
+return Int_Option.None;                 --  No value
 
---  Use with default
-Age : constant Integer := Int_Option.Unwrap_Or (Find_User_Age ("bob"), 0);
+--  Get with default
+Age : constant Integer := Int_Option.Unwrap_Or (Opt, 0);
 ```
 
 ### Either<L,R> - For Neutral Choices
@@ -116,52 +106,23 @@ Age : constant Integer := Int_Option.Unwrap_Or (Find_User_Age ("bob"), 0);
 ```ada
 with Functional.Either;
 
-package Str_Int_Either is new Functional.Either
-  (L => String, R => Integer);
+package Str_Int is new Functional.Either (L => String, R => Integer);
 
-function Parse_Or_Default (Input : String) return Str_Int_Either.Either is
-begin
-   if Is_Numeric (Input) then
-      return Str_Int_Either.Right (Integer'Value (Input));
-   else
-      return Str_Int_Either.Left (Input);  --  Keep as string
-   end if;
-end Parse_Or_Default;
+--  Create either
+return Str_Int.Left ("text");           --  Left variant
+return Str_Int.Right (42);              --  Right variant
 ```
 
 ### Try Module - Exception Boundaries
 
-The Try module bridges exception-based code to functional Result/Option types:
-
 ```ada
 with Functional.Try;
-with Ada.Exceptions;
 
-function Read_Int32 (Stream : Stream_Access) return Int32_Result.Result is
-
-   function Raw_Read return Integer_32 is
-      Value : Integer_32;
-   begin
-      Integer_32'Read (Stream, Value);
-      return Value;
-   end Raw_Read;
-
-   function From_Exception (Occ : Exception_Occurrence) return Error_Type is
-   begin
-      return (IO_Error, Exception_Message (Occ));
-   end From_Exception;
-
-   function Try_Read is new Functional.Try.Try_To_Result
-     (T             => Integer_32,
-      E             => Error_Type,
-      Result_Type   => Int32_Result.Result,
-      Ok            => Int32_Result.Ok,
-      Err           => Int32_Result.From_Error,
-      Map_Exception => From_Exception,
-      Action        => Raw_Read);
-begin
-   return Try_Read;
-end Read_Int32;
+--  Bridge exception-based code to Result types
+function Try_Read is new Functional.Try.Try_To_Result
+  (T => Integer_32, E => Error_Type, Result_Type => Int32_Result.Result,
+   Ok => Int32_Result.Ok, Err => Int32_Result.From_Error,
+   Map_Exception => From_Exception, Action => Raw_Read);
 ```
 
 ## Testing
