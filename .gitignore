@@ -258,7 +258,6 @@ externals/*/lib/
 data/
 *.zip
 *.tar.gz
-tools/*
 
 ###############################################################################
 # Python (for automation scripts)
