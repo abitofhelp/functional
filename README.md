@@ -33,8 +33,6 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 | **Desktop** | ✅ Full | Standard Ada runtime |
 | **Embedded** | ✅ Full | Pure packages, no heap allocation, no I/O |
 
-This is a pure library with no I/O dependencies. It works on any platform that supports Ada 2022, including embedded targets with restricted runtimes.
-
 ## Quick Start
 
 ### Installation

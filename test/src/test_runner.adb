@@ -60,26 +60,27 @@ begin
    Grand_Total := Test_Framework.Grand_Total_Tests;
    Grand_Passed := Test_Framework.Grand_Total_Passed;
 
-   --  Final summary with visual indicator
+   --  Print grand summary
    New_Line;
    Put_Line ("========================================================");
-   if Grand_Passed = Grand_Total and then not Overall_Failed then
-      Put_Line
-        ("  [PASS] GRAND TOTAL: "
-         & Grand_Passed'Image
-         & " /"
-         & Grand_Total'Image
-         & " TESTS PASSED");
-      Put_Line ("========================================================");
-      Ada.Command_Line.Set_Exit_Status (0);
-   else
-      Put_Line
-        ("  [FAIL] GRAND TOTAL: "
-         & Grand_Passed'Image
-         & " /"
-         & Grand_Total'Image
-         & " TESTS (FAILURES DETECTED)");
-      Put_Line ("========================================================");
-      Ada.Command_Line.Set_Exit_Status (1);
-   end if;
+   Put_Line ("        GRAND TOTAL - ALL FUNCTIONAL TESTS");
+   Put_Line ("========================================================");
+   Put_Line ("Total tests:  " & Grand_Total'Image);
+   Put_Line ("Passed:       " & Grand_Passed'Image);
+   Put_Line ("Failed:       " & Natural'Image (Grand_Total - Grand_Passed));
+
+   --  Print professional color-coded summary and get exit status
+   declare
+      Exit_Code : Integer :=
+        Test_Framework.Print_Category_Summary
+          ("FUNCTIONAL", Grand_Total, Grand_Passed);
+   begin
+      --  Account for crashed suites
+      if Overall_Failed then
+         Exit_Code := 1;
+      end if;
+      Ada.Command_Line.Set_Exit_Status
+        (if Exit_Code = 0 then Ada.Command_Line.Success
+         else Ada.Command_Line.Failure);
+   end;
 end Test_Runner;

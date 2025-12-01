@@ -1,12 +1,15 @@
 pragma Ada_2022;
---  ============================================================================
---  Test_Framework - Shared test infrastructure for tracking results
---  ============================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ======================================================================
+--  Test_Framework
+--  ======================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
---  Provides shared state for tracking test results across all test suites
---  ============================================================================
+--  Purpose:
+--    Reusable test framework for professional test suites.
+--    Provides test result tracking and standardized output formatting.
+--
+--  ======================================================================
 
 package Test_Framework is
 
@@ -19,5 +22,14 @@ package Test_Framework is
 
    --  Reset counters (for test runner)
    procedure Reset;
+
+   --  Print professional color-coded category summary box
+   --  - Bright green box for success (all tests passed)
+   --  - Bright red box for failure (any tests failed)
+   --  - Returns exit status: 0 for success, 1 for failure
+   function Print_Category_Summary
+     (Category_Name : String;
+      Total         : Natural;
+      Passed        : Natural) return Integer;
 
 end Test_Framework;
