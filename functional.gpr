@@ -2,7 +2,7 @@ with "config/functional_config.gpr";
 
 project Functional is
 
-   for Library_Name use "Functional";
+   for Library_Name use "functional";
    for Library_Version use Project'Library_Name & ".so." & Functional_Config.Crate_Version;
 
    for Source_Dirs use ("src/**", "config/");

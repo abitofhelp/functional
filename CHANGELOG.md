@@ -17,10 +17,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Added
+- **ROADMAP marker scanning**: Release script now detects ROADMAP markers alongside TODO/FIXME/STUB
+  - ROADMAP markers indicate planned future work tracked in roadmap.md
+  - Helps identify deferred features during release preparation
 
 ### Removed
 
 ### Fixed
+- **Library_Name casing**: Changed from `"Functional"` to `"functional"` in functional.gpr
+  - Fixes GPRbuild elaboration object lookup (`p__functional_0.o` vs `p__Functional_0.o`)
+  - Follows GNAT convention: library name matches lowercase project filename
+  - Eliminates `ar: p__functional_0.o: not found in archive` warning in dependent projects
 
 ---
 

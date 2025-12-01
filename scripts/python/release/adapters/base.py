@@ -1244,11 +1244,13 @@ class BaseReleaseAdapter(ABC):
 
     def scan_for_code_markers(self, config) -> Tuple[bool, List[str]]:
         """
-        Scan source code for TODO, FIXME, STUB, XXX, and HACK markers.
+        Scan source code for TODO, FIXME, STUB, XXX, HACK, and ROADMAP markers.
 
         These markers indicate incomplete or temporary code that should be
         reviewed before release. Finding these doesn't necessarily block
         release, but the user should be aware of them.
+
+        ROADMAP markers indicate planned future work tracked in roadmap.md.
 
         Args:
             config: ReleaseConfig instance
@@ -1258,7 +1260,7 @@ class BaseReleaseAdapter(ABC):
             is_clean: True if NO markers found
             findings: List of file:line details with markers
         """
-        print("Scanning source code for TODO/FIXME/STUB markers...")
+        print("Scanning source code for TODO/FIXME/STUB/ROADMAP markers...")
         findings = []
 
         # Patterns to search for (case-insensitive)
@@ -1268,6 +1270,7 @@ class BaseReleaseAdapter(ABC):
             (r'\bSTUB\b', 'STUB'),
             (r'\bXXX\b', 'XXX'),
             (r'\bHACK\b', 'HACK'),
+            (r'\bROADMAP\b', 'ROADMAP'),
             (r'\bnot\s+implemented\b', 'NOT IMPLEMENTED'),
             (r'\bunimplemented\b', 'UNIMPLEMENTED'),
         ]
