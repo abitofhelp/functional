@@ -13,6 +13,23 @@
 
 A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
 
+## Getting Started
+
+### Clone with Submodules
+
+This repository uses git submodules for shared tooling. Clone with:
+
+```bash
+git clone --recurse-submodules https://github.com/abitofhelp/functional.git
+```
+
+Or if already cloned without submodules:
+
+```bash
+git submodule update --init --recursive
+# Or: make submodule-init
+```
+
 ## Features
 
 - ✅ **Result<T,E>** - Type-safe error handling (17 operations)
