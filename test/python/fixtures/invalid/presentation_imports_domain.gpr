@@ -1,8 +1,0 @@
--- Invalid: Presentation depending on Domain (violates clean architecture)
-with "../../shared_config.gpr";
-with "../application/application.gpr";
-with "../domain/domain.gpr";  -- ❌ Presentation must not directly access Domain
-
-project Presentation is
-   for Source_Dirs use (".");
-end Presentation;

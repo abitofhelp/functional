@@ -1,0 +1,6 @@
+[submodule "scripts/python"]
+	path = scripts/python
+	url = https://github.com/abitofhelp/hybrid_python_scripts.git
+[submodule "test/python"]
+	path = test/python
+	url = https://github.com/abitofhelp/hybrid_test_python.git
