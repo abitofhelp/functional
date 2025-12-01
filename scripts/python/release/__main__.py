@@ -9,12 +9,12 @@
 """
 Entry point for running release as a module.
 
-Usage (from scripts directory):
-    cd scripts && python3 -m release prepare 1.0.0
-    cd scripts && python3 -m release release 1.0.0
+Usage (from scripts/python directory):
+    cd scripts/python && python3 -m release prepare 1.0.0
+    cd scripts/python && python3 -m release release 1.0.0
 
 Or run directly from project root (recommended):
-    python3 scripts/release/release.py prepare 1.0.0
+    python3 scripts/python/release/release.py prepare 1.0.0
 """
 
 from .release import main

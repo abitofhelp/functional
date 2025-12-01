@@ -11,15 +11,15 @@
 #   Auto-detects project language and applies appropriate release workflow.
 #
 # Usage:
-#   python scripts/release/release.py prepare <version>
-#   python scripts/release/release.py release <version>
-#   python scripts/release/release.py diagrams
-#   python scripts/release/release.py validate <version>
+#   python scripts/python/release/release.py prepare <version>
+#   python scripts/python/release/release.py release <version>
+#   python scripts/python/release/release.py diagrams
+#   python scripts/python/release/release.py validate <version>
 #
 # Examples:
-#   python scripts/release/release.py prepare 1.0.0
-#   python scripts/release/release.py release 1.0.0
-#   python scripts/release/release.py diagrams
+#   python scripts/python/release/release.py prepare 1.0.0
+#   python scripts/python/release/release.py release 1.0.0
+#   python scripts/python/release/release.py diagrams
 #
 # Design Notes:
 #   Uses adapter pattern for language-specific operations.
@@ -534,7 +534,7 @@ After committing, press ENTER to continue with build and test verification."""
     print_info("Tests passing")
     print()
     print_info("Next step:")
-    print_info(f"   python3 scripts/release/release.py release {config.version}")
+    print_info(f"   python3 scripts/python/release/release.py release {config.version}")
     print()
     print_info("This will:")
     print_info(f"  - Create git tag v{config.version}")
@@ -657,8 +657,9 @@ the appropriate release workflow.
         project_root = args.project_root.resolve()
     else:
         # Auto-detect: go up from script location to find project root
+        # scripts/python/release/release.py -> scripts/python/release -> scripts/python -> scripts -> project_root
         script_dir = Path(__file__).parent
-        project_root = script_dir.parent.parent
+        project_root = script_dir.parent.parent.parent
 
     if not project_root.exists():
         print_error(f"Project root does not exist: {project_root}")
