@@ -177,6 +177,55 @@ This project follows:
 - **Ada Agent** (`~/.claude/agents/ada.md`)
 - **Functional Agent** (`~/.claude/agents/functional.md`)
 
+## Submodule Management
+
+This project uses git submodules for shared Python tooling:
+
+- `scripts/python` - Build, release, and architecture scripts
+- `test/python` - Shared test fixtures and configuration
+
+### Workflow
+
+```
+hybrid_python_scripts (source repo)
+         │
+         │ git push (manual)
+         ▼
+      GitHub
+         │
+         │ make submodule-update (in each consuming repo)
+         ▼
+┌─────────────────────────────────┐
+│  1. Pull new submodule commit   │
+│  2. Stage reference change      │
+│  3. Commit locally              │
+│  4. Push to remote              │
+└─────────────────────────────────┘
+```
+
+### Commands
+
+```bash
+# After fresh clone
+make submodule-init
+
+# Pull latest from submodule repos
+make submodule-update
+
+# Check current submodule commits
+make submodule-status
+```
+
+### Bulk Update (all repositories)
+
+```bash
+python3 ~/Python/src/github.com/abitofhelp/git/update_submodules.py
+
+# Options:
+#   --dry-run   Show what would happen without changes
+#   --no-push   Update locally but do not push to remote
+```
+
 ## Contributing
 
 This project is not open to external contributions at this time.
