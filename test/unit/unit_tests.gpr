@@ -1,0 +1,36 @@
+-- ===========================================================================
+-- unit_tests.gpr - Unit Test Suite for Functional Library
+-- ===========================================================================
+-- Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
+-- SPDX-License-Identifier: BSD-3-Clause
+--
+-- Purpose:
+--   Unit test project for testing Result, Option, Either, and Try modules.
+--   Inherits compiler settings from functional.gpr for consistency.
+--
+-- Build: make build-tests
+--        alr exec -- gprbuild -P test/unit/unit_tests.gpr
+-- ===========================================================================
+
+with "../../functional.gpr";
+
+project Unit_Tests is
+
+   for Source_Dirs use (".", "../common");
+   for Object_Dir use "../obj";
+   for Exec_Dir use "../bin";
+
+   --  Only the runner is Main; individual tests are procedures it calls
+   for Main use ("unit_runner.adb");
+
+   package Compiler renames Functional.Compiler;
+
+   package Binder is
+      for Switches ("Ada") use ("-Es");
+   end Binder;
+
+   package Builder is
+      for Switches ("Ada") use ("-g");  -- Debug symbols
+   end Builder;
+
+end Unit_Tests;

@@ -146,19 +146,19 @@ build-release: check-arch prereqs
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
 build-tests: check-arch prereqs
-	@echo "$(GREEN)Building test suite...$(NC)"
-	@if [ -f "$(TEST_DIR)/tests.gpr" ]; then \
-		$(ALR) exec -- $(GPRBUILD) -P $(TEST_DIR)/tests.gpr -p $(ALR_TEST_FLAGS); \
-		echo "$(GREEN)✓ Test build complete$(NC)"; \
+	@echo "$(GREEN)Building test suites...$(NC)"
+	@if [ -f "$(TEST_DIR)/unit/unit_tests.gpr" ]; then \
+		$(ALR) exec -- $(GPRBUILD) -P $(TEST_DIR)/unit/unit_tests.gpr -p $(ALR_TEST_FLAGS); \
+		echo "$(GREEN)✓ Unit tests built$(NC)"; \
 	else \
-		echo "$(YELLOW)No test project found (test/tests.gpr)$(NC)"; \
+		echo "$(YELLOW)Unit test project not found$(NC)"; \
 	fi
 
 clean:
 	@echo "$(YELLOW)Cleaning project build artifacts (keeps dependencies)...$(NC)"
 	@# Use gprclean WITHOUT -r to clean only our project, not dependencies
 	@$(ALR) exec -- gprclean -P $(PROJECT_NAME).gpr -q 2>/dev/null || true
-	@$(ALR) exec -- gprclean -P $(TEST_DIR)/tests.gpr -q 2>/dev/null || true
+	@$(ALR) exec -- gprclean -P $(TEST_DIR)/unit/unit_tests.gpr -q 2>/dev/null || true
 	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TEST_DIR)/bin $(TEST_DIR)/obj
 	@find . -name "*.backup" -delete 2>/dev/null || true
 	@echo "$(GREEN)✓ Project artifacts cleaned (dependencies preserved for fast rebuild)$(NC)"
@@ -220,7 +220,7 @@ test-all: build build-tests
 	@echo "$(GREEN)Running all test executables...$(NC)"
 	@failed=0; \
 	if [ -d "$(TEST_DIR)/bin" ]; then \
-		for test in $(TEST_DIR)/bin/*_runner $(TEST_DIR)/bin/test_*; do \
+		for test in $(TEST_DIR)/bin/*_runner; do \
 			if [ -x "$$test" ] && [ -f "$$test" ]; then \
 				echo "$(CYAN)Running $$test...$(NC)"; \
 				$$test || failed=1; \
@@ -253,12 +253,8 @@ test-all: build build-tests
 
 test-unit: build build-tests
 	@echo "$(GREEN)Running unit tests...$(NC)"
-	@if [ -f "$(TEST_DIR)/bin/test_result" ]; then \
-		$(TEST_DIR)/bin/test_result && \
-		$(TEST_DIR)/bin/test_option && \
-		$(TEST_DIR)/bin/test_either && \
-		$(TEST_DIR)/bin/test_try && \
-		$(TEST_DIR)/bin/test_try_option; \
+	@if [ -f "$(TEST_DIR)/bin/unit_runner" ]; then \
+		$(TEST_DIR)/bin/unit_runner; \
 		if [ $$? -eq 0 ]; then \
 			echo "$(GREEN)✓ Unit tests passed$(NC)"; \
 		else \
@@ -266,7 +262,7 @@ test-unit: build build-tests
 			exit 1; \
 		fi; \
 	else \
-		echo "$(YELLOW)Unit test executables not found in $(TEST_DIR)/bin$(NC)"; \
+		echo "$(YELLOW)Unit test runner not found at $(TEST_DIR)/bin/unit_runner$(NC)"; \
 		exit 1; \
 	fi
 
