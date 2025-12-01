@@ -1,4 +1,4 @@
-# Functional Library — Quick Reference
+# Quick Start Guide
 
 **Version:** 2.2.0  
 **Date:** November 30, 2025  
