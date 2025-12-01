@@ -131,3 +131,42 @@ class LanguageAdapter(ABC):
     def get_config_step_name(self) -> str:
         """Return the name for config validation step in output."""
         return "Configuration"
+
+    @property
+    def domain_allowed_external_prefixes(self) -> Set[str]:
+        """
+        Prefixes for external packages allowed in Domain layer.
+
+        Domain must have ZERO external crate/module dependencies.
+        Only standard library packages are allowed.
+
+        Override in language adapters to specify language-specific stdlib.
+        """
+        return set()
+
+    def is_domain_allowed_import(self, import_path: str) -> bool:
+        """
+        Check if an import is allowed in Domain layer.
+
+        Args:
+            import_path: The imported package/module path
+
+        Returns:
+            True if allowed (stdlib, config, or project-local domain)
+        """
+        normalized = import_path.lower()
+
+        # Check allowed prefixes (language-specific stdlib)
+        for prefix in self.domain_allowed_external_prefixes:
+            if normalized.startswith(prefix) or normalized == prefix.rstrip('.'):
+                return True
+
+        # Project config packages (*_Config or *_config)
+        if normalized.endswith('_config'):
+            return True
+
+        # Project-local domain packages (*.domain.* or domain.*)
+        if '.domain.' in normalized or normalized.startswith('domain.'):
+            return True
+
+        return False

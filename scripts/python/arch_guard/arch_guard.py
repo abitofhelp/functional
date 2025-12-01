@@ -200,6 +200,24 @@ class ArchitectureGuard:
         for line_num, import_path in imports:
             dependency_layer = self.adapter.get_layer_from_import(import_path, self.source_root)
 
+            # ═══════════════════════════════════════════════════════════════
+            # DOMAIN EXTERNAL DEPENDENCY CHECK
+            # ═══════════════════════════════════════════════════════════════
+            # Domain must have ZERO external crate/module dependencies.
+            # Only language standard library and project-local domain
+            # packages are allowed. See adapter for language-specific rules.
+            if not dependency_layer and current_layer == 'domain':
+                if not self.adapter.is_domain_allowed_import(import_path):
+                    self.violations.append(ArchitectureViolation(
+                        file_path=str(file_path),
+                        line_number=line_num,
+                        violation_type='DOMAIN_EXTERNAL_DEPENDENCY',
+                        details=f"Domain cannot depend on external package: {import_path}\n" +
+                                f"         Domain must have ZERO external dependencies.\n" +
+                                f"         Allowed: standard library, *_config, project domain packages"
+                    ))
+                continue
+
             if not dependency_layer or dependency_layer not in self.layers_present:
                 continue
 

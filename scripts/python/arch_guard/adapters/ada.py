@@ -28,6 +28,16 @@ class AdaAdapter(LanguageAdapter):
     - Ada-specific validations (pragma vs aspect, file naming, etc.)
     """
 
+    # Ada standard library prefixes allowed in Domain
+    DOMAIN_ALLOWED_PREFIXES = {
+        'ada.',           # Ada standard library child packages
+        'ada',            # Ada root package
+        'interfaces.',    # Interfaces child packages (Unsigned_8, etc.)
+        'interfaces',     # Interfaces root package
+        'system.',        # System child packages
+        'system',         # System root package
+    }
+
     # Pragmas that should be aspects instead (Ada 2012+)
     PRAGMA_TO_ASPECT = {
         'Pure': 'with Pure',
@@ -56,8 +66,29 @@ class AdaAdapter(LanguageAdapter):
         """Ada projects typically have sources under src/."""
         return 'src'
 
+    @property
+    def domain_allowed_external_prefixes(self) -> Set[str]:
+        """Ada standard library prefixes allowed in Domain."""
+        return self.DOMAIN_ALLOWED_PREFIXES
+
+    # Ada aspects that use 'with' keyword (NOT package imports)
+    ADA_ASPECTS = {
+        'pure', 'preelaborate', 'elaborate_body', 'inline', 'volatile',
+        'atomic', 'pack', 'convention', 'import', 'export', 'external',
+        'pre', 'post', 'type_invariant', 'static_predicate', 'dynamic_predicate',
+        'default_value', 'default_component_value', 'address', 'size',
+        'alignment', 'component_size', 'bit_order', 'storage_size',
+        'storage_pool', 'stream_size', 'external_name', 'link_name',
+        'attach_handler', 'interrupt_handler', 'independent', 'atomic_components',
+        'volatile_components', 'independent_components', 'spark_mode',
+        'global', 'depends', 'relaxed_initialization', 'extensions_visible',
+        'ghost', 'abstract_state', 'initializes', 'refined_state',
+        'refined_global', 'refined_depends', 'refined_post', 'contract_cases',
+        'always_terminates', 'exceptional_cases', 'side_effects',
+    }
+
     def extract_imports(self, file_path: Path) -> List[Tuple[int, str]]:
-        """Extract all 'with' clauses from an Ada file."""
+        """Extract all 'with' clauses from an Ada file (excluding aspects)."""
         with_clauses = []
 
         try:
@@ -68,10 +99,25 @@ class AdaAdapter(LanguageAdapter):
                     match = re.match(r'^\s*with\s+([^;]+);', line, re.IGNORECASE)
                     if match:
                         packages_str = match.group(1)
+
+                        # Skip aspect declarations (with Pre =>, with Inline, etc.)
+                        # Aspects contain '=>' or are single known aspect names
+                        if '=>' in packages_str:
+                            continue
+
                         # Split by comma for multiple packages in one with clause
                         packages = [pkg.strip() for pkg in packages_str.split(',')]
+
+                        # Filter out known aspects and invalid package names
                         for pkg in packages:
-                            with_clauses.append((line_num, pkg))
+                            pkg_lower = pkg.lower()
+                            # Skip if it's a known aspect
+                            if pkg_lower in self.ADA_ASPECTS:
+                                continue
+                            # Valid package names: identifiers with optional dots
+                            # Must start with letter, contain only letters/digits/underscores/dots
+                            if re.match(r'^[A-Za-z][A-Za-z0-9_.]*$', pkg):
+                                with_clauses.append((line_num, pkg))
         except Exception as e:
             print(f"Warning: Could not read {file_path}: {e}")
 

@@ -79,6 +79,15 @@ class BoundedStringCase:
     description: str = ""
 
 
+@dataclass
+class DomainExternalDepCase:
+    """Test case for domain external dependency validation."""
+    id: str
+    import_package: str
+    should_violate: bool
+    description: str = ""
+
+
 # =============================================================================
 # Shared Layer Dependency Cases (Same rules as Go)
 # =============================================================================
@@ -395,6 +404,115 @@ end Domain.Error;
 
 
 # =============================================================================
+# Domain External Dependency Cases (CRITICAL: Domain must have ZERO external deps)
+# =============================================================================
+
+DOMAIN_EXTERNAL_DEP_CASES = [
+    # VIOLATIONS: External crate imports in Domain
+    DomainExternalDepCase(
+        id="domain_cannot_import_functional_option",
+        import_package="Functional.Option",
+        should_violate=True,
+        description="Domain MUST NOT import external crates like Functional.*",
+    ),
+    DomainExternalDepCase(
+        id="domain_cannot_import_functional_result",
+        import_package="Functional.Result",
+        should_violate=True,
+        description="Domain MUST NOT import external crates like Functional.*",
+    ),
+    DomainExternalDepCase(
+        id="domain_cannot_import_gnatcoll",
+        import_package="GNATCOLL.JSON",
+        should_violate=True,
+        description="Domain MUST NOT import external crates like GNATCOLL.*",
+    ),
+    DomainExternalDepCase(
+        id="domain_cannot_import_random_external",
+        import_package="Some_External_Crate.Package",
+        should_violate=True,
+        description="Domain MUST NOT import any external crates",
+    ),
+
+    # ALLOWED: Ada standard library
+    DomainExternalDepCase(
+        id="domain_can_import_ada_text_io",
+        import_package="Ada.Text_IO",
+        should_violate=False,
+        description="Ada standard library is allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_ada_containers",
+        import_package="Ada.Containers.Vectors",
+        should_violate=False,
+        description="Ada standard library is allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_ada_strings",
+        import_package="Ada.Strings.Bounded",
+        should_violate=False,
+        description="Ada standard library is allowed",
+    ),
+
+    # ALLOWED: Interfaces package (root and children)
+    DomainExternalDepCase(
+        id="domain_can_import_interfaces_root",
+        import_package="Interfaces",
+        should_violate=False,
+        description="Interfaces root package is allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_interfaces_c",
+        import_package="Interfaces.C",
+        should_violate=False,
+        description="Interfaces child packages are allowed",
+    ),
+
+    # ALLOWED: System package (root and children)
+    DomainExternalDepCase(
+        id="domain_can_import_system_root",
+        import_package="System",
+        should_violate=False,
+        description="System root package is allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_system_storage",
+        import_package="System.Storage_Elements",
+        should_violate=False,
+        description="System child packages are allowed",
+    ),
+
+    # ALLOWED: Project config packages (*_Config)
+    DomainExternalDepCase(
+        id="domain_can_import_project_config",
+        import_package="TZif_Config",
+        should_violate=False,
+        description="Project config packages (*_Config) are allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_myproject_config",
+        import_package="MyProject_Config",
+        should_violate=False,
+        description="Any *_Config package is allowed",
+    ),
+
+    # ALLOWED: Project-local domain packages (*.Domain.* or Domain.*)
+    DomainExternalDepCase(
+        id="domain_can_import_local_domain_package",
+        import_package="TZif.Domain.Error",
+        should_violate=False,
+        description="Project-local Domain packages are allowed",
+    ),
+    DomainExternalDepCase(
+        id="domain_can_import_domain_value_object",
+        import_package="TZif.Domain.Value_Object.Person",
+        should_violate=False,
+        description="Project-local Domain packages are allowed",
+    ),
+]
+
+
+# =============================================================================
 # Fixtures
 # =============================================================================
 
@@ -675,6 +793,72 @@ class TestBoundedStrings:
         else:
             assert len(bounded_violations) == 0, (
                 f"Unexpected bounded string violation: {bounded_violations}"
+            )
+
+
+# =============================================================================
+# Domain External Dependency Tests (Table-Driven)
+# =============================================================================
+
+class TestDomainExternalDependencies:
+    """
+    Table-driven tests for domain external dependency validation.
+
+    CRITICAL: Domain layer must have ZERO external crate dependencies.
+    Only allowed:
+      - Ada.*, Interfaces.*, System.* (Ada runtime)
+      - *_Config (project config packages)
+      - *.Domain.* (project-local domain packages)
+    """
+
+    @pytest.mark.parametrize(
+        "case",
+        DOMAIN_EXTERNAL_DEP_CASES,
+        ids=lambda c: c.id,
+    )
+    def test_domain_external_dependency(
+        self, temp_ada_project, ada_adapter, case: DomainExternalDepCase
+    ):
+        """Verify domain external dependency rules are enforced."""
+        # Generate Ada code that imports the test package
+        ada_content = f"""with {case.import_package};
+
+package Domain.Test_Package is
+   -- Testing import of {case.import_package}
+end Domain.Test_Package;
+"""
+        ada_path = create_ada_file(
+            temp_ada_project,
+            "domain",
+            "domain-test_package.ads",
+            ada_content,
+        )
+
+        # Validate
+        guard = ArchitectureGuard(temp_ada_project["root"], ada_adapter)
+        guard.validate_file(ada_path)
+
+        # Check for DOMAIN_EXTERNAL_DEPENDENCY violations
+        external_dep_violations = [
+            v for v in guard.violations
+            if v.violation_type == "DOMAIN_EXTERNAL_DEPENDENCY"
+        ]
+
+        if case.should_violate:
+            assert len(external_dep_violations) > 0, (
+                f"Expected DOMAIN_EXTERNAL_DEPENDENCY violation for "
+                f"'{case.import_package}' but got none. "
+                f"All violations: {[v.violation_type for v in guard.violations]}"
+            )
+            # Verify the violation message mentions the package
+            violation_details = external_dep_violations[0].details
+            assert case.import_package in violation_details, (
+                f"Violation should mention '{case.import_package}'"
+            )
+        else:
+            assert len(external_dep_violations) == 0, (
+                f"Unexpected DOMAIN_EXTERNAL_DEPENDENCY violation for "
+                f"'{case.import_package}': {external_dep_violations}"
             )
 
 
