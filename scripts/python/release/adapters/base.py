@@ -1321,7 +1321,7 @@ class BaseReleaseAdapter(ABC):
                                 context += "..."
 
                             findings.append(
-                                f"  {rel_path}:{line_num}: [{marker_name}]\n"
+                                f"  [{marker_name}] {rel_path}:{line_num}:\n"
                                 f"    {context}"
                             )
                             break  # Only report first marker per line
