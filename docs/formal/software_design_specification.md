@@ -344,15 +344,14 @@ test/
 ### 10.2 Project Structure
 
 ```
-tzif/
+functional/
 ├── src/
-│   ├── domain/
-│   ├── application/
-│   └── infrastructure/
+│   └── version/
 ├── test/
-├── examples/
 ├── docs/
-└── scripts/
+├── scripts/
+├── tools/
+└── config/
 ```
 
 ---
