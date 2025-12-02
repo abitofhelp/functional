@@ -238,19 +238,19 @@ test-all: build build-tests
 	if [ $$failed -eq 0 ]; then \
 		echo ""; \
 		echo "\033[1;92m########################################"; \
-		echo "###                                  ###"; \
-		echo "###   ALL TEST SUITES: SUCCESS      ###"; \
-		echo "###   All tests passed!              ###"; \
-		echo "###                                  ###"; \
+		echo "###"; \
+		echo "###   ALL TEST SUITES: SUCCESS"; \
+		echo "###   All tests passed!"; \
+		echo "###"; \
 		echo "########################################\033[0m"; \
 		echo ""; \
 	else \
 		echo ""; \
 		echo "\033[1;91m########################################"; \
-		echo "###                                  ###"; \
-		echo "###   ALL TEST SUITES: FAILURE      ###"; \
-		echo "###   Some tests failed!             ###"; \
-		echo "###                                  ###"; \
+		echo "###"; \
+		echo "###   ALL TEST SUITES: FAILURE"; \
+		echo "###   Some tests failed!"; \
+		echo "###"; \
 		echo "########################################\033[0m"; \
 		echo ""; \
 		exit 1; \

@@ -54,10 +54,10 @@ package body Test_Framework is
       if Passed = Total then
          --  Success: Bright green box
          Put_Line (Color_Green & "########################################");
-         Put_Line ("###                                  ###");
+         Put_Line ("###");
          Put_Line ("###    " & Category_Name & ": SUCCESS");
          Put_Line ("###    All " & Total'Image & " tests passed!");
-         Put_Line ("###                                  ###");
+         Put_Line ("###");
          Put_Line ("########################################" & Color_Reset);
          Put_Line ("");
          return 0;  --  Success exit code
@@ -65,12 +65,12 @@ package body Test_Framework is
       else
          --  Failure: Bright red box
          Put_Line (Color_Red & "########################################");
-         Put_Line ("###                                  ###");
+         Put_Line ("###");
          Put_Line ("###    " & Category_Name & ": FAILURE");
          Put_Line
            ("###   " & Natural'Image (Total - Passed) & " of" &
             Total'Image & " tests failed");
-         Put_Line ("###                                  ###");
+         Put_Line ("###");
          Put_Line ("########################################" & Color_Reset);
          Put_Line ("");
          return 1;  --  Failure exit code
