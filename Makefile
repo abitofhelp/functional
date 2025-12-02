@@ -120,6 +120,11 @@ help: ## Display this help message
 	@echo ""
 	@echo "$(YELLOW)Workflow Shortcuts:$(NC)"
 	@echo "  all                - Build library (default)"
+	@echo ""
+	@echo "$(YELLOW)Submodule Commands:$(NC)"
+	@echo "  submodule-init     - Initialize submodules after fresh clone"
+	@echo "  submodule-update   - Pull latest from all submodule repos"
+	@echo "  submodule-status   - Show submodule commit status"
 
 # =============================================================================
 # Build Commands
@@ -407,7 +412,7 @@ submodule-update: ## Pull latest from all submodule repos
 	git submodule update --remote --merge
 	@echo ""
 	@echo "Submodules updated. Review changes, then run:"
-	@echo "  git add scripts/python test/python"
+	@echo "  git add docs/common scripts/python test/python"
 	@echo "  git commit -m 'chore: update submodules'"
 	@echo "  git push"
 
