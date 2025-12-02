@@ -1,7 +1,7 @@
 # Changelog
 
-**Version:** 2.2.0  
-**Date:** November 30, 2025  
+**Version:** 2.2.1  
+**Date:** December 02, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
@@ -14,20 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
+## [2.2.1] - 2025-12-02
 
 ### Added
 - **ROADMAP marker scanning**: Release script now detects ROADMAP markers alongside TODO/FIXME/STUB
   - ROADMAP markers indicate planned future work tracked in roadmap.md
   - Helps identify deferred features during release preparation
 
-### Removed
-
 ### Fixed
 - **Library_Name casing**: Changed from `"Functional"` to `"functional"` in functional.gpr
   - Fixes GPRbuild elaboration object lookup (`p__functional_0.o` vs `p__Functional_0.o`)
   - Follows GNAT convention: library name matches lowercase project filename
   - Eliminates `ar: p__functional_0.o: not found in archive` warning in dependent projects
+- **Alire deployment**: Add `export-ignore` for submodules (`scripts/python`, `test/python`, `docs/common`) to prevent path collisions with dependencies during Alire source archive creation
 
 ---
 
