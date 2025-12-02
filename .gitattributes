@@ -78,3 +78,12 @@ config/tzif_config.ads linguist-generated
 # Use Ada-aware diff for Ada files
 *.ads diff=ada
 *.adb diff=ada
+
+# -----------------------------------------------------------------------------
+# Export Ignore (Alire/Archive Exclusions)
+# -----------------------------------------------------------------------------
+# Exclude submodules from Alire source archives to prevent path collisions
+# with dependencies that share the same submodule structure
+scripts/python export-ignore
+test/python export-ignore
+docs/common export-ignore
