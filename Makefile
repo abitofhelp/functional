@@ -280,14 +280,9 @@ test-e2e: build build-tests
 	@echo "$(GREEN)Running E2E tests...$(NC)"
 	@echo "$(YELLOW)No E2E tests defined for functional library$(NC)"
 
-test-coverage: clean build build-coverage-runtime
+test-coverage: ## Run tests with GNATcoverage analysis
 	@echo "$(GREEN)Running tests with GNATcoverage analysis...$(NC)"
-	@if [ -f "scripts/python/makefile/coverage.sh" ]; then \
-		bash scripts/python/makefile/coverage.sh; \
-	else \
-		echo "$(YELLOW)Coverage script not found at scripts/python/makefile/coverage.sh$(NC)"; \
-		exit 1; \
-	fi
+	@$(PYTHON3) scripts/python/makefile/coverage_ada.py
 
 test-python: ## Run Python script tests (arch_guard.py validation)
 	@echo "$(GREEN)Running Python script tests...$(NC)"
@@ -394,9 +389,10 @@ install-tools: ## Install development tools (GMP, gcovr, gnatformat)
 	@$(PYTHON3) scripts/python/makefile/install_tools.py
 	@echo "$(GREEN)✓ Tool installation complete$(NC)"
 
-build-coverage-runtime: ## Build GNATcoverage runtime library
-	@echo "$(CYAN)Building GNATcoverage runtime...$(NC)"
-	@$(PYTHON3) scripts/python/makefile/build_gnatcov_runtime.py
+build-coverage-runtime: ## Force rebuild GNATcoverage runtime library
+	@echo "$(CYAN)Rebuilding GNATcoverage runtime...$(NC)"
+	@$(PYTHON3) scripts/python/makefile/coverage_ada.py --rebuild-runtime --unit-only
+	@echo "$(GREEN)✓ GNATcov runtime rebuilt (run 'make test-coverage' for full analysis)$(NC)"
 
 .DEFAULT_GOAL := help
 
