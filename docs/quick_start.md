@@ -1,11 +1,11 @@
 # Quick Start Guide
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
+**Version:** 2.3.0<br>
+**Date:** December 05, 2025<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 Type-safe error handling for Ada 2022: `Result<T,E>`, `Option<T>`, `Either<L,R>`
 
@@ -34,7 +34,7 @@ package Int_Option is new Functional.Option (T => Integer);
 
 ---
 
-## Result<T,E> — Error Handling (20 Operations)
+## Result<T,E> - Error Handling (20 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
@@ -76,7 +76,7 @@ R := Transform (Int_Result.Err (E)); -- Err(E) unchanged
 
 ---
 
-## Option<T> — Optional Values (11 Operations)
+## Option<T> - Optional Values (11 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
@@ -113,7 +113,7 @@ O := Adults_Only (Int_Option.New_Some (15));  -- None
 
 ---
 
-## Either<L,R> — Neutral Choice (10 Operations)
+## Either<L,R> - Neutral Choice (8 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
@@ -164,7 +164,7 @@ S := To_String (Str_Int_Either.Right (42));      -- " 42"
 
 ---
 
-## Try — Exception Boundaries (5 Functions)
+## Try - Exception Boundaries (5 Functions)
 
 ### Try_To_Result (No Parameters)
 
@@ -270,10 +270,10 @@ function Add_One (X : Integer) return Int_Result.Result is
 function Chain is new Int_Result.And_Then (F => Add_One);
 
 Result := Chain (Validate (Int_Result.Ok (5)));
--- Ok(5) → Ensure positive → Ok(5) → Add_One → Ok(6)
+-- Ok(5) -> Ensure positive -> Ok(5) -> Add_One -> Ok(6)
 
 Result := Chain (Validate (Int_Result.Ok (-1)));
--- Ok(-1) → Ensure positive → Err(Not positive) → Chain skipped → Err
+-- Ok(-1) -> Ensure positive -> Err(Not positive) -> Chain skipped -> Err
 ```
 
 ### Error Context Breadcrumbs
@@ -344,5 +344,3 @@ R := With_Logging (Some_Operation);  -- Logs, returns unchanged Result
 ## See Also
 
 - **README.md** - Full documentation with examples
-- **docs/formal/** - SRS, SDS, and STG formal documentation
-

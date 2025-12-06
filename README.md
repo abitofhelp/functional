@@ -2,22 +2,44 @@
 
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Friendly-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
+**Version:** 2.3.0<br>
+**Date:** December 05, 2025<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ## Overview
 
-A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022.
+A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022. Enables railway-oriented programming with composable operations like Map, And_Then, and Recover.
 
-## Getting Started
+## Features
+
+- **Result<T,E>** - Type-safe error handling (20 operations)
+- **Option<T>** - Optional values (11 operations)
+- **Either<L,R>** - Disjoint union type (8 operations)
+- **Try Module** - Convert exceptions to functional types (5 functions)
+  - `Try_To_Result` - General bridge for any Result type
+  - `Try_To_Functional_Result` - Convenience for Functional.Result
+  - `Try_To_Functional_Option` - Convenience for Functional.Option
+  - `Try_To_Result_With_Param` - Parameterized Result bridge
+  - `Try_To_Option_With_Param` - Parameterized Option bridge
+- **Pure packages** - No side effects, compile-time guarantees
+- **Zero dependencies** - Just Ada 2022 standard library
+- **Production ready** - Comprehensive compiler checks and style enforcement
+
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| **Desktop** | Full | Standard Ada runtime |
+| **Embedded** | Full | Pure packages, no heap allocation, no I/O |
+
+## Quick Start
 
 ### Clone with Submodules
 
-This repository uses git submodules for shared tooling. Clone with:
+This repository uses git submodules for shared tooling:
 
 ```bash
 git clone --recurse-submodules https://github.com/abitofhelp/functional.git
@@ -30,28 +52,6 @@ git submodule update --init --recursive
 # Or: make submodule-init
 ```
 
-## Features
-
-- ✅ **Result<T,E>** - Type-safe error handling (17 operations)
-- ✅ **Option<T>** - Optional values (11 operations)
-- ✅ **Either<L,R>** - Disjoint union type (8 operations)
-- ✅ **Try Module** - Convert exceptions to functional types
-  - `Try_To_Result` - General bridge for any Result type
-  - `Try_To_Functional_Result` - Convenience for Functional.Result
-  - `Try_To_Functional_Option` - Convenience for Functional.Option
-- ✅ **Pure packages** - No side effects, compile-time guarantees
-- ✅ **Zero dependencies** - Just Ada 2022 standard library
-- ✅ **Production ready** - Comprehensive compiler checks and style enforcement
-
-## Platform Support
-
-| Platform | Status | Notes |
-|----------|--------|-------|
-| **Desktop** | ✅ Full | Standard Ada runtime |
-| **Embedded** | ✅ Full | Pure packages, no heap allocation, no I/O |
-
-## Quick Start
-
 ### Installation
 
 Add to your `alire.toml`:
@@ -61,22 +61,13 @@ Add to your `alire.toml`:
 functional = "^2.0.0"
 ```
 
-Then run:
+Then build:
+
 ```bash
 alr build
 ```
 
-### Building
-
-```bash
-# Build the library
-alr build
-
-# Run tests
-make test
-```
-
-## Quick Snippets
+## Usage
 
 ### Result<T,E> - For Error Handling
 
@@ -152,41 +143,57 @@ alr run test_runner
 
 ## Documentation
 
+- **[Quick Start Guide](docs/quick_start.md)** - Get started in minutes
+- **[CHANGELOG](CHANGELOG.md)** - Release history
+
 ### API Reference
 
-**Result<T,E>:**
+**Result<T,E>** (20 operations):
+
+| Category | Operations | Purpose |
+|----------|------------|---------|
+| **Construct** | `Ok(v)`, `Err(e)`, `From_Error(e)` | Create success or error result |
+| **Predicates** | `Is_Ok(r)`, `Is_Err(r)` | Test result state |
+| **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)` | Get value (with Pre) or panic with message |
+| **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
+| **Transform** | `Map(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value, chain operations |
+| **Error Map** | `Map_Err(r)`, `Bimap(r)` | Transform error, transform both sides |
+| **Fallback** | `Fallback(a, b)`, `Fallback_With(r)` | Try alternative on error (eager/lazy) |
+| **Recovery** | `Recover(r)`, `Recover_With(r)` | Convert error to value or new Result |
+| **Validation** | `Ensure(r)`, `With_Context(r, msg)` | Validate predicate, add error breadcrumbs |
+| **Side Effects** | `Tap(r)` | Run callbacks without changing Result |
+
+**Option<T>** (11 operations):
+
+| Category | Operations | Purpose |
+|----------|------------|---------|
+| **Construct** | `New_Some(v)`, `None` | Create present or absent value |
+| **Predicates** | `Is_Some(o)`, `Is_None(o)` | Test presence |
+| **Extract** | `Value(o)` | Get value (with Pre) |
+| **Defaults** | `Unwrap_Or(o, default)`, `Unwrap_Or_With(o)` | Get value or fallback (eager/lazy) |
+| **Transform** | `Map(o)`, `And_Then(o)` | Transform Some value, chain operations |
+| **Filter** | `Filter(o)` | Keep value only if predicate holds |
+| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)`, `Fallback` | Try alternative on None (eager/lazy) |
+
+**Either<L,R>** (8 operations):
+
+| Category | Operations | Purpose |
+|----------|------------|---------|
+| **Construct** | `Left(v)`, `Right(v)` | Create left or right value |
+| **Predicates** | `Is_Left(e)`, `Is_Right(e)` | Test which side |
+| **Extract** | `Left_Value(e)`, `Right_Value(e)` | Get value (with Pre) |
+| **Transform** | `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Transform one or both sides |
+| **Reduce** | `Fold(e)` | Reduce to single value |
+
+**Try Module** (5 functions):
 
 | Function | Purpose |
 |----------|---------|
-| `Ok(v)`, `Err(e)` | Constructors |
-| `Is_Ok`, `Is_Err` | Check state |
-| `Value`, `Error` | Extract values |
-| `Unwrap_Or` | Get value or default |
-| `And_Then` | Chain operations |
-| `Fallback` | Try alternative on error |
-| `Recover` | Turn error into value |
-| `Ensure` | Validate with predicate |
-| `With_Context` | Add error breadcrumbs |
-
-**Option<T>:**
-
-| Function | Purpose |
-|----------|---------|
-| `New_Some(v)`, `None` | Constructors |
-| `Is_Some`, `Is_None` | Check presence |
-| `Value` | Extract value |
-| `Unwrap_Or` | Get value or default |
-| `And_Then` | Chain operations |
-| `Filter` | Keep if predicate holds |
-| `Or_Else` | Try alternative |
-
-**Either<L,R>:**
-
-| Function | Purpose |
-|----------|---------|
-| `Left(v)`, `Right(v)` | Constructors |
-| `Is_Left`, `Is_Right` | Check side |
-| `Left_Value`, `Right_Value` | Extract values |
+| `Try_To_Result` | General bridge for any Result type |
+| `Try_To_Functional_Result` | Convenience for Functional.Result |
+| `Try_To_Functional_Option` | Convenience for Functional.Option |
+| `Try_To_Result_With_Param` | Parameterized Result bridge |
+| `Try_To_Option_With_Param` | Parameterized Option bridge |
 
 ## Code Standards
 
@@ -201,25 +208,6 @@ This project uses git submodules for shared Python tooling:
 - `scripts/python` - Build, release, and architecture scripts
 - `test/python` - Shared test fixtures and configuration
 
-### Workflow
-
-```
-hybrid_python_scripts (source repo)
-         │
-         │ git push (manual)
-         ▼
-      GitHub
-         │
-         │ make submodule-update (in each consuming repo)
-         ▼
-┌─────────────────────────────────┐
-│  1. Pull new submodule commit   │
-│  2. Stage reference change      │
-│  3. Commit locally              │
-│  4. Push to remote              │
-└─────────────────────────────────┘
-```
-
 ### Commands
 
 ```bash
@@ -231,16 +219,6 @@ make submodule-update
 
 # Check current submodule commits
 make submodule-status
-```
-
-### Bulk Update (all repositories)
-
-```bash
-python3 ~/Python/src/github.com/abitofhelp/git/update_submodules.py
-
-# Options:
-#   --dry-run   Show what would happen without changes
-#   --no-push   Update locally but do not push to remote
 ```
 
 ## Contributing
@@ -274,14 +252,13 @@ https://github.com/abitofhelp
 
 ## Project Status
 
-**Status**: Production Ready (v2.1.1)
+**Status**: Production Ready (v2.3.0)
 
-- ✅ Result<T,E> with 17 operations
-- ✅ Option<T> with 11 operations
-- ✅ Either<L,R> with 8 operations
-- ✅ Try module for exception bridging
-- ✅ Pure packages (no side effects)
-- ✅ Zero external dependencies
-- ✅ Comprehensive test suite
-- ✅ Production ready
-- ✅ Alire publication
+- Result<T,E> with 20 operations
+- Option<T> with 11 operations
+- Either<L,R> with 8 operations
+- Try module with 5 exception bridges
+- Pure packages (no side effects)
+- Zero external dependencies
+- Comprehensive test suite
+- Alire publication
