@@ -391,6 +391,10 @@ procedure Test_Result is
       Assert (Recover_To_Int (R_Err) = -1, "Recover converts Err to value");
 
       Assert
+        (Int_Result.Is_Ok (Recover_To_Res (R_Ok))
+         and then Int_Result.Value (Recover_To_Res (R_Ok)) = 42,
+         "Recover_With returns Ok unchanged");
+      Assert
         (Int_Result.Value (Recover_To_Res (R_Err)) = -1,
          "Recover_With converts Err to Result");
    end Test_Recover;
