@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
+**Version:** 3.0.0
+**Date:** December 06, 2025
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 All notable changes to this project will be documented in this file.
 
@@ -13,6 +13,83 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [3.0.0] - 2025-12-06
+
+### ⚠️ BREAKING CHANGES
+- **Boolean discriminants replace enumeration discriminants**
+  - Option: `Kind` → `Has_Value` (Boolean)
+  - Result: `Kind` → `Is_Ok` (Boolean), `Err_Value` → `Error_Value`
+  - Either: `Kind` → `Is_Left` (Boolean)
+- **Result API renaming for clarity**
+  - `Err` → `New_Error` (constructor)
+  - `Is_Err` → `Is_Error` (predicate)
+  - `Map_Err` → `Map_Error` (transform)
+- **Try module generic formal renamed**: `Err` → `New_Error`
+
+### Added
+
+**Result (25 operations, +5 new)**
+- `Zip_With` - Combine two Results with a function
+- `Flatten` - Unwrap nested Result[Result[T,E],E] → Result[T,E]
+- `To_Option` - Convert Ok(v) → Some(v), Error(_) → None
+- `"or"` operator for `Unwrap_Or` - `R or Default` syntax
+- `"or"` operator for `Fallback` - `A or B` syntax
+
+**Option (19 operations, +8 new)**
+- `"and"` operator - Returns second when both have values
+- `"xor"` operator - Returns one when exactly one has value
+- `Zip_With` - Combine two Options with a function
+- `Flatten` - Unwrap nested Option[Option[T]] → Option[T]
+- `Ok_Or` - Convert Some(v) → Ok(v), None → Error(e) (eager)
+- `Ok_Or_Else` - Convert Some(v) → Ok(v), None → Error(f()) (lazy)
+- `"or"` operator for `Unwrap_Or` - `O or Default` syntax
+- `"or"` operator for `Or_Else` - `A or B` syntax
+
+**Either (11 operations, +3 new)**
+- `Map` - Right-biased transform (convenience for common case)
+- `Swap` - Exchange Left and Right values
+- `And_Then` - Right-biased monadic bind for chaining
+
+### Migration Guide (2.x → 3.0.0)
+
+**Discriminant access:**
+```ada
+-- Old (2.x)
+if R.Kind = K_Ok then ...
+if O.Kind = K_Some then ...
+
+-- New (3.0.0)
+if R.Is_Ok then ...
+if O.Has_Value then ...
+```
+
+**Result constructors/predicates:**
+```ada
+-- Old (2.x)
+Str_Result.Err (E);
+if Str_Result.Is_Err (R) then ...
+
+-- New (3.0.0)
+Str_Result.New_Error (E);
+if Str_Result.Is_Error (R) then ...
+```
+
+**Map_Error:**
+```ada
+-- Old (2.x)
+function Transform is new Str_Result.Map_Err (F => ...);
+
+-- New (3.0.0)
+function Transform is new Str_Result.Map_Error (F => ...);
+```
+
+### Technical Details
+- All 134 unit tests passing (Result: 51, Option: 40, Either: 23, Try: 14, Try_Option: 6)
+- stmt+decision coverage: 95%+
+- Total operations: 55 (Result: 25, Option: 19, Either: 11)
+
+---
 
 ## [2.3.0] - 2025-12-05
 

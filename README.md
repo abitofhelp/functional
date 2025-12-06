@@ -2,8 +2,8 @@
 
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Friendly-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
+**Version:** 3.0.0
+**Date:** December 06, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
@@ -15,9 +15,9 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 
 ## Features
 
-- **Result<T,E>** - Type-safe error handling (20 operations)
-- **Option<T>** - Optional values (11 operations)
-- **Either<L,R>** - Disjoint union type (8 operations)
+- **Result<T,E>** - Type-safe error handling (25 operations)
+- **Option<T>** - Optional values (19 operations)
+- **Either<L,R>** - Disjoint union type (11 operations)
 - **Try Module** - Convert exceptions to functional types (5 functions)
   - `Try_To_Result` - General bridge for any Result type
   - `Try_To_Functional_Result` - Convenience for Functional.Result
@@ -79,7 +79,7 @@ package Str_Result is new Functional.Result (T => String, E => Error);
 
 --  Create results
 return Str_Result.Ok (Value);           --  Success
-return Str_Result.Err (Error_Info);     --  Failure
+return Str_Result.New_Error (Error_Info);  --  Failure
 
 --  Check and extract
 if Str_Result.Is_Ok (R) then
@@ -127,7 +127,7 @@ with Functional.Try;
 --  Bridge exception-based code to Result types
 function Try_Read is new Functional.Try.Try_To_Result
   (T => Integer_32, E => Error_Type, Result_Type => Int32_Result.Result,
-   Ok => Int32_Result.Ok, Err => Int32_Result.From_Error,
+   Ok => Int32_Result.Ok, New_Error => Int32_Result.From_Error,
    Map_Exception => From_Exception, Action => Raw_Read);
 ```
 
@@ -148,22 +148,25 @@ alr run test_runner
 
 ### API Reference
 
-**Result<T,E>** (20 operations):
+**Result<T,E>** (25 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
-| **Construct** | `Ok(v)`, `Err(e)`, `From_Error(e)` | Create success or error result |
-| **Predicates** | `Is_Ok(r)`, `Is_Err(r)` | Test result state |
+| **Construct** | `Ok(v)`, `New_Error(e)`, `From_Error(e)` | Create success or error result |
+| **Predicates** | `Is_Ok(r)`, `Is_Error(r)` | Test result state |
 | **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)` | Get value (with Pre) or panic with message |
 | **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
 | **Transform** | `Map(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value, chain operations |
-| **Error Map** | `Map_Err(r)`, `Bimap(r)` | Transform error, transform both sides |
+| **Error Map** | `Map_Error(r)`, `Bimap(r)` | Transform error, transform both sides |
 | **Fallback** | `Fallback(a, b)`, `Fallback_With(r)` | Try alternative on error (eager/lazy) |
 | **Recovery** | `Recover(r)`, `Recover_With(r)` | Convert error to value or new Result |
 | **Validation** | `Ensure(r)`, `With_Context(r, msg)` | Validate predicate, add error breadcrumbs |
 | **Side Effects** | `Tap(r)` | Run callbacks without changing Result |
+| **Combine** | `Zip_With(a, b)`, `Flatten(r)` | Combine Results, unwrap nested Result |
+| **Convert** | `To_Option(r)` | Ok(v)->Some(v), Error(_)->None |
+| **Operators** | `r or default`, `a or b` | Aliases for Unwrap_Or and Fallback |
 
-**Option<T>** (11 operations):
+**Option<T>** (19 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
@@ -173,16 +176,21 @@ alr run test_runner
 | **Defaults** | `Unwrap_Or(o, default)`, `Unwrap_Or_With(o)` | Get value or fallback (eager/lazy) |
 | **Transform** | `Map(o)`, `And_Then(o)` | Transform Some value, chain operations |
 | **Filter** | `Filter(o)` | Keep value only if predicate holds |
-| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)`, `Fallback` | Try alternative on None (eager/lazy) |
+| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)` | Try alternative on None (eager/lazy) |
+| **Combine** | `Zip_With(a, b)`, `Flatten(o)` | Combine Options, unwrap nested Option |
+| **Convert** | `Ok_Or(o, e)`, `Ok_Or_Else(o)` | Option to Result (eager/lazy error) |
+| **Operators** | `a and b`, `a xor b`, `o or default`, `a or b` | Logical and fallback operators |
 
-**Either<L,R>** (8 operations):
+**Either<L,R>** (11 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `Left(v)`, `Right(v)` | Create left or right value |
 | **Predicates** | `Is_Left(e)`, `Is_Right(e)` | Test which side |
 | **Extract** | `Left_Value(e)`, `Right_Value(e)` | Get value (with Pre) |
-| **Transform** | `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Transform one or both sides |
+| **Transform** | `Map(e)`, `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Right-biased Map, transform sides |
+| **Chain** | `And_Then(e)` | Right-biased monadic bind |
+| **Swap** | `Swap(e)` | Exchange Left and Right |
 | **Reduce** | `Fold(e)` | Reduce to single value |
 
 **Try Module** (5 functions):
@@ -252,13 +260,13 @@ https://github.com/abitofhelp
 
 ## Project Status
 
-**Status**: Production Ready (v2.3.0)
+**Status**: Production Ready (v3.0.0)
 
-- Result<T,E> with 20 operations
-- Option<T> with 11 operations
-- Either<L,R> with 8 operations
+- Result<T,E> with 25 operations
+- Option<T> with 19 operations
+- Either<L,R> with 11 operations
 - Try module with 5 exception bridges
 - Pure packages (no side effects)
 - Zero external dependencies
-- Comprehensive test suite
+- Comprehensive test suite (134 unit tests)
 - Alire publication

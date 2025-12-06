@@ -1,6 +1,6 @@
 name = "functional"
 description = "Result, Option, Either types for type-safe error handling in Ada 2022"
-version = "2.3.0"
+version = "3.0.0"
 
 authors = ["A Bit of Help, Inc. - Michael Gardner"]
 maintainers = ["A Bit of Help, Inc. - Michael Gardner <mjgardner@abitofhelp.com>"]
