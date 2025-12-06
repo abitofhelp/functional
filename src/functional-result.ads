@@ -14,7 +14,7 @@ pragma Ada_2022;
 --    Result       - Discriminated record with Is_Ok : Boolean
 --                   When True, holds Ok_Value; when False, holds Error_Value
 --
---  Operations (20):
+--  Operations (22):
 --    Constructors: Ok, New_Error, From_Error
 --    Predicates:   Is_Ok, Is_Error
 --    Extractors:   Value, Error, Expect
@@ -23,6 +23,7 @@ pragma Ada_2022;
 --    Recovery:     Fallback, Fallback_With, Recover, Recover_With
 --    Validation:   Ensure, With_Context
 --    Side Effects: Tap
+--    Operators:    "or" (Unwrap_Or), "or" (Fallback)
 --
 --  ===========================================================================
 
@@ -173,5 +174,17 @@ package Functional.Result is
       with procedure On_Ok (V : T);
       with procedure On_Error (E_Val : E);
    function Tap (R : Result) return Result;
+
+   --  ==========================================================================
+   --  Operator Aliases (Ada idioms for ergonomic syntax)
+   --  ==========================================================================
+
+   --  "or" for Unwrap_Or: Result or Default -> T
+   --  Usage: Port : Integer := Port_Result or 8080;
+   function "or" (R : Result; Default : T) return T renames Unwrap_Or;
+
+   --  "or" for Fallback: Result or Result -> Result
+   --  Usage: Config := Primary_Config or Backup_Config;
+   function "or" (Left, Right : Result) return Result renames Fallback;
 
 end Functional.Result;

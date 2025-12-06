@@ -14,13 +14,14 @@ pragma Ada_2022;
 --    Option       - Discriminated record with Has_Value : Boolean
 --                   When True, holds Value; when False, empty
 --
---  Operations (11):
+--  Operations (13):
 --    Constructors: New_Some, None
 --    Predicates:   Is_Some, Is_None
 --    Extractors:   Value
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
 --    Transforms:   Map, And_Then, Filter
 --    Fallback:     Or_Else, Or_Else_With, Fallback (alias)
+--    Operators:    "or" (Unwrap_Or), "or" (Or_Else)
 --
 --  ===========================================================================
 
@@ -112,5 +113,17 @@ is
 
    --  Aliases for discoverability (Result-style naming)
    function Fallback (A, B : Option) return Option renames Or_Else;
+
+   --  ==========================================================================
+   --  Operator Aliases (Ada idioms for ergonomic syntax)
+   --  ==========================================================================
+
+   --  "or" for Unwrap_Or: Option or Default -> T
+   --  Usage: Port : Integer := Port_Option or 8080;
+   function "or" (O : Option; Default : T) return T renames Unwrap_Or;
+
+   --  "or" for Or_Else: Option or Option -> Option
+   --  Usage: Config := Primary_Config or Backup_Config;
+   function "or" (Left, Right : Option) return Option renames Or_Else;
 
 end Functional.Option;
