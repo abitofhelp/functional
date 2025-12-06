@@ -160,6 +160,8 @@ alr run test_runner
 
 ## Documentation
 
+- **[Cheatsheet](docs/guides/cheatsheet.md)** - All types and operators on 1-2 pages
+- **[User Guide](docs/guides/user_guide.md)** - Design philosophy, SPARK, embedded, best practices
 - **[Quick Start Guide](docs/quick_start.md)** - Get started in minutes
 - **[CHANGELOG](CHANGELOG.md)** - Release history
 

@@ -29,6 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+**Documentation**
+- `docs/guides/cheatsheet.md` - All types and operators on 1-2 pages
+- `docs/guides/user_guide.md` - Design philosophy, SPARK, embedded, best practices
+
 **Result (25 operations, +5 new)**
 - `Zip_With` - Combine two Results with a function
 - `Flatten` - Unwrap nested Result[Result[T,E],E] → Result[T,E]
