@@ -1,11 +1,11 @@
 # Quick Start Guide
 
-**Version:** 2.3.0<br>
-**Date:** December 05, 2025<br>
+**Version:** 2.3.0  
+**Date:** December 05, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
-**Status:** Released
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
+**Status:** Released  
 
 Type-safe error handling for Ada 2022: `Result<T,E>`, `Option<T>`, `Either<L,R>`
 
