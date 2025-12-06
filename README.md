@@ -15,18 +15,35 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 
 ## Features
 
-- **Result<T,E>** - Type-safe error handling (25 operations)
-- **Option<T>** - Optional values (19 operations)
-- **Either<L,R>** - Disjoint union type (11 operations)
+### Core Types
+
+- **Result[T,E]** - Type-safe error handling (25 operations)
+- **Option[T]** - Optional values (19 operations)
+- **Either[L,R]** - Disjoint union type (11 operations)
 - **Try Module** - Convert exceptions to functional types (5 functions)
-  - `Try_To_Result` - General bridge for any Result type
-  - `Try_To_Functional_Result` - Convenience for Functional.Result
-  - `Try_To_Functional_Option` - Convenience for Functional.Option
-  - `Try_To_Result_With_Param` - Parameterized Result bridge
-  - `Try_To_Option_With_Param` - Parameterized Option bridge
+
+### SPARK Formal Verification
+
+- **SPARK_Mode => On** for Option, Result, Either (formally verifiable)
+- **Postconditions** on all transform operations for prover assistance
+- **Preconditions** on all extractors preventing invalid access
+- **Exception boundary isolation** - Try module is the only SPARK_Mode => Off code
+
+### Embedded Systems Ready
+
+- **Preelaborate/Pure** categorization on all packages
+- **Zero heap allocation** - All stack-based discriminated records
+- **No controlled types** - No finalization overhead
+- **No tasking dependencies** - Ravenscar profile compatible
+- **Bounded memory** - Fixed-size structures, no dynamic allocation
+- **No OS dependencies** - Pure Ada 2022 (except Try boundary)
+
+### Production Quality
+
 - **Pure packages** - No side effects, compile-time guarantees
 - **Zero dependencies** - Just Ada 2022 standard library
-- **Production ready** - Comprehensive compiler checks and style enforcement
+- **135 unit tests** - 95%+ code coverage
+- **Comprehensive contracts** - Pre/Post conditions throughout
 
 ## Platform Support
 
