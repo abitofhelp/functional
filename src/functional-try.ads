@@ -19,8 +19,8 @@ pragma Ada_2022;
 --
 --  Design Pattern:
 --    Exception handling at boundaries only. Domain/Application layers use
---    Result/Option types throughout. Infrastructure/Presentation use Try
---    to convert external APIs.
+--    Result/Option types throughout. Boundary adapters use Try to convert
+--    exception-based external APIs into Result/Option types.
 --
 --  Dependencies:
 --    Ada.Exceptions, Functional.Result, Functional.Option
