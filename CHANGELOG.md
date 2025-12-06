@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Expanded test coverage**: Added tests for previously uncovered functions
+  - `Result.From_Error` (boundary constructor - 3 tests)
+  - `Result.And_Then_Into` (type-changing monadic chain - 5 tests)
   - `Either.Map_Left` (both Left and Right input paths)
   - `Either.Map_Right` (both Left and Right input paths)
   - `Try.Try_To_Result_With_Param` (success and exception paths)
@@ -49,8 +51,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation terminology**: Updated Try.ads comment to use "Boundary adapters" instead of "Infrastructure/Presentation" to avoid false positives in release validation
 
 ### Technical Details
-- All 93 unit tests passing (Result: 35, Option: 22, Either: 16, Try: 14, Try_Option: 6)
-- stmt+decision coverage: 95% (152/160 lines)
+- All 101 unit tests passing (Result: 43, Option: 22, Either: 16, Try: 14, Try_Option: 6)
+- stmt+decision coverage: 95%+
+- All 20 Result operations now have tests (From_Error, And_Then_Into added)
 
 ---
 

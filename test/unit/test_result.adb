@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Result monad.
---    Tests all 20 Result operations. 35 tests. Target: 90%+ coverage.
+--    Tests all 20 Result operations. 43 tests. Target: 90%+ coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -28,6 +28,10 @@ procedure Test_Result is
    end record;
 
    package Int_Result is new Functional.Result (T => Integer, E => Error);
+
+   --  Second Result type for And_Then_Into tests (type-changing chain)
+   subtype Result_String is String (1 .. 20);
+   package Str_Result is new Functional.Result (T => Result_String, E => Error);
 
    Test_Count : Natural := 0;
    Pass_Count : Natural := 0;
@@ -58,6 +62,24 @@ procedure Test_Result is
       Assert (not Int_Result.Is_Err (R_Ok), "Ok result is not Err");
       Assert (not Int_Result.Is_Ok (R_Err), "Err result is not Ok");
    end Test_Constructors;
+
+   --  ==========================================================================
+   --  Test: From_Error (boundary constructor)
+   --  ==========================================================================
+
+   procedure Test_From_Error is
+      Test_Err : constant Error := (IO_Error, "boundary error" & [15 .. 100 => ' '], 14);
+      R_Err    : constant Int_Result.Result := Int_Result.From_Error (Test_Err);
+   begin
+      Put_Line ("Testing From_Error...");
+      Assert (Int_Result.Is_Err (R_Err), "From_Error creates Err result");
+      Assert
+        (Int_Result.Error (R_Err).Kind = IO_Error,
+         "From_Error preserves error kind");
+      Assert
+        (Int_Result.Error (R_Err).Message (1 .. 14) = "boundary error",
+         "From_Error preserves error message");
+   end Test_From_Error;
 
    --  ==========================================================================
    --  Test: Extractors
@@ -187,6 +209,68 @@ procedure Test_Result is
       Assert
         (Int_Result.Is_Err (Result), "And_Then propagates Err from function");
    end Test_And_Then;
+
+   --  ==========================================================================
+   --  Test: And_Then_Into (type-changing monadic chain)
+   --  ==========================================================================
+
+   procedure Test_And_Then_Into is
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+
+      function Int_To_Str (X : Integer) return Str_Result.Result is
+         Img : constant String := Integer'Image (X);
+         Res : Result_String   := [others => ' '];
+      begin
+         Res (1 .. Img'Length) := Img;
+         return Str_Result.Ok (Res);
+      end Int_To_Str;
+
+      function Int_To_Str_Fail (X : Integer) return Str_Result.Result is
+         pragma Unreferenced (X);
+      begin
+         return Str_Result.Err ((Validation_Error, [others => ' '], 0));
+      end Int_To_Str_Fail;
+
+      function Chain_To_Str is new Int_Result.And_Then_Into
+        (Result_U => Str_Result.Result,
+         Err_U    => Str_Result.Err,
+         F        => Int_To_Str);
+
+      function Chain_To_Str_Fail is new Int_Result.And_Then_Into
+        (Result_U => Str_Result.Result,
+         Err_U    => Str_Result.Err,
+         F        => Int_To_Str_Fail);
+
+      Result : Str_Result.Result;
+   begin
+      Put_Line ("Testing And_Then_Into...");
+
+      --  Test Ok path: transforms Int -> String
+      Result := Chain_To_Str (R_Ok);
+      Assert
+        (Str_Result.Is_Ok (Result),
+         "And_Then_Into transforms Ok to different type");
+      Assert
+        (Str_Result.Value (Result) (1 .. 3) = " 42",
+         "And_Then_Into preserves transformed value");
+
+      --  Test Err path: propagates original error
+      Result := Chain_To_Str (R_Err);
+      Assert
+        (Str_Result.Is_Err (Result),
+         "And_Then_Into propagates Err through type change");
+      Assert
+        (Str_Result.Error (Result).Kind = Parse_Error,
+         "And_Then_Into preserves error kind through type change");
+
+      --  Test function returning Err
+      Result := Chain_To_Str_Fail (R_Ok);
+      Assert
+        (Str_Result.Is_Err (Result),
+         "And_Then_Into propagates Err from function");
+   end Test_And_Then_Into;
 
    --  ==========================================================================
    --  Test: Map_Err
@@ -431,11 +515,13 @@ begin
    New_Line;
 
    Test_Constructors;
+   Test_From_Error;
    Test_Extractors;
    Test_Expect;
    Test_Unwrap;
    Test_Map;
    Test_And_Then;
+   Test_And_Then_Into;
    Test_Map_Err;
    Test_Bimap;
    Test_Fallback;
