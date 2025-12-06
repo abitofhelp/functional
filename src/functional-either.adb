@@ -70,6 +70,42 @@ package body Functional.Either is
       end case;
    end Bimap;
 
+   --  Map: transform Right value (Right-biased convenience)
+   function Map (E : Either) return Either is
+   begin
+      case E.Is_Left is
+         when True =>
+            return E;
+
+         when False =>
+            return Right (F (E.Right_Value));
+      end case;
+   end Map;
+
+   --  Swap: exchange Left and Right values
+   function Swap (E : Either) return Either_Swapped is
+   begin
+      case E.Is_Left is
+         when True =>
+            return Make_Right (E.Left_Value);
+
+         when False =>
+            return Make_Left (E.Right_Value);
+      end case;
+   end Swap;
+
+   --  And_Then: chain fallible operations (Right-biased monadic bind)
+   function And_Then (E : Either) return Either is
+   begin
+      case E.Is_Left is
+         when True =>
+            return E;
+
+         when False =>
+            return F (E.Right_Value);
+      end case;
+   end And_Then;
+
    --  Fold: reduce Either to single value
    function Fold (E : Either) return U is
    begin

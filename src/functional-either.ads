@@ -14,11 +14,11 @@ pragma Ada_2022;
 --    Either       - Discriminated record with Is_Left : Boolean
 --                   When True, holds Left_Value; when False, holds Right_Value
 --
---  Operations (8):
+--  Operations (11):
 --    Constructors:   Left, Right
 --    Predicates:     Is_Left, Is_Right
 --    Extractors:     Left_Value, Right_Value
---    Transforms:     Map_Left, Map_Right, Bimap
+--    Transforms:     Map, Map_Left, Map_Right, Bimap, Swap, And_Then
 --    Reduction:      Fold
 --
 --  ===========================================================================
@@ -85,6 +85,25 @@ package Functional.Either is
       with function Map_L (X : L) return L;
       with function Map_R (X : R) return R;
    function Bimap (E : Either) return Either;
+
+   --  Map: transform Right value (Right-biased convenience for common case)
+   generic
+      with function F (X : R) return R;
+   function Map (E : Either) return Either;
+
+   --  Swap: exchange Left and Right values
+   --  Useful for switching convention or reversing bias
+   generic
+      type Either_Swapped is private;
+      with function Make_Left (V : R) return Either_Swapped;
+      with function Make_Right (V : L) return Either_Swapped;
+   function Swap (E : Either) return Either_Swapped;
+
+   --  And_Then: chain fallible operations (Right-biased monadic bind)
+   --  On Right, applies function; on Left, propagates Left unchanged
+   generic
+      with function F (X : R) return Either;
+   function And_Then (E : Either) return Either;
 
    --  Fold: reduce Either to single value by providing handlers for both cases
    generic

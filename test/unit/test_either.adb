@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Either type.
---    Tests all 8 Either functions. Target: 90%+ code coverage.
+--    Tests all 11 Either functions. Target: 90%+ code coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -21,6 +21,10 @@ procedure Test_Either is
 
    package Str_Int_Either is new
      Functional.Either (L => Fixed_String, R => Integer);
+
+   --  Swapped version for Swap test
+   package Int_Str_Either is new
+     Functional.Either (L => Integer, R => Fixed_String);
 
    Test_Count : Natural := 0;
    Pass_Count : Natural := 0;
@@ -260,6 +264,118 @@ procedure Test_Either is
       Assert (Result_R = 42, "Fold handles Right value");
    end Test_Fold;
 
+   --  ==========================================================================
+   --  Test: Map (Right-biased convenience transform)
+   --  ==========================================================================
+
+   procedure Test_Map is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("hello" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (5);
+
+      function Double (X : Integer) return Integer is (X * 2);
+
+      function Transform is new Str_Int_Either.Map (F => Double);
+
+      Result_L : Str_Int_Either.Either;
+      Result_R : Str_Int_Either.Either;
+   begin
+      Put_Line ("Testing Map...");
+      Result_L := Transform (E_Left);
+      Assert
+        (Str_Int_Either.Is_Left (Result_L)
+         and then Str_Int_Either.Left_Value (Result_L) (1 .. 5) = "hello",
+         "Map passes through Left value unchanged");
+
+      Result_R := Transform (E_Right);
+      Assert
+        (Str_Int_Either.Is_Right (Result_R)
+         and then Str_Int_Either.Right_Value (Result_R) = 10,
+         "Map transforms Right value");
+   end Test_Map;
+
+   --  ==========================================================================
+   --  Test: Swap (exchange Left and Right)
+   --  ==========================================================================
+
+   procedure Test_Swap is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("hello" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function Do_Swap is new
+        Str_Int_Either.Swap
+          (Either_Swapped => Int_Str_Either.Either,
+           Make_Left      => Int_Str_Either.Left,
+           Make_Right     => Int_Str_Either.Right);
+
+      Swapped_L : Int_Str_Either.Either;
+      Swapped_R : Int_Str_Either.Either;
+   begin
+      Put_Line ("Testing Swap...");
+      Swapped_L := Do_Swap (E_Left);
+      Assert
+        (Int_Str_Either.Is_Right (Swapped_L)
+         and then Int_Str_Either.Right_Value (Swapped_L) (1 .. 5) = "hello",
+         "Swap turns Left into Right");
+
+      Swapped_R := Do_Swap (E_Right);
+      Assert
+        (Int_Str_Either.Is_Left (Swapped_R)
+         and then Int_Str_Either.Left_Value (Swapped_R) = 42,
+         "Swap turns Right into Left");
+   end Test_Swap;
+
+   --  ==========================================================================
+   --  Test: And_Then (Right-biased monadic bind)
+   --  ==========================================================================
+
+   procedure Test_And_Then is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (10);
+
+      --  Function that returns Right on success
+      function Safe_Halve (X : Integer) return Str_Int_Either.Either is
+      begin
+         if X mod 2 = 0 then
+            return Str_Int_Either.Right (X / 2);
+         else
+            return Str_Int_Either.Left ("not even" & [9 .. 20 => ' ']);
+         end if;
+      end Safe_Halve;
+
+      function Chain is new Str_Int_Either.And_Then (F => Safe_Halve);
+
+      Result_L : Str_Int_Either.Either;
+      Result_R : Str_Int_Either.Either;
+      E_Odd    : constant Str_Int_Either.Either := Str_Int_Either.Right (7);
+      Result_F : Str_Int_Either.Either;
+   begin
+      Put_Line ("Testing And_Then...");
+
+      --  And_Then on Left passes through unchanged
+      Result_L := Chain (E_Left);
+      Assert
+        (Str_Int_Either.Is_Left (Result_L)
+         and then Str_Int_Either.Left_Value (Result_L) (1 .. 5) = "error",
+         "And_Then short-circuits on Left");
+
+      --  And_Then on Right with success
+      Result_R := Chain (E_Right);
+      Assert
+        (Str_Int_Either.Is_Right (Result_R)
+         and then Str_Int_Either.Right_Value (Result_R) = 5,
+         "And_Then chains Right -> Right");
+
+      --  And_Then on Right with function returning Left
+      Result_F := Chain (E_Odd);
+      Assert
+        (Str_Int_Either.Is_Left (Result_F)
+         and then Str_Int_Either.Left_Value (Result_F) (1 .. 8) = "not even",
+         "And_Then propagates Left from function");
+   end Test_And_Then;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Either Unit Tests");
@@ -273,6 +389,9 @@ begin
    Test_Map_Left;
    Test_Map_Right;
    Test_Bimap;
+   Test_Map;
+   Test_Swap;
+   Test_And_Then;
    Test_Fold;
 
    New_Line;
