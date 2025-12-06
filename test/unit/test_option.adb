@@ -12,6 +12,7 @@ pragma Ada_2022;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Command_Line;
 with Functional.Option;
+with Functional.Result;
 with Test_Framework;
 
 procedure Test_Option is
@@ -210,6 +211,225 @@ procedure Test_Option is
          "Or_Else_With calls lazy backup on None");
    end Test_Or_Else;
 
+   --  ==========================================================================
+   --  Test: "and" operator
+   --  ==========================================================================
+
+   procedure Test_And_Operator is
+      use Int_Option;
+      O_Some1 : constant Option := New_Some (10);
+      O_Some2 : constant Option := New_Some (20);
+      O_None  : constant Option := None;
+      Result  : Option;
+   begin
+      Put_Line ("Testing ""and"" operator...");
+      --  Both have values: returns B
+      Result := O_Some1 and O_Some2;
+      Assert (Is_Some (Result) and then Value (Result) = 20,
+              """and"" returns second when both have values");
+
+      --  First is None: returns None
+      Result := O_None and O_Some2;
+      Assert (Is_None (Result), """and"" returns None when first is None");
+
+      --  Second is None: returns None
+      Result := O_Some1 and O_None;
+      Assert (Is_None (Result), """and"" returns None when second is None");
+
+      --  Both are None: returns None
+      Result := O_None and O_None;
+      Assert (Is_None (Result), """and"" returns None when both are None");
+   end Test_And_Operator;
+
+   --  ==========================================================================
+   --  Test: "xor" operator
+   --  ==========================================================================
+
+   procedure Test_Xor_Operator is
+      use Int_Option;
+      O_Some1 : constant Option := New_Some (10);
+      O_Some2 : constant Option := New_Some (20);
+      O_None  : constant Option := None;
+      Result  : Option;
+   begin
+      Put_Line ("Testing ""xor"" operator...");
+      --  First has value, second is None: returns first
+      Result := O_Some1 xor O_None;
+      Assert (Is_Some (Result) and then Value (Result) = 10,
+              """xor"" returns first when only first has value");
+
+      --  First is None, second has value: returns second
+      Result := O_None xor O_Some2;
+      Assert (Is_Some (Result) and then Value (Result) = 20,
+              """xor"" returns second when only second has value");
+
+      --  Both have values: returns None
+      Result := O_Some1 xor O_Some2;
+      Assert (Is_None (Result), """xor"" returns None when both have values");
+
+      --  Both are None: returns None
+      Result := O_None xor O_None;
+      Assert (Is_None (Result), """xor"" returns None when both are None");
+   end Test_Xor_Operator;
+
+   --  ==========================================================================
+   --  Test: Zip_With
+   --  ==========================================================================
+
+   procedure Test_Zip_With is
+      use Int_Option;
+
+      --  Second Integer option for the second operand
+      package Int_Option2 is new Functional.Option (T => Integer);
+
+      function Has_Value_2 (O : Int_Option2.Option) return Boolean
+      is (Int_Option2.Is_Some (O));
+
+      function Value_2 (O : Int_Option2.Option) return Integer
+      is (Int_Option2.Value (O));
+
+      --  Combine two integers by multiplication
+      function Multiply (A : Integer; B : Integer) return Integer
+      is (A * B);
+
+      function Zip_Ints is new Int_Option.Zip_With
+        (U => Integer,
+         Option_U => Int_Option2.Option,
+         Has_Value_U => Has_Value_2,
+         Value_U => Value_2,
+         Combine => Multiply);
+
+      Int_Some1 : constant Option := New_Some (3);
+      Int_Some2 : constant Int_Option2.Option := Int_Option2.New_Some (4);
+      Int_None1 : constant Option := None;
+      Int_None2 : constant Int_Option2.Option := Int_Option2.None;
+      Result    : Option;
+   begin
+      Put_Line ("Testing Zip_With...");
+      --  Both have values
+      Result := Zip_Ints (Int_Some1, Int_Some2);
+      Assert (Is_Some (Result) and then Value (Result) = 12,
+              "Zip_With combines values when both present");
+
+      --  First is None
+      Result := Zip_Ints (Int_None1, Int_Some2);
+      Assert (Is_None (Result), "Zip_With returns None when first is None");
+
+      --  Second is None
+      Result := Zip_Ints (Int_Some1, Int_None2);
+      Assert (Is_None (Result), "Zip_With returns None when second is None");
+   end Test_Zip_With;
+
+   --  ==========================================================================
+   --  Test: Flatten
+   --  ==========================================================================
+
+   procedure Test_Flatten is
+      --  Option[Option[Integer]]
+      package Nested_Option is new Functional.Option (T => Int_Option.Option);
+      use Nested_Option;
+
+      --  Identity conversion (T = Inner_Option in this case)
+      function Convert (V : Int_Option.Option) return Int_Option.Option
+      is (V);
+
+      function Has_Value_Inner (O : Int_Option.Option) return Boolean
+      is (Int_Option.Is_Some (O));
+
+      function None_Inner return Int_Option.Option
+      is (Int_Option.None);
+
+      function Do_Flatten is new Nested_Option.Flatten
+        (Inner_Option => Int_Option.Option,
+         Convert => Convert,
+         Has_Value_Inner => Has_Value_Inner,
+         None_Inner => None_Inner);
+
+      Inner_Some  : constant Int_Option.Option := Int_Option.New_Some (42);
+      Inner_None  : constant Int_Option.Option := Int_Option.None;
+      Outer_Some1 : constant Nested_Option.Option := New_Some (Inner_Some);
+      Outer_Some2 : constant Nested_Option.Option := New_Some (Inner_None);
+      Outer_None  : constant Nested_Option.Option := None;
+      Result      : Int_Option.Option;
+   begin
+      Put_Line ("Testing Flatten...");
+      --  Some(Some(42)) -> Some(42)
+      Result := Do_Flatten (Outer_Some1);
+      Assert (Int_Option.Is_Some (Result) and then Int_Option.Value (Result) = 42,
+              "Flatten extracts inner value from Some(Some)");
+
+      --  Some(None) -> None
+      Result := Do_Flatten (Outer_Some2);
+      Assert (Int_Option.Is_None (Result),
+              "Flatten returns None for Some(None)");
+
+      --  None -> None
+      Result := Do_Flatten (Outer_None);
+      Assert (Int_Option.Is_None (Result),
+              "Flatten returns None for None");
+   end Test_Flatten;
+
+   --  ==========================================================================
+   --  Test: Ok_Or and Ok_Or_Else
+   --  ==========================================================================
+
+   procedure Test_Ok_Or is
+      use Int_Option;
+
+      type Error_Code is (Missing_Value, Invalid_Input, Not_Found);
+
+      package Int_Result is new Functional.Result (T => Integer, E => Error_Code);
+
+      function Make_Ok (V : Integer) return Int_Result.Result
+      is (Int_Result.Ok (V));
+
+      function Make_Error (E : Error_Code) return Int_Result.Result
+      is (Int_Result.New_Error (E));
+
+      function Opt_To_Result is new Int_Option.Ok_Or
+        (Error_Type => Error_Code,
+         Result_Type => Int_Result.Result,
+         Make_Ok => Make_Ok,
+         Make_Error => Make_Error);
+
+      function Produce_Error return Error_Code
+      is (Missing_Value);
+
+      function Opt_To_Result_Lazy is new Int_Option.Ok_Or_Else
+        (Error_Type => Error_Code,
+         Result_Type => Int_Result.Result,
+         Make_Ok => Make_Ok,
+         Make_Error => Make_Error,
+         Produce_Error => Produce_Error);
+
+      O_Some : constant Option := New_Some (42);
+      O_None : constant Option := None;
+      Result : Int_Result.Result;
+   begin
+      Put_Line ("Testing Ok_Or and Ok_Or_Else...");
+      --  Some -> Ok
+      Result := Opt_To_Result (O_Some, Not_Found);
+      Assert (Int_Result.Is_Ok (Result) and then Int_Result.Value (Result) = 42,
+              "Ok_Or converts Some to Ok");
+
+      --  None -> Error with provided error code
+      Result := Opt_To_Result (O_None, Invalid_Input);
+      Assert (Int_Result.Is_Error (Result) and then
+              Int_Result.Error (Result) = Invalid_Input,
+              "Ok_Or converts None to Error");
+
+      --  Ok_Or_Else: Some -> Ok (lazy not called)
+      Result := Opt_To_Result_Lazy (O_Some);
+      Assert (Int_Result.Is_Ok (Result) and then Int_Result.Value (Result) = 42,
+              "Ok_Or_Else converts Some to Ok");
+
+      --  Ok_Or_Else: None -> Error (lazy called)
+      Result := Opt_To_Result_Lazy (O_None);
+      Assert (Int_Result.Is_Error (Result) and then
+              Int_Result.Error (Result) = Missing_Value,
+              "Ok_Or_Else converts None to Error using lazy producer");
+   end Test_Ok_Or;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Option Unit Tests");
@@ -224,6 +444,11 @@ begin
    Test_And_Then;
    Test_Filter;
    Test_Or_Else;
+   Test_And_Operator;
+   Test_Xor_Operator;
+   Test_Zip_With;
+   Test_Flatten;
+   Test_Ok_Or;
 
    New_Line;
    Put_Line ("======================================");

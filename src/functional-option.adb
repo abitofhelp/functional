@@ -116,4 +116,74 @@ package body Functional.Option is
       end case;
    end Or_Else_With;
 
+   --  "and": returns B if both have values, else None
+   function "and" (A, B : Option) return Option is
+   begin
+      if A.Has_Value and B.Has_Value then
+         return B;
+      else
+         return None;
+      end if;
+   end "and";
+
+   --  "xor": returns the value if exactly one has a value
+   function "xor" (A, B : Option) return Option is
+   begin
+      if A.Has_Value and not B.Has_Value then
+         return A;
+      elsif B.Has_Value and not A.Has_Value then
+         return B;
+      else
+         return None;
+      end if;
+   end "xor";
+
+   --  Zip_With: combine two Options with a function
+   function Zip_With (A : Option; B : Option_U) return Option is
+   begin
+      if A.Has_Value and Has_Value_U (B) then
+         return New_Some (Combine (A.Value, Value_U (B)));
+      else
+         return None;
+      end if;
+   end Zip_With;
+
+   --  Flatten: Option[Option[T]] -> Option[T]
+   function Flatten (Outer : Option) return Inner_Option is
+   begin
+      if not Outer.Has_Value then
+         return None_Inner;
+      end if;
+
+      declare
+         Inner : constant Inner_Option := Convert (Outer.Value);
+      begin
+         if Has_Value_Inner (Inner) then
+            return Inner;
+         else
+            return None_Inner;
+         end if;
+      end;
+   end Flatten;
+
+   --  Ok_Or: convert to Result - Some(v) -> Ok(v), None -> Error(e)
+   function Ok_Or (O : Option; Error : Error_Type) return Result_Type is
+   begin
+      if O.Has_Value then
+         return Make_Ok (O.Value);
+      else
+         return Make_Error (Error);
+      end if;
+   end Ok_Or;
+
+   --  Ok_Or_Else: convert to Result with lazy error production
+   function Ok_Or_Else (O : Option) return Result_Type is
+   begin
+      if O.Has_Value then
+         return Make_Ok (O.Value);
+      else
+         return Make_Error (Produce_Error);
+      end if;
+   end Ok_Or_Else;
+
 end Functional.Option;
