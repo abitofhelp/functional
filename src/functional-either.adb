@@ -15,17 +15,17 @@ package body Functional.Either is
 
    --  Constructors
    function Left (V : L) return Either
-   is ((Kind => K_Left, Left_Value => V));
+   is ((Is_Left => True, Left_Value => V));
 
    function Right (V : R) return Either
-   is ((Kind => K_Right, Right_Value => V));
+   is ((Is_Left => False, Right_Value => V));
 
    --  Predicates
    function Is_Left (E : Either) return Boolean
-   is (E.Kind = K_Left);
+   is (E.Is_Left);
 
    function Is_Right (E : Either) return Boolean
-   is (E.Kind = K_Right);
+   is (not E.Is_Left);
 
    --  Extractors
    function Left_Value (E : Either) return L
@@ -37,11 +37,11 @@ package body Functional.Either is
    --  Map_Left: transform Left value
    function Map_Left (E : Either) return Either is
    begin
-      case E.Kind is
-         when K_Left =>
+      case E.Is_Left is
+         when True =>
             return Left (F (E.Left_Value));
 
-         when K_Right =>
+         when False =>
             return E;
       end case;
    end Map_Left;
@@ -49,11 +49,11 @@ package body Functional.Either is
    --  Map_Right: transform Right value
    function Map_Right (E : Either) return Either is
    begin
-      case E.Kind is
-         when K_Left =>
+      case E.Is_Left is
+         when True =>
             return E;
 
-         when K_Right =>
+         when False =>
             return Right (F (E.Right_Value));
       end case;
    end Map_Right;
@@ -61,11 +61,11 @@ package body Functional.Either is
    --  Bimap: transform both Left and Right values simultaneously
    function Bimap (E : Either) return Either is
    begin
-      case E.Kind is
-         when K_Left =>
+      case E.Is_Left is
+         when True =>
             return Left (Map_L (E.Left_Value));
 
-         when K_Right =>
+         when False =>
             return Right (Map_R (E.Right_Value));
       end case;
    end Bimap;
@@ -73,11 +73,11 @@ package body Functional.Either is
    --  Fold: reduce Either to single value
    function Fold (E : Either) return U is
    begin
-      case E.Kind is
-         when K_Left =>
+      case E.Is_Left is
+         when True =>
             return On_Left (E.Left_Value);
 
-         when K_Right =>
+         when False =>
             return On_Right (E.Right_Value);
       end case;
    end Fold;

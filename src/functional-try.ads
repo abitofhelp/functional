@@ -44,7 +44,7 @@ package Functional.Try is
       type E is private;
       type Result_Type is private;
       with function Ok (Value : T) return Result_Type is <>;
-      with function Err (Error : E) return Result_Type is <>;
+      with function New_Error (Error : E) return Result_Type is <>;
       with
         function Map_Exception
           (Occ : Ada.Exceptions.Exception_Occurrence) return E is <>;

@@ -11,15 +11,15 @@ pragma Ada_2022;
 --    programming with composable operations like Map, And_Then, and Recover.
 --
 --  Key Types:
---    Result_Kind  - Discriminant: K_Ok or K_Err
---    Result       - Discriminated record holding either Ok_Value or Err_Value
+--    Result       - Discriminated record with Is_Ok : Boolean
+--                   When True, holds Ok_Value; when False, holds Error_Value
 --
 --  Operations (20):
---    Constructors: Ok, Err, From_Error
---    Predicates:   Is_Ok, Is_Err
+--    Constructors: Ok, New_Error, From_Error
+--    Predicates:   Is_Ok, Is_Error
 --    Extractors:   Value, Error, Expect
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
---    Transforms:   Map, And_Then, And_Then_Into, Map_Err, Bimap
+--    Transforms:   Map, And_Then, And_Then_Into, Map_Error, Bimap
 --    Recovery:     Fallback, Fallback_With, Recover, Recover_With
 --    Validation:   Ensure, With_Context
 --    Side Effects: Tap
@@ -31,15 +31,13 @@ generic
    type E is private;
 package Functional.Result is
 
-   type Result_Kind is (K_Ok, K_Err);
-
-   type Result (Kind : Result_Kind := K_Ok) is record
-      case Kind is
-         when K_Ok =>
+   type Result (Is_Ok : Boolean := True) is record
+      case Is_Ok is
+         when True =>
             Ok_Value : T;
 
-         when K_Err =>
-            Err_Value : E;
+         when False =>
+            Error_Value : E;
       end case;
    end record;
 
@@ -49,13 +47,13 @@ package Functional.Result is
 
    function Ok (V : T) return Result
    with Inline;
-   function Err (E_Val : E) return Result
+   function New_Error (E_Val : E) return Result
    with Inline;
 
    --  From_Error: construct Result from pre-existing error value
    --  Used at infrastructure boundaries when converting exceptions to Results
-   function From_Error (E_Val : E) return Result
-   with Inline;
+   --  Alias for New_Error for semantic clarity at exception boundaries
+   function From_Error (E_Val : E) return Result renames New_Error;
 
    --  ==========================================================================
    --  Predicates
@@ -63,7 +61,7 @@ package Functional.Result is
 
    function Is_Ok (R : Result) return Boolean
    with Inline;
-   function Is_Err (R : Result) return Boolean
+   function Is_Error (R : Result) return Boolean
    with Inline;
 
    --  ==========================================================================
@@ -71,15 +69,15 @@ package Functional.Result is
    --  ==========================================================================
 
    function Value (R : Result) return T
-   with Pre => R.Kind = K_Ok, Inline;
+   with Pre => R.Is_Ok, Inline;
 
    function Error (R : Result) return E
-   with Pre => R.Kind = K_Err, Inline;
+   with Pre => not R.Is_Ok, Inline;
 
    --  Expect: extract value or raise with custom message
    --  Forces programmer to document why they believe Result is Ok
    function Expect (R : Result; Msg : String) return T
-   with Pre => R.Kind = K_Ok or else raise Program_Error with Msg;
+   with Pre => R.Is_Ok or else raise Program_Error with Msg;
 
    --  ==========================================================================
    --  Unwrap with defaults
@@ -88,7 +86,7 @@ package Functional.Result is
    function Unwrap_Or (R : Result; Default : T) return T
    with
      Post =>
-       (if R.Kind = K_Ok then Unwrap_Or'Result = R.Ok_Value
+       (if R.Is_Ok then Unwrap_Or'Result = R.Ok_Value
         else Unwrap_Or'Result = Default);
 
    generic
@@ -114,14 +112,14 @@ package Functional.Result is
    --  Requires caller to provide target Result error constructor for error propagation
    generic
       type Result_U is private;
-      with function Err_U (E_Val : E) return Result_U;
+      with function Error_U (E_Val : E) return Result_U;
       with function F (X : T) return Result_U;
    function And_Then_Into (R : Result) return Result_U;
 
-   --  Map_Err: transform error value
+   --  Map_Error: transform error value
    generic
       with function F (X : E) return E;
-   function Map_Err (R : Result) return Result;
+   function Map_Error (R : Result) return Result;
 
    --  Bimap: transform both Ok and Err values simultaneously
    generic
@@ -173,7 +171,7 @@ package Functional.Result is
    --  Tap: run side effects without changing Result (for logging/debugging)
    generic
       with procedure On_Ok (V : T);
-      with procedure On_Err (E_Val : E);
+      with procedure On_Error (E_Val : E);
    function Tap (R : Result) return Result;
 
 end Functional.Result;

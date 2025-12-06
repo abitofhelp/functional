@@ -27,7 +27,7 @@ package body Functional.Try is
       return Ok (Action);
    exception
       when Occ : others =>
-         return Err (Map_Exception (Occ));
+         return New_Error (Map_Exception (Occ));
    end Try_To_Result;
 
    --  ========================================================================
@@ -42,7 +42,7 @@ package body Functional.Try is
            E             => E,
            Result_Type   => Result_Pkg.Result,
            Ok            => Result_Pkg.Ok,
-           Err           => Result_Pkg.Err,
+           New_Error     => Result_Pkg.New_Error,
            Map_Exception => Map_Exception,
            Action        => Action);
    begin
@@ -72,7 +72,7 @@ package body Functional.Try is
       return Result_Pkg.Ok (Action (P));
    exception
       when Occ : others =>
-         return Result_Pkg.Err (Map_Exception (Occ));
+         return Result_Pkg.New_Error (Map_Exception (Occ));
    end Try_To_Result_With_Param;
 
    --  ========================================================================

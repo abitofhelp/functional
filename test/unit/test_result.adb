@@ -54,12 +54,12 @@ procedure Test_Result is
    procedure Test_Constructors is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
    begin
       Put_Line ("Testing Constructors and Predicates...");
       Assert (Int_Result.Is_Ok (R_Ok), "Ok constructor creates Ok result");
-      Assert (Int_Result.Is_Err (R_Err), "Err constructor creates Err result");
-      Assert (not Int_Result.Is_Err (R_Ok), "Ok result is not Err");
+      Assert (Int_Result.Is_Error (R_Err), "New_Error constructor creates Err result");
+      Assert (not Int_Result.Is_Error (R_Ok), "Ok result is not Err");
       Assert (not Int_Result.Is_Ok (R_Err), "Err result is not Ok");
    end Test_Constructors;
 
@@ -72,7 +72,7 @@ procedure Test_Result is
       R_Err    : constant Int_Result.Result := Int_Result.From_Error (Test_Err);
    begin
       Put_Line ("Testing From_Error...");
-      Assert (Int_Result.Is_Err (R_Err), "From_Error creates Err result");
+      Assert (Int_Result.Is_Error (R_Err), "From_Error creates Err result");
       Assert
         (Int_Result.Error (R_Err).Kind = IO_Error,
          "From_Error preserves error kind");
@@ -88,7 +88,7 @@ procedure Test_Result is
    procedure Test_Extractors is
       R_Ok    : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err   : constant Int_Result.Result :=
-        Int_Result.Err ((Validation_Error, [others => 'X'], 5));
+        Int_Result.New_Error ((Validation_Error, [others => 'X'], 5));
       Val     : Integer;
       Err_Val : Error;
    begin
@@ -123,7 +123,7 @@ procedure Test_Result is
    procedure Test_Unwrap is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Get_Default return Integer
       is (999);
@@ -150,7 +150,7 @@ procedure Test_Result is
    procedure Test_Map is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (5);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Double (X : Integer) return Integer
       is (X * 2);
@@ -166,7 +166,7 @@ procedure Test_Result is
          "Map transforms Ok value");
 
       Result := Transform (R_Err);
-      Assert (Int_Result.Is_Err (Result), "Map leaves Err unchanged");
+      Assert (Int_Result.Is_Error (Result), "Map leaves Err unchanged");
    end Test_Map;
 
    --  ==========================================================================
@@ -176,7 +176,7 @@ procedure Test_Result is
    procedure Test_And_Then is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (5);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Double (X : Integer) return Int_Result.Result
       is (Int_Result.Ok (X * 2));
@@ -186,7 +186,7 @@ procedure Test_Result is
          if X > 0 then
             return Int_Result.Ok (X);
          else
-            return Int_Result.Err ((Validation_Error, [others => ' '], 0));
+            return Int_Result.New_Error ((Validation_Error, [others => ' '], 0));
          end if;
       end Validate_Positive;
 
@@ -203,11 +203,11 @@ procedure Test_Result is
          "And_Then chains Ok -> Ok");
 
       Result := Chain_Double (R_Err);
-      Assert (Int_Result.Is_Err (Result), "And_Then short-circuits on Err");
+      Assert (Int_Result.Is_Error (Result), "And_Then short-circuits on Err");
 
       Result := Chain_Validate (Int_Result.Ok (-5));
       Assert
-        (Int_Result.Is_Err (Result), "And_Then propagates Err from function");
+        (Int_Result.Is_Error (Result), "And_Then propagates Err from function");
    end Test_And_Then;
 
    --  ==========================================================================
@@ -217,7 +217,7 @@ procedure Test_Result is
    procedure Test_And_Then_Into is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Int_To_Str (X : Integer) return Str_Result.Result is
          Img : constant String := Integer'Image (X);
@@ -230,17 +230,17 @@ procedure Test_Result is
       function Int_To_Str_Fail (X : Integer) return Str_Result.Result is
          pragma Unreferenced (X);
       begin
-         return Str_Result.Err ((Validation_Error, [others => ' '], 0));
+         return Str_Result.New_Error ((Validation_Error, [others => ' '], 0));
       end Int_To_Str_Fail;
 
       function Chain_To_Str is new Int_Result.And_Then_Into
         (Result_U => Str_Result.Result,
-         Err_U    => Str_Result.Err,
+         Error_U  => Str_Result.New_Error,
          F        => Int_To_Str);
 
       function Chain_To_Str_Fail is new Int_Result.And_Then_Into
         (Result_U => Str_Result.Result,
-         Err_U    => Str_Result.Err,
+         Error_U  => Str_Result.New_Error,
          F        => Int_To_Str_Fail);
 
       Result : Str_Result.Result;
@@ -259,7 +259,7 @@ procedure Test_Result is
       --  Test Err path: propagates original error
       Result := Chain_To_Str (R_Err);
       Assert
-        (Str_Result.Is_Err (Result),
+        (Str_Result.Is_Error (Result),
          "And_Then_Into propagates Err through type change");
       Assert
         (Str_Result.Error (Result).Kind = Parse_Error,
@@ -268,35 +268,35 @@ procedure Test_Result is
       --  Test function returning Err
       Result := Chain_To_Str_Fail (R_Ok);
       Assert
-        (Str_Result.Is_Err (Result),
+        (Str_Result.Is_Error (Result),
          "And_Then_Into propagates Err from function");
    end Test_And_Then_Into;
 
    --  ==========================================================================
-   --  Test: Map_Err
+   --  Test: Map_Error
    --  ==========================================================================
 
-   procedure Test_Map_Err is
+   procedure Test_Map_Error is
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => 'A'], 5));
+        Int_Result.New_Error ((Parse_Error, [others => 'A'], 5));
 
       function Change_Kind (E : Error) return Error
       is ((IO_Error, E.Message, E.Len));
 
-      function Transform_Err is new Int_Result.Map_Err (F => Change_Kind);
+      function Transform_Err is new Int_Result.Map_Error (F => Change_Kind);
 
       Result : Int_Result.Result;
    begin
-      Put_Line ("Testing Map_Err...");
+      Put_Line ("Testing Map_Error...");
       Result := Transform_Err (R_Err);
       Assert
-        (Int_Result.Is_Err (Result)
+        (Int_Result.Is_Error (Result)
          and then Int_Result.Error (Result).Kind = IO_Error,
-         "Map_Err transforms error type");
+         "Map_Error transforms error type");
 
       Result := Transform_Err (Int_Result.Ok (42));
-      Assert (Int_Result.Is_Ok (Result), "Map_Err leaves Ok unchanged");
-   end Test_Map_Err;
+      Assert (Int_Result.Is_Ok (Result), "Map_Error leaves Ok unchanged");
+   end Test_Map_Error;
 
    --  ==========================================================================
    --  Test: Bimap (transform both Ok and Err)
@@ -305,7 +305,7 @@ procedure Test_Result is
    procedure Test_Bimap is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (5);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => 'A'], 5));
+        Int_Result.New_Error ((Parse_Error, [others => 'A'], 5));
 
       function Double (X : Integer) return Integer
       is (X * 2);
@@ -326,7 +326,7 @@ procedure Test_Result is
 
       Result := Transform (R_Err);
       Assert
-        (Int_Result.Is_Err (Result)
+        (Int_Result.Is_Error (Result)
          and then Int_Result.Error (Result).Kind = IO_Error,
          "Bimap transforms Err value");
    end Test_Bimap;
@@ -339,7 +339,7 @@ procedure Test_Result is
       R_Ok1 : constant Int_Result.Result := Int_Result.Ok (10);
       R_Ok2 : constant Int_Result.Result := Int_Result.Ok (20);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Get_Backup return Int_Result.Result
       is (Int_Result.Ok (99));
@@ -368,7 +368,7 @@ procedure Test_Result is
    procedure Test_Recover is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       function Handle_Error (E : Error) return Integer
       is (case E.Kind is
@@ -419,11 +419,11 @@ procedure Test_Result is
 
       Result := Validate (Int_Result.Ok (-5));
       Assert
-        (Int_Result.Is_Err (Result),
+        (Int_Result.Is_Error (Result),
          "Ensure converts to Err if predicate fails");
 
-      Result := Validate (Int_Result.Err ((Parse_Error, [others => ' '], 0)));
-      Assert (Int_Result.Is_Err (Result), "Ensure leaves Err unchanged");
+      Result := Validate (Int_Result.New_Error ((Parse_Error, [others => ' '], 0)));
+      Assert (Int_Result.Is_Error (Result), "Ensure leaves Err unchanged");
    end Test_Ensure;
 
    --  ==========================================================================
@@ -432,7 +432,7 @@ procedure Test_Result is
 
    procedure Test_With_Context is
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((IO_Error, "file not found" & [15 .. 100 => ' '], 14));
+        Int_Result.New_Error ((IO_Error, "file not found" & [15 .. 100 => ' '], 14));
 
       function Append (E : Error; Msg : String) return Error is
          New_Msg : constant String := E.Message (1 .. E.Len) & " :: " & Msg;
@@ -450,7 +450,7 @@ procedure Test_Result is
    begin
       Put_Line ("Testing With_Context...");
       Result := Add_Context (R_Err, "reading config");
-      Assert (Int_Result.Is_Err (Result), "With_Context preserves Err state");
+      Assert (Int_Result.Is_Error (Result), "With_Context preserves Err state");
 
       Final_Err := Int_Result.Error (Result);
       Assert
@@ -469,7 +469,7 @@ procedure Test_Result is
    procedure Test_Tap is
       R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
       R_Err : constant Int_Result.Result :=
-        Int_Result.Err ((Parse_Error, [others => ' '], 0));
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
 
       Ok_Called  : Boolean := False;
       Err_Called : Boolean := False;
@@ -480,14 +480,14 @@ procedure Test_Result is
          Ok_Called := True;
       end On_Ok;
 
-      procedure On_Err (E : Error) is
+      procedure On_Error (E : Error) is
          pragma Unreferenced (E);
       begin
          Err_Called := True;
-      end On_Err;
+      end On_Error;
 
       function Tap_Both is new
-        Int_Result.Tap (On_Ok => On_Ok, On_Err => On_Err);
+        Int_Result.Tap (On_Ok => On_Ok, On_Error => On_Error);
 
       Result : Int_Result.Result;
    begin
@@ -503,8 +503,8 @@ procedure Test_Result is
       Err_Called := False;
       Result := Tap_Both (R_Err);
       Assert
-        (Int_Result.Is_Err (Result) and then Err_Called and then not Ok_Called,
-         "Tap calls On_Err for Err result");
+        (Int_Result.Is_Error (Result) and then Err_Called and then not Ok_Called,
+         "Tap calls On_Error for Err result");
    end Test_Tap;
 
 begin
@@ -522,7 +522,7 @@ begin
    Test_Map;
    Test_And_Then;
    Test_And_Then_Into;
-   Test_Map_Err;
+   Test_Map_Error;
    Test_Bimap;
    Test_Fallback;
    Test_Recover;

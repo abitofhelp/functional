@@ -11,8 +11,8 @@ pragma Ada_2022;
 --    equally valid outcomes. Useful for parsing, validation, and branching.
 --
 --  Key Types:
---    Either_Kind  - Discriminant: K_Left or K_Right
---    Either       - Discriminated record holding Left_Value or Right_Value
+--    Either       - Discriminated record with Is_Left : Boolean
+--                   When True, holds Left_Value; when False, holds Right_Value
 --
 --  Operations (8):
 --    Constructors:   Left, Right
@@ -28,14 +28,12 @@ generic
    type R is private;
 package Functional.Either is
 
-   type Either_Kind is (K_Left, K_Right);
-
-   type Either (Kind : Either_Kind := K_Left) is record
-      case Kind is
-         when K_Left =>
+   type Either (Is_Left : Boolean := True) is record
+      case Is_Left is
+         when True =>
             Left_Value : L;
 
-         when K_Right =>
+         when False =>
             Right_Value : R;
       end case;
    end record;
@@ -63,10 +61,10 @@ package Functional.Either is
    --  ==========================================================================
 
    function Left_Value (E : Either) return L
-   with Pre => E.Kind = K_Left, Inline;
+   with Pre => E.Is_Left, Inline;
 
    function Right_Value (E : Either) return R
-   with Pre => E.Kind = K_Right, Inline;
+   with Pre => not E.Is_Left, Inline;
 
    --  ==========================================================================
    --  Transformations

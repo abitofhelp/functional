@@ -109,7 +109,7 @@ procedure Test_Try is
    begin
       Put_Line ("Testing Try with exception...");
       Assert
-        (Int_Result.Is_Err (Result), "Try returns Err when action raises");
+        (Int_Result.Is_Error (Result), "Try returns Err when action raises");
 
       Err := Int_Result.Error (Result);
       Assert
@@ -148,7 +148,7 @@ procedure Test_Try is
       Err    : Error;
    begin
       Put_Line ("Testing Try with parse failure...");
-      Assert (Int_Result.Is_Err (Result), "Try catches parse exception");
+      Assert (Int_Result.Is_Error (Result), "Try catches parse exception");
 
       Err := Int_Result.Error (Result);
       Assert
@@ -259,7 +259,7 @@ procedure Test_Try is
    begin
       Put_Line ("Testing Try_To_Result_With_Param (exception)...");
       Assert
-        (Int_Result.Is_Err (Result),
+        (Int_Result.Is_Error (Result),
          "Try_With_Param returns Err when action raises");
    end Test_Try_With_Param_Exception;
 

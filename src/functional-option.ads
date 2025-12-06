@@ -11,8 +11,8 @@ pragma Ada_2022;
 --    Supports Preelaborate for use in domain layers with strict elaboration.
 --
 --  Key Types:
---    Option_Kind  - Discriminant: K_Some or K_None
---    Option       - Discriminated record holding Value when K_Some
+--    Option       - Discriminated record with Has_Value : Boolean
+--                   When True, holds Value; when False, empty
 --
 --  Operations (11):
 --    Constructors: New_Some, None
@@ -30,14 +30,12 @@ package Functional.Option with
   Preelaborate
 is
 
-   type Option_Kind is (K_Some, K_None);
-
-   type Option (Kind : Option_Kind := K_None) is record
-      case Kind is
-         when K_Some =>
+   type Option (Has_Value : Boolean := False) is record
+      case Has_Value is
+         when True =>
             Value : T;
 
-         when K_None =>
+         when False =>
             null;
       end case;
    end record;
@@ -65,7 +63,7 @@ is
    --  ==========================================================================
 
    function Value (O : Option) return T
-   with Pre => O.Kind = K_Some, Inline;
+   with Pre => O.Has_Value, Inline;
 
    --  ==========================================================================
    --  Unwrap with defaults
@@ -74,7 +72,7 @@ is
    function Unwrap_Or (O : Option; Default : T) return T
    with
      Post =>
-       (if O.Kind = K_Some then Unwrap_Or'Result = O.Value
+       (if O.Has_Value then Unwrap_Or'Result = O.Value
         else Unwrap_Or'Result = Default);
 
    generic
