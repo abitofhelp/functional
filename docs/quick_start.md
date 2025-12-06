@@ -1,13 +1,13 @@
 # Quick Start Guide
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause<br>
-**License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Version:** 3.0.0
+**Date:** December 06, 2025
+**SPDX-License-Identifier:** BSD-3-Clause
+**License File:** See the LICENSE file in the project root
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
-Type-safe error handling for Ada 2022: `Result<T,E>`, `Option<T>`, `Either<L,R>`
+Type-safe error handling for Ada 2022: `Result[T,E]`, `Option[T]`, `Either[L,R]`
 
 ---
 
@@ -34,29 +34,33 @@ package Int_Option is new Functional.Option (T => Integer);
 
 ---
 
-## Result<T,E> - Error Handling (20 Operations)
+## Result[T,E] - Error Handling (25 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
-| **Construct** | `Ok(v)`, `Err(e)`, `From_Error(e)` | Create success or error result |
-| **Predicates** | `Is_Ok(r)`, `Is_Err(r)` | Test result state |
+| **Construct** | `Ok(v)`, `New_Error(e)`, `From_Error(e)` | Create success or error result |
+| **Predicates** | `Is_Ok(r)`, `Is_Error(r)` | Test result state |
 | **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)` | Get value (with Pre) or panic with message |
 | **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
 | **Transform** | `Map(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value, chain operations |
-| **Error Map** | `Map_Err(r)`, `Bimap(r)` | Transform error, transform both sides |
+| **Error Map** | `Map_Error(r)`, `Bimap(r)` | Transform error, transform both sides |
 | **Fallback** | `Fallback(a, b)`, `Fallback_With(r)` | Try alternative on error (eager/lazy) |
 | **Recovery** | `Recover(r)`, `Recover_With(r)` | Convert error to value or new Result |
 | **Validation** | `Ensure(r)`, `With_Context(r, msg)` | Validate predicate, add error breadcrumbs |
 | **Side Effects** | `Tap(r)` | Run callbacks without changing Result |
+| **Combine** | `Zip_With(a, b)`, `Flatten(r)` | Combine Results, unwrap nested Result |
+| **Convert** | `To_Option(r)` | Ok(v)->Some(v), Error(_)->None |
+| **Operators** | `r or default`, `a or b` | Aliases for Unwrap_Or and Fallback |
 
-**Basic Example:**
+### Basic Example
+
 ```ada
 function Parse_Int (S : String) return Int_Result.Result is
 begin
    return Int_Result.Ok (Integer'Value (S));
 exception
    when Constraint_Error =>
-      return Int_Result.Err ((Parse_Error, "Invalid integer" & [15 .. 100 => ' ']));
+      return Int_Result.New_Error ((Parse_Error, "Invalid integer" & [15 .. 100 => ' ']));
 end Parse_Int;
 
 R := Parse_Int ("42");
@@ -65,18 +69,60 @@ if Int_Result.Is_Ok (R) then
 end if;
 ```
 
-**Transform with Map:**
+### Transform with Map
+
 ```ada
 function Double (X : Integer) return Integer is (X * 2);
 function Transform is new Int_Result.Map (F => Double);
 
-R := Transform (Int_Result.Ok (5));  -- Ok(10)
-R := Transform (Int_Result.Err (E)); -- Err(E) unchanged
+R := Transform (Int_Result.Ok (5));          -- Ok(10)
+R := Transform (Int_Result.New_Error (E));   -- Error(E) unchanged
+```
+
+### Operator Syntax (v3.0.0)
+
+```ada
+-- "or" for Unwrap_Or: get value or default
+Port : constant Integer := Port_Result or 8080;
+
+-- "or" for Fallback: try alternative on error
+Config := Load_Primary or Load_Backup;
+```
+
+### Zip_With: Combine Two Results
+
+```ada
+package Str_Result is new Functional.Result (T => String, E => Error);
+
+function Concat (A : Integer; B : String) return Integer is
+  (A + B'Length);
+
+function Zip is new Int_Result.Zip_With
+  (U        => String,
+   Result_U => Str_Result.Result,
+   Is_Ok_U  => Str_Result.Is_Ok,
+   Value_U  => Str_Result.Value,
+   Error_U  => Str_Result.Error,
+   Combine  => Concat);
+
+R := Zip (Int_Result.Ok (10), Str_Result.Ok ("hello"));  -- Ok(15)
+```
+
+### To_Option: Convert Result to Option
+
+```ada
+function To_Opt is new Int_Result.To_Option
+  (Option_Type => Int_Option.Option,
+   Make_Some   => Int_Option.New_Some,
+   Make_None   => Int_Option.None);
+
+O := To_Opt (Int_Result.Ok (42));           -- Some(42)
+O := To_Opt (Int_Result.New_Error (E));     -- None
 ```
 
 ---
 
-## Option<T> - Optional Values (11 Operations)
+## Option[T] - Optional Values (19 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
@@ -86,9 +132,13 @@ R := Transform (Int_Result.Err (E)); -- Err(E) unchanged
 | **Defaults** | `Unwrap_Or(o, default)`, `Unwrap_Or_With(o)` | Get value or fallback (eager/lazy) |
 | **Transform** | `Map(o)`, `And_Then(o)` | Transform Some value, chain operations |
 | **Filter** | `Filter(o)` | Keep value only if predicate holds |
-| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)`, `Fallback` | Try alternative on None (eager/lazy) |
+| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)` | Try alternative on None (eager/lazy) |
+| **Combine** | `Zip_With(a, b)`, `Flatten(o)` | Combine Options, unwrap nested Option |
+| **Convert** | `Ok_Or(o, e)`, `Ok_Or_Else(o)` | Option to Result (eager/lazy error) |
+| **Operators** | `a and b`, `a xor b`, `o or default`, `a or b` | Logical and fallback operators |
 
-**Example:**
+### Basic Example
+
 ```ada
 function Find_User (ID : String) return Int_Option.Option is
 begin
@@ -102,7 +152,8 @@ end Find_User;
 Age := Int_Option.Unwrap_Or (Find_User ("bob"), 0);
 ```
 
-**Filter Example:**
+### Filter Example
+
 ```ada
 function Is_Adult (Age : Integer) return Boolean is (Age >= 18);
 function Adults_Only is new Int_Option.Filter (Pred => Is_Adult);
@@ -111,19 +162,51 @@ O := Adults_Only (Int_Option.New_Some (25));  -- Some(25)
 O := Adults_Only (Int_Option.New_Some (15));  -- None
 ```
 
+### Operator Syntax (v3.0.0)
+
+```ada
+-- "or" for Unwrap_Or: get value or default
+Age : constant Integer := Find_Age ("bob") or 0;
+
+-- "or" for Or_Else: try alternative on None
+Config := Load_User_Config or Load_Default_Config;
+
+-- "and": returns B if both have values, else None
+Both := Option_A and Option_B;  -- Some(B) if both Some, else None
+
+-- "xor": returns value if exactly one has value
+One := Option_A xor Option_B;   -- Some if exactly one, else None
+```
+
+### Ok_Or: Convert Option to Result
+
+```ada
+function To_Result is new Int_Option.Ok_Or
+  (Error_Type  => Error,
+   Result_Type => Int_Result.Result,
+   Make_Ok     => Int_Result.Ok,
+   Make_Error  => Int_Result.New_Error);
+
+R := To_Result (Int_Option.New_Some (42), Missing_Error);  -- Ok(42)
+R := To_Result (Int_Option.None, Missing_Error);           -- Error(Missing_Error)
+```
+
 ---
 
-## Either<L,R> - Neutral Choice (8 Operations)
+## Either[L,R] - Neutral Choice (11 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `Left(v)`, `Right(v)` | Create left or right value |
 | **Predicates** | `Is_Left(e)`, `Is_Right(e)` | Test which side |
 | **Extract** | `Left_Value(e)`, `Right_Value(e)` | Get value (with Pre) |
-| **Transform** | `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Transform one or both sides |
+| **Transform** | `Map(e)`, `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Right-biased Map, transform sides |
+| **Chain** | `And_Then(e)` | Right-biased monadic bind |
+| **Swap** | `Swap(e)` | Exchange Left and Right |
 | **Reduce** | `Fold(e)` | Reduce to single value |
 
-**Basic Example:**
+### Basic Example
+
 ```ada
 package Str_Int_Either is new Functional.Either
   (L => String, R => Integer);
@@ -138,19 +221,52 @@ begin
 end Parse_Or_Keep;
 ```
 
-**Transform with Map_Left/Map_Right:**
+### Map (Right-biased, v3.0.0)
+
 ```ada
-function Upper (S : String) return String is ...;
 function Double (X : Integer) return Integer is (X * 2);
+function Transform is new Str_Int_Either.Map (F => Double);
 
-function Upper_Left is new Str_Int_Either.Map_Left (F => Upper);
-function Double_Right is new Str_Int_Either.Map_Right (F => Double);
-
-E := Upper_Left (Str_Int_Either.Left ("hello"));   -- Left("HELLO")
-E := Double_Right (Str_Int_Either.Right (5));      -- Right(10)
+E := Transform (Str_Int_Either.Right (5));     -- Right(10)
+E := Transform (Str_Int_Either.Left ("hi"));   -- Left("hi") unchanged
 ```
 
-**Fold to Single Value:**
+### And_Then (Right-biased chain, v3.0.0)
+
+```ada
+function Safe_Divide (X : Integer) return Str_Int_Either.Either is
+begin
+   if X = 0 then
+      return Str_Int_Either.Left ("division by zero");
+   else
+      return Str_Int_Either.Right (100 / X);
+   end if;
+end Safe_Divide;
+
+function Chain is new Str_Int_Either.And_Then (F => Safe_Divide);
+
+E := Chain (Str_Int_Either.Right (5));   -- Right(20)
+E := Chain (Str_Int_Either.Right (0));   -- Left("division by zero")
+E := Chain (Str_Int_Either.Left ("x"));  -- Left("x") unchanged
+```
+
+### Swap (v3.0.0)
+
+```ada
+package Int_Str_Either is new Functional.Either
+  (L => Integer, R => String);
+
+function Do_Swap is new Str_Int_Either.Swap
+  (Either_Swapped => Int_Str_Either.Either,
+   Make_Left      => Int_Str_Either.Left,
+   Make_Right     => Int_Str_Either.Right);
+
+E := Do_Swap (Str_Int_Either.Left ("hello"));  -- Int_Str_Either.Right("hello")
+E := Do_Swap (Str_Int_Either.Right (42));      -- Int_Str_Either.Left(42)
+```
+
+### Fold to Single Value
+
 ```ada
 function To_Str (S : String) return String is (S);
 function Int_To_Str (X : Integer) return String is (Integer'Image (X));
@@ -180,7 +296,7 @@ function Load_Safely is new Functional.Try.Try_To_Functional_Result
    Map_Exception => To_Error, Action => Load_File);
 
 R : constant Str_Result.Result := Load_Safely;
--- Never raises! Always returns Ok or Err
+-- Never raises! Always returns Ok or Error
 ```
 
 ### Try_To_Option (No Parameters)
@@ -245,6 +361,7 @@ O : constant Str_Option.Option := Read_Safely ("Enter name: ");
 ```
 
 **Why use With_Param variants?**
+
 - Thread-safe: No module-level mutable state
 - Type-safe: No `Unchecked_Access` needed
 - Flexible: Supports indefinite types (String, unconstrained arrays)
@@ -273,7 +390,7 @@ Result := Chain (Validate (Int_Result.Ok (5)));
 -- Ok(5) -> Ensure positive -> Ok(5) -> Add_One -> Ok(6)
 
 Result := Chain (Validate (Int_Result.Ok (-1)));
--- Ok(-1) -> Ensure positive -> Err(Not positive) -> Chain skipped -> Err
+-- Ok(-1) -> Ensure positive -> Error(Not positive) -> Chain skipped -> Error
 ```
 
 ### Error Context Breadcrumbs
@@ -294,6 +411,9 @@ R := With_File_Context (R, "reading config.yaml");
 ```ada
 -- Eager: both evaluated
 R := Int_Result.Fallback (Try_Primary, Try_Backup);
+
+-- Operator syntax (v3.0.0)
+R := Try_Primary or Try_Backup;
 
 -- Lazy: backup only evaluated if primary fails
 function Get_Backup return Int_Result.Result is ...;
@@ -316,7 +436,7 @@ begin
 end Log_Err;
 
 function With_Logging is new Int_Result.Tap
-  (On_Ok => Log_Ok, On_Err => Log_Err);
+  (On_Ok => Log_Ok, On_Error => Log_Err);
 
 R := With_Logging (Some_Operation);  -- Logs, returns unchanged Result
 ```
@@ -335,12 +455,56 @@ R := With_Logging (Some_Operation);  -- Logs, returns unchanged Result
 | **Try_With_Param** | Exception boundaries (with params) | Console output, parameterized I/O |
 
 **Rule of thumb:**
+
 - If absence/failure is an **error**, use **Result**. If it's **expected**, use **Option**.
 - If your exception-prone code needs **input parameters**, use **Try_With_Param** variants.
 - If you don't need error details, use **Option**. If you need error info, use **Result**.
 
 ---
 
+## Migration from v2.x to v3.0.0
+
+### Discriminant Access
+
+```ada
+-- Old (2.x)
+if R.Kind = K_Ok then ...
+if O.Kind = K_Some then ...
+
+-- New (3.0.0)
+if R.Is_Ok then ...
+if O.Has_Value then ...
+```
+
+### Result API Changes
+
+```ada
+-- Old (2.x)
+Int_Result.Err (E);
+Int_Result.Is_Err (R);
+function Transform is new Int_Result.Map_Err (F => ...);
+
+-- New (3.0.0)
+Int_Result.New_Error (E);
+Int_Result.Is_Error (R);
+function Transform is new Int_Result.Map_Error (F => ...);
+```
+
+### New Operators
+
+```ada
+-- v3.0.0 operator syntax
+Value := Result or Default;           -- Unwrap_Or
+Result := Primary or Backup;          -- Fallback
+Value := Option or Default;           -- Unwrap_Or
+Option := Primary or Backup;          -- Or_Else
+Option := Option_A and Option_B;      -- Both must have value
+Option := Option_A xor Option_B;      -- Exactly one has value
+```
+
+---
+
 ## See Also
 
 - **README.md** - Full documentation with examples
+- **CHANGELOG.md** - Version history and migration notes

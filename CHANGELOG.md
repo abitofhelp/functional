@@ -84,8 +84,17 @@ function Transform is new Str_Result.Map_Err (F => ...);
 function Transform is new Str_Result.Map_Error (F => ...);
 ```
 
+### SPARK and Embedded Compliance (NEW)
+- `SPARK_Mode => On` for Option, Result, Either (formally verifiable)
+- `SPARK_Mode => Off` for Try (exception boundary, by design)
+- `Preelaborate` categorization for Result, Either
+- `Pure` categorization for Version
+- Postconditions added to all transform operations for prover assistance
+- Zero heap allocation, no controlled types, Ravenscar compatible
+
 ### Technical Details
-- All 134 unit tests passing (Result: 51, Option: 40, Either: 23, Try: 14, Try_Option: 6)
+- All 135 unit tests passing (Result: 52, Option: 40, Either: 23, Try: 14, Try_Option: 6)
+- Tested on POSIX (macOS, Linux) and Windows platforms
 - stmt+decision coverage: 95%+
 - Total operations: 55 (Result: 25, Option: 19, Either: 11)
 
