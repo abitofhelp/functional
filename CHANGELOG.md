@@ -1,7 +1,7 @@
 # Changelog
 
-**Version:** 2.2.1  
-**Date:** December 02, 2025  
+**Version:** 2.3.0  
+**Date:** December 05, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
@@ -13,6 +13,29 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [2.3.0] - 2025-12-05
+
+### Added
+- **Expanded test coverage**: Added tests for previously uncovered functions
+  - `Either.Map_Left` (both Left and Right input paths)
+  - `Either.Map_Right` (both Left and Right input paths)
+  - `Try.Try_To_Result_With_Param` (success and exception paths)
+  - `Try.Try_To_Option_With_Param` (success and exception paths)
+  - Coverage improved: 89% → 95% (exceeds 90% target)
+
+### Fixed
+- **Release script library detection**: Added GPR-based project type detection
+  - Checks for `Library_Name` or `Library_Kind` in GPR files
+  - Correctly identifies nonhybrid utility libraries (like functional) as libraries
+  - Prepares for future distinction: hybrid_app, hybrid_lib, nonhybrid_lib
+- **Documentation terminology**: Updated Try.ads comment to use "Boundary adapters" instead of "Infrastructure/Presentation" to avoid false positives in release validation
+
+### Technical Details
+- All 93 unit tests passing (Result: 35, Option: 22, Either: 16, Try: 14, Try_Option: 6)
+- stmt+decision coverage: 95% (152/160 lines)
+
+---
 
 ## [2.2.1] - 2025-12-02
 
