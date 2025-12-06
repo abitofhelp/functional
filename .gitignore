@@ -166,6 +166,7 @@ gmon.out
 *.gcov
 *.gcda
 *.gcno
+*.srctrace
 coverage/
 *.gcov.html
 lcov.info
