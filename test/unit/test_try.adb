@@ -13,6 +13,8 @@ with Ada.Text_IO;    use Ada.Text_IO;
 with Ada.Command_Line;
 with Ada.Exceptions; use Ada.Exceptions;
 with Functional.Result;
+with Functional.Option;
+with Functional.Try;
 with Functional.Try.To_Result;
 with Test_Framework;
 
@@ -29,6 +31,7 @@ procedure Test_Try is
    end record;
 
    package Int_Result is new Functional.Result (T => Integer, E => Error);
+   package Int_Option is new Functional.Option (T => Integer);
 
    Test_Count : Natural := 0;
    Pass_Count : Natural := 0;
@@ -189,6 +192,130 @@ procedure Test_Try is
         (Int_Result.Value (Result) = 42, "Try returns parsed integer value");
    end Test_Try_Parse_Success;
 
+   --  ==========================================================================
+   --  Test: Try_To_Result_With_Param - success path
+   --  ==========================================================================
+
+   procedure Test_Try_With_Param_Success is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Parse is new
+        Functional.Try.Try_To_Result_With_Param
+          (T             => Integer,
+           E             => Error,
+           Param         => String,
+           Result_Pkg    => Int_Result,
+           Map_Exception => To_Error,
+           Action        => Parse_String);
+
+      Result : constant Int_Result.Result := Try_Parse ("42");
+   begin
+      Put_Line ("Testing Try_To_Result_With_Param (success)...");
+      Assert
+        (Int_Result.Is_Ok (Result),
+         "Try_With_Param returns Ok for successful action");
+      Assert
+        (Int_Result.Value (Result) = 42,
+         "Try_With_Param returns correct value");
+   end Test_Try_With_Param_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Result_With_Param - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_With_Param_Exception is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Parse is new
+        Functional.Try.Try_To_Result_With_Param
+          (T             => Integer,
+           E             => Error,
+           Param         => String,
+           Result_Pkg    => Int_Result,
+           Map_Exception => To_Error,
+           Action        => Parse_String);
+
+      Result : constant Int_Result.Result := Try_Parse ("not_a_number");
+   begin
+      Put_Line ("Testing Try_To_Result_With_Param (exception)...");
+      Assert
+        (Int_Result.Is_Err (Result),
+         "Try_With_Param returns Err when action raises");
+   end Test_Try_With_Param_Exception;
+
+   --  ==========================================================================
+   --  Test: Try_To_Option_With_Param - success path
+   --  ==========================================================================
+
+   procedure Test_Try_Option_With_Param_Success is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function Try_Parse is new
+        Functional.Try.Try_To_Option_With_Param
+          (T          => Integer,
+           Param      => String,
+           Option_Pkg => Int_Option,
+           Action     => Parse_String);
+
+      Result : constant Int_Option.Option := Try_Parse ("42");
+   begin
+      Put_Line ("Testing Try_To_Option_With_Param (success)...");
+      Assert
+        (Int_Option.Is_Some (Result),
+         "Try_Option_With_Param returns Some for successful action");
+      Assert
+        (Int_Option.Value (Result) = 42,
+         "Try_Option_With_Param returns correct value");
+   end Test_Try_Option_With_Param_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Option_With_Param - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_Option_With_Param_Exception is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function Try_Parse is new
+        Functional.Try.Try_To_Option_With_Param
+          (T          => Integer,
+           Param      => String,
+           Option_Pkg => Int_Option,
+           Action     => Parse_String);
+
+      Result : constant Int_Option.Option := Try_Parse ("not_a_number");
+   begin
+      Put_Line ("Testing Try_To_Option_With_Param (exception)...");
+      Assert
+        (Int_Option.Is_None (Result),
+         "Try_Option_With_Param returns None when action raises");
+   end Test_Try_Option_With_Param_Exception;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Try.To_Result Tests");
@@ -200,6 +327,10 @@ begin
    Test_Try_Exception;
    Test_Try_Parse_Int;
    Test_Try_Parse_Success;
+   Test_Try_With_Param_Success;
+   Test_Try_With_Param_Exception;
+   Test_Try_Option_With_Param_Success;
+   Test_Try_Option_With_Param_Exception;
 
    New_Line;
    Put_Line ("======================================");

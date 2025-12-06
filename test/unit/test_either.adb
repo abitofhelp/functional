@@ -110,6 +110,75 @@ procedure Test_Either is
    end Test_Parse_Or_Keep;
 
    --  ==========================================================================
+   --  Test: Map_Left (transform Left value only)
+   --  ==========================================================================
+
+   procedure Test_Map_Left is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("hello" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function To_Upper (S : Fixed_String) return Fixed_String is
+         Result : Fixed_String := S;
+      begin
+         for I in Result'Range loop
+            if Result (I) >= 'a' and then Result (I) <= 'z' then
+               Result (I) := Character'Val (Character'Pos (Result (I)) - 32);
+            end if;
+         end loop;
+         return Result;
+      end To_Upper;
+
+      function Transform is new Str_Int_Either.Map_Left (F => To_Upper);
+
+      Result_L : Str_Int_Either.Either;
+      Result_R : Str_Int_Either.Either;
+   begin
+      Put_Line ("Testing Map_Left...");
+      Result_L := Transform (E_Left);
+      Assert
+        (Str_Int_Either.Is_Left (Result_L)
+         and then Str_Int_Either.Left_Value (Result_L) (1 .. 5) = "HELLO",
+         "Map_Left transforms Left value");
+
+      Result_R := Transform (E_Right);
+      Assert
+        (Str_Int_Either.Is_Right (Result_R)
+         and then Str_Int_Either.Right_Value (Result_R) = 42,
+         "Map_Left passes through Right value unchanged");
+   end Test_Map_Left;
+
+   --  ==========================================================================
+   --  Test: Map_Right (transform Right value only)
+   --  ==========================================================================
+
+   procedure Test_Map_Right is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("hello" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (5);
+
+      function Double (X : Integer) return Integer is (X * 2);
+
+      function Transform is new Str_Int_Either.Map_Right (F => Double);
+
+      Result_L : Str_Int_Either.Either;
+      Result_R : Str_Int_Either.Either;
+   begin
+      Put_Line ("Testing Map_Right...");
+      Result_L := Transform (E_Left);
+      Assert
+        (Str_Int_Either.Is_Left (Result_L)
+         and then Str_Int_Either.Left_Value (Result_L) (1 .. 5) = "hello",
+         "Map_Right passes through Left value unchanged");
+
+      Result_R := Transform (E_Right);
+      Assert
+        (Str_Int_Either.Is_Right (Result_R)
+         and then Str_Int_Either.Right_Value (Result_R) = 10,
+         "Map_Right transforms Right value");
+   end Test_Map_Right;
+
+   --  ==========================================================================
    --  Test: Bimap (transform both Left and Right)
    --  ==========================================================================
 
@@ -201,6 +270,8 @@ begin
    Test_Constructors;
    Test_Extractors;
    Test_Parse_Or_Keep;
+   Test_Map_Left;
+   Test_Map_Right;
    Test_Bimap;
    Test_Fold;
 
