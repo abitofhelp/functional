@@ -1,24 +1,25 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Either
+--  Functional.Either - Disjoint Union Type
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Either interface and type definitions.
+--    Generic Either type representing one of two possible values (Left or
+--    Right). Unlike Result, neither side is designated as "error" - both are
+--    equally valid outcomes. Useful for parsing, validation, and branching.
 --
 --  Key Types:
---    L
---    R
---    Either_Kind
---    Either
---    U
+--    Either_Kind  - Discriminant: K_Left or K_Right
+--    Either       - Discriminated record holding Left_Value or Right_Value
 --
---  Dependencies:
---    Inline
---    Inline
---    Inline
+--  Operations (8):
+--    Constructors:   Left, Right
+--    Predicates:     Is_Left, Is_Right
+--    Extractors:     Left_Value, Right_Value
+--    Transforms:     Map_Left, Map_Right, Bimap
+--    Reduction:      Fold
 --
 --  ===========================================================================
 

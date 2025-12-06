@@ -1,23 +1,28 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Result
+--  Functional.Result - Type-Safe Error Handling
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Result interface and type definitions.
+--    Generic Result type for explicit error handling. Represents either a
+--    success value (Ok) or an error value (Err). Enables railway-oriented
+--    programming with composable operations like Map, And_Then, and Recover.
 --
 --  Key Types:
---    T
---    E
---    Result_Kind
---    Result
+--    Result_Kind  - Discriminant: K_Ok or K_Err
+--    Result       - Discriminated record holding either Ok_Value or Err_Value
 --
---  Dependencies:
---    Inline
---    Inline
---    Inline
+--  Operations (20):
+--    Constructors: Ok, Err, From_Error
+--    Predicates:   Is_Ok, Is_Err
+--    Extractors:   Value, Error, Expect
+--    Defaults:     Unwrap_Or, Unwrap_Or_With
+--    Transforms:   Map, And_Then, And_Then_Into, Map_Err, Bimap
+--    Recovery:     Fallback, Fallback_With, Recover, Recover_With
+--    Validation:   Ensure, With_Context
+--    Side Effects: Tap
 --
 --  ===========================================================================
 

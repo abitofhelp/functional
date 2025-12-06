@@ -1,10 +1,10 @@
 # Software Requirements Specification (SRS)
 
-**Project**: Functional - Type-Safe Error Handling Library for Ada 2022
-**Version**: 2.0.0
-**Date**: 2025-11-13
-**Author**: Michael Gardner, A Bit of Help, Inc.
-**Status**: Released
+**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
+**Version:** 2.3.0
+**Date:** December 05, 2025
+**Author:** Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 ---
 
@@ -12,238 +12,272 @@
 
 ### 1.1 Purpose
 
-This Software Requirements Specification (SRS) describes the functional and non-functional requirements for TZif, a production-ready Ada 2022 library for parsing and querying IANA timezone information from TZif binary files.
+This Software Requirements Specification (SRS) describes the functional and non-functional requirements for the Functional library, a production-ready Ada 2022 library providing type-safe functional programming abstractions for error handling.
 
 ### 1.2 Scope
 
-TZif provides:
-- Parsing of TZif binary format (versions 1, 2, and 3)
-- Query operations for timezone data by ID, region, and pattern
-- Timezone transition lookups for specific epochs
-- Source discovery and validation
-- Cache export/import functionality
-- Thread-safe operations
-- Railway-oriented error handling
+Functional provides:
+- `Result[T, E]` type for explicit error handling (success or failure with typed error)
+- `Option[T]` type for optional values (presence or absence)
+- `Either[L, R]` type for disjoint unions (one of two possible values)
+- `Try` bridges for converting exception-based APIs to Result/Option types
+- Railway-oriented programming patterns for composable error handling
+- Full Ada 2022 contract support (Pre, Post, Inline aspects)
 
 ### 1.3 Definitions and Acronyms
 
-- **TZif**: Timezone Information Format (IANA standard binary format)
-- **IANA**: Internet Assigned Numbers Authority
-- **SRS**: Software Requirements Specification
-- **API**: Application Programming Interface
-- **UTC**: Coordinated Universal Time
+- **Result**: A discriminated record representing either a success value (Ok) or an error value (Err)
+- **Option**: A discriminated record representing either a present value (Some) or absence (None)
+- **Either**: A discriminated record representing one of two possible values (Left or Right)
+- **Try**: Exception-to-Result/Option conversion utilities
+- **Railway-Oriented Programming (ROP)**: A pattern where operations chain along "happy path" (Ok/Some) or "error track" (Err/None)
+- **Monadic Bind**: The `And_Then` operation that chains fallible operations
 
 ### 1.4 References
 
-- IANA Time Zone Database: https://www.iana.org/time-zones
-- TZif Format Specification: RFC 8536
-- Ada 2022 Language Reference Manual
-
----
+- Ada 2022 Reference Manual (ISO/IEC 8652:2023)
+- Semantic Versioning 2.0.0 (semver.org)
+- Railway-Oriented Programming (Scott Wlaschin)
+- Rust std::result::Result and std::option::Option documentation
 
 ## 2. Overall Description
 
 ### 2.1 Product Perspective
 
-TZif is a standalone Ada library implementing hexagonal (ports and adapters) architecture with clean separation between domain logic, application use cases, and infrastructure adapters.
+Functional is a standalone utility library with no external dependencies beyond the Ada standard library. It provides foundational types used by domain, application, and infrastructure layers in hexagonal architecture projects.
 
-**Architecture Layers**:
-- **Domain Layer**: Pure business logic, value objects, entities
-- **Application Layer**: Use cases, ports (interfaces)
-- **Infrastructure Layer**: Adapters for file system, parsing, caching
+The library is designed to:
+- Replace exception-based error handling with explicit typed errors
+- Enable composition of fallible operations without nested conditionals
+- Provide a consistent API familiar to developers from Rust, Haskell, or F#
 
 ### 2.2 Product Features
 
-1. **TZif Parsing**: Parse TZif v1, v2, v3 binary files
-2. **Timezone Queries**: Find by ID, region, pattern, regex
-3. **Transition Lookups**: Get timezone info for specific epoch
-4. **Source Management**: Discover and validate timezone sources
-5. **Caching**: Export/import zone caches for performance
-6. **Error Handling**: Railway-oriented programming with Result monads
+| Feature | Description |
+|---------|-------------|
+| **Result Type** | 20+ operations for error handling (Ok/Err, Map, And_Then, Map_Err, Recover, etc.) |
+| **Option Type** | 11 operations for optional values (Some/None, Map, And_Then, Filter, Or_Else, etc.) |
+| **Either Type** | 8 operations for disjoint unions (Left/Right, Map_Left, Map_Right, Bimap, Fold) |
+| **Try Bridges** | 5 generic functions for exception-to-Result/Option conversion |
+| **Contract Support** | Pre/Post conditions, Inline aspects throughout |
+| **Preelaborate** | Option package supports preelaborate instantiation |
 
 ### 2.3 User Classes
 
-- **Application Developers**: Integrate timezone functionality
-- **System Administrators**: Configure timezone data sources
-- **Library Maintainers**: Extend and maintain the codebase
+| User Class | Description |
+|------------|-------------|
+| **Library Developers** | Build domain/application layers using Result/Option for all fallible operations |
+| **Infrastructure Developers** | Use Try bridges at I/O boundaries to convert exceptions to typed errors |
+| **API Consumers** | Instantiate generic packages and compose operations via railway-oriented patterns |
 
 ### 2.4 Operating Environment
 
-- **Platforms**: POSIX-compliant systems (Linux, macOS, BSD), Windows
-- **Ada Compiler**: GNAT FSF 14.2+ or GNAT Pro 25.0+
-- **Ada Version**: Ada 2022
-- **Dependencies**: functional ^1.0.0 (Result/Option monads)
-
----
+- **Ada Version**: Ada 2022 (requires GNAT >= 13)
+- **Build System**: Alire 2.0+ with GPRbuild
+- **Platforms**: Any platform supported by GNAT (Linux, macOS, Windows, embedded)
+- **Memory Model**: No dynamic allocation in core types; stack-based discriminated records
 
 ## 3. Functional Requirements
 
-### 3.1 TZif Parsing (FR-01)
+### 3.1 Result Type (FR-01)
 
-**Priority**: High
-**Description**: Parse TZif binary files in all versions.
+The `Functional.Result` generic package SHALL provide:
 
-**Requirements**:
-- FR-01.1: Parse TZif version 1 (legacy 32-bit)
-- FR-01.2: Parse TZif version 2 (64-bit)
-- FR-01.3: Parse TZif version 3 (with extensions)
-- FR-01.4: Validate file format and magic numbers
-- FR-01.5: Handle malformed files gracefully
+**Constructors:**
+- `Ok(V)` - Create success result containing value V
+- `Err(E)` - Create error result containing error E
+- `From_Error(E)` - Alias for Err (infrastructure convenience)
 
-### 3.2 Timezone Query Operations (FR-02)
+**Predicates:**
+- `Is_Ok(R)` - Returns True if R is Ok
+- `Is_Err(R)` - Returns True if R is Err
 
-**Priority**: High
-**Description**: Provide query operations for timezone data.
+**Extractors:**
+- `Value(R)` - Extract Ok value (Pre: Is_Ok)
+- `Error(R)` - Extract Err value (Pre: Is_Err)
+- `Expect(R, Msg)` - Extract Ok or raise with message
 
-**Requirements**:
-- FR-02.1: Find timezone by exact ID (e.g., "America/New_York")
-- FR-02.2: Find timezones by region (e.g., "America")
-- FR-02.3: Find timezones by pattern matching
-- FR-02.4: Find timezones by regex
-- FR-02.5: List all available timezones
-- FR-02.6: Get local timezone ID
+**Defaults:**
+- `Unwrap_Or(R, Default)` - Return value or default
+- `Unwrap_Or_With(R)` - Return value or call lazy function
 
-### 3.3 Transition Lookups (FR-03)
+**Transformations:**
+- `Map(R)` - Transform Ok value, pass Err unchanged
+- `And_Then(R)` - Chain fallible operation (monadic bind)
+- `And_Then_Into(R)` - Chain with type transformation
+- `Map_Err(R)` - Transform Err value, pass Ok unchanged
+- `Bimap(R)` - Transform both Ok and Err simultaneously
 
-**Priority**: High
-**Description**: Retrieve timezone information for specific points in time.
+**Recovery:**
+- `Fallback(A, B)` - Return A if Ok, else B (eager)
+- `Fallback_With(R)` - Lazy fallback
+- `Recover(R)` - Convert Err to value
+- `Recover_With(R)` - Convert Err to Result
 
-**Requirements**:
-- FR-03.1: Get transition info for given epoch seconds
-- FR-03.2: Return UTC offset at specific time
-- FR-03.3: Return timezone abbreviation (e.g., "PST", "PDT")
-- FR-03.4: Handle times before/after transition data
+**Validation:**
+- `Ensure(R)` - Validate Ok value with predicate
+- `With_Context(R, Msg)` - Append context to Err
 
-### 3.4 Source Management (FR-04)
+**Side Effects:**
+- `Tap(R)` - Execute callbacks without changing Result
 
-**Priority**: Medium
-**Description**: Discover and validate timezone data sources.
+### 3.2 Option Type (FR-02)
 
-**Requirements**:
-- FR-04.1: Scan filesystem paths for timezone sources
-- FR-04.2: Validate source directory structure
-- FR-04.3: Check for required VERSION file
-- FR-04.4: Count available zone files
-- FR-04.5: Generate unique IDs for sources (ULID)
+The `Functional.Option` generic package SHALL provide:
 
-### 3.5 Cache Management (FR-05)
+**Constructors:**
+- `New_Some(V)` - Create Option containing value V
+- `None` - Create empty Option
 
-**Priority**: Medium
-**Description**: Export and import zone caches for performance.
+**Predicates:**
+- `Is_Some(O)` - Returns True if O contains a value
+- `Is_None(O)` - Returns True if O is empty
 
-**Requirements**:
-- FR-05.1: Export zone cache to JSON format
-- FR-05.2: Import zone cache from JSON format
-- FR-05.3: Validate cache integrity
-- FR-05.4: Handle cache versioning
+**Extractors:**
+- `Value(O)` - Extract value (Pre: Is_Some)
 
-### 3.6 Error Handling (FR-06)
+**Defaults:**
+- `Unwrap_Or(O, Default)` - Return value or default
+- `Unwrap_Or_With(O)` - Return value or call lazy function
 
-**Priority**: High
-**Description**: Railway-oriented error handling without exceptions.
+**Transformations:**
+- `Map(O)` - Transform Some value, pass None unchanged
+- `And_Then(O)` - Chain optional operation (monadic bind)
+- `Filter(O)` - Keep value only if predicate holds
 
-**Requirements**:
-- FR-06.1: Use Result monad for all fallible operations
-- FR-06.2: Provide descriptive error messages
-- FR-06.3: Error codes for all failure modes
-- FR-06.4: No exceptions in library code
+**Fallback:**
+- `Or_Else(A, B)` - Return A if Some, else B (eager)
+- `Or_Else_With(O)` - Lazy fallback
+- `Fallback` - Alias for Or_Else
 
----
+### 3.3 Either Type (FR-03)
+
+The `Functional.Either` generic package SHALL provide:
+
+**Constructors:**
+- `Left(V)` - Create Either with Left value
+- `Right(V)` - Create Either with Right value
+
+**Predicates:**
+- `Is_Left(E)` - Returns True if E is Left
+- `Is_Right(E)` - Returns True if E is Right
+
+**Extractors:**
+- `Left_Value(E)` - Extract Left value (Pre: Is_Left)
+- `Right_Value(E)` - Extract Right value (Pre: Is_Right)
+
+**Transformations:**
+- `Map_Left(E)` - Transform Left value only
+- `Map_Right(E)` - Transform Right value only
+- `Bimap(E)` - Transform both values simultaneously
+- `Fold(E)` - Reduce to single value via handlers
+
+### 3.4 Try Bridges (FR-04)
+
+The `Functional.Try` package SHALL provide:
+
+**General Bridge:**
+- `Try_To_Result` - Convert exception-throwing action to any Result type
+
+**Convenience Wrappers:**
+- `Try_To_Functional_Result` - Bridge to Functional.Result
+- `Try_To_Functional_Option` - Bridge to Functional.Option
+
+**Parameterized Bridges:**
+- `Try_To_Result_With_Param` - Result bridge with input parameter
+- `Try_To_Option_With_Param` - Option bridge with input parameter
+
+### 3.5 Child Packages (FR-05)
+
+Backwards-compatible child packages SHALL provide legacy API:
+- `Functional.Try.To_Result` - Child package with `.Run` function
+- `Functional.Try.To_Option` - Child package with `.Run` function
 
 ## 4. Non-Functional Requirements
 
 ### 4.1 Performance (NFR-01)
 
-- NFR-01.1: Parse TZif file in < 10ms
-- NFR-01.2: Zone lookup in < 1ms (cached)
-- NFR-01.3: Transition lookup in < 100μs
+- All core operations SHALL be marked with `Inline` aspect
+- No dynamic memory allocation in Result, Option, or Either types
+- Zero-overhead abstraction: generated code equivalent to manual if/case
 
 ### 4.2 Reliability (NFR-02)
 
-- NFR-02.1: Handle all malformed inputs gracefully
-- NFR-02.2: No memory leaks
-- NFR-02.3: Thread-safe repository operations
+- Pre/Post contracts SHALL enforce correct usage at compile time (assertions enabled)
+- No exceptions SHALL propagate from core type operations
+- Try bridges SHALL catch all exceptions and convert to typed errors
 
 ### 4.3 Portability (NFR-03)
 
-- NFR-03.1: Support POSIX platforms (Linux, macOS, BSD)
-- NFR-03.2: Support Windows
-- NFR-03.3: No platform-specific code in domain/application layers
+- Library SHALL compile on any GNAT >= 13 target
+- No platform-specific code in core packages
+- Library type (static, relocatable, static-pic) configurable via GPR
 
 ### 4.4 Maintainability (NFR-04)
 
-- NFR-04.1: Hexagonal architecture with clear boundaries
-- NFR-04.2: Comprehensive documentation (docstrings)
-- NFR-04.3: > 90% test coverage
-- NFR-04.4: Zero compiler warnings
+- 90%+ statement+decision test coverage target
+- All public API documented with purpose and usage
+- Consistent naming following Ada and functional programming conventions
 
 ### 4.5 Usability (NFR-05)
 
-- NFR-05.1: Clear, intuitive API
-- NFR-05.2: Working examples for all use cases
-- NFR-05.3: Comprehensive error messages
-
----
+- API naming familiar to Rust/Haskell developers
+- Generic packages instantiable with any `private` type
+- Option package supports `Preelaborate` for strict elaboration contexts
 
 ## 5. System Requirements
 
 ### 5.1 Hardware Requirements
 
-- **Minimum**:
-  - CPU: Any modern processor
-  - RAM: 64 MB
-  - Disk: 10 MB
+None - pure library with no hardware dependencies.
 
 ### 5.2 Software Requirements
 
-- **Operating System**: Linux, macOS, BSD, or Windows
-- **Compiler**: GNAT FSF 14.2+ or GNAT Pro 25.0+
-- **Build System**: Alire 2.0+
-
----
+| Component | Requirement |
+|-----------|-------------|
+| Ada Compiler | GNAT >= 13 (FSF or Pro) |
+| Build System | Alire >= 2.0, GPRbuild |
+| Test Coverage | GNATcoverage (optional) |
 
 ## 6. Verification and Validation
 
 ### 6.1 Test Coverage
 
-- Unit tests: 0 tests
-- Integration tests: 0 tests
-- Examples: 0 working examples
+| Suite | Tests | Coverage Target |
+|-------|-------|-----------------|
+| Unit Tests | 93 | 90%+ stmt+decision |
+| Result | 35 | 91% |
+| Option | 22 | 100% |
+| Either | 16 | 100% |
+| Try | 14 | 100% |
+| Try_Option | 6 | 100% |
 
 ### 6.2 Verification Methods
 
-- **Code Review**: All code reviewed before merge
-- **Static Analysis**: Zero compiler warnings
-- **Dynamic Testing**: All tests must pass
-- **Coverage Analysis**: > 90% line coverage
-
----
+| Requirement | Method |
+|-------------|--------|
+| FR-01 to FR-05 | Unit tests exercising all operations |
+| NFR-01 | Code review for Inline aspects |
+| NFR-02 | Tests verify no exceptions from core operations |
+| NFR-03 | Build on multiple targets |
+| NFR-04 | GNATcoverage analysis |
+| NFR-05 | API review against Rust documentation |
 
 ## 7. Appendices
 
-### 7.1 TZif Format Overview
+### 7.1 API Summary
 
-TZif (Timezone Information Format) is a binary format defined by IANA for storing timezone data. The format includes:
-- Header with version and counts
-- Transition times
-- Transition types
-- Timezone abbreviations
-- Leap second information
-- Standard/wall indicators
-- UTC/local indicators
+| Package | Operations |
+|---------|------------|
+| Functional.Result | 20 (Ok, Err, Is_Ok, Is_Err, Value, Error, Expect, Unwrap_Or, Unwrap_Or_With, Map, And_Then, And_Then_Into, Map_Err, Bimap, Fallback, Fallback_With, Recover, Recover_With, Ensure, With_Context, Tap) |
+| Functional.Option | 11 (New_Some, None, Is_Some, Is_None, Value, Unwrap_Or, Unwrap_Or_With, Map, And_Then, Filter, Or_Else, Or_Else_With) |
+| Functional.Either | 8 (Left, Right, Is_Left, Is_Right, Left_Value, Right_Value, Map_Left, Map_Right, Bimap, Fold) |
+| Functional.Try | 5 (Try_To_Result, Try_To_Functional_Result, Try_To_Functional_Option, Try_To_Result_With_Param, Try_To_Option_With_Param) |
 
 ### 7.2 Project Statistics
 
-- Ada specification files: 5
-- Ada implementation files: 4
-- Total lines of code: ~15,000 (estimated)
-- Architecture layers: 
-
----
-
-**Document Control**:
-- Version: 1.0.0
-- Last Updated: 2025-11-13
-- Status: Released
-- Copyright © 2025 Michael Gardner, A Bit of Help, Inc.
-- License: BSD-3-Clause
+- Source Files: 13
+- Test Files: 8
+- Total Tests: 93
+- Code Coverage: 95% (stmt+decision)
+- Lines of Code: ~1,200 (excluding tests)

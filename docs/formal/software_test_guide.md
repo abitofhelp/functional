@@ -1,10 +1,10 @@
-# Software Test Guide
+# Software Test Guide (STG)
 
-**Project**: Functional - Type-Safe Error Handling Library for Ada 2022
-**Version**: 2.0.0
-**Date**: 2025-11-13
-**Author**: Michael Gardner, A Bit of Help, Inc.
-**Status**: Released
+**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
+**Version:** 2.3.0
+**Date:** December 05, 2025
+**Author:** Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 ---
 
@@ -12,48 +12,32 @@
 
 ### 1.1 Purpose
 
-This Software Test Guide describes the testing approach, test organization, and procedures for the TZif library.
+This Software Test Guide (STG) describes the testing strategy, organization, and execution procedures for the Functional library. It provides guidance for running existing tests and writing new tests.
 
 ### 1.2 Scope
 
 This document covers:
-- Test strategy and levels
-- Test organization
-- Running tests
-- Writing new tests
-- Test coverage analysis
-
----
+- Test organization and directory structure
+- Test execution commands
+- Writing new unit tests
+- Coverage analysis procedures
+- Test naming conventions
 
 ## 2. Test Strategy
 
 ### 2.1 Testing Levels
 
-**Unit Tests**:
-- Test individual packages in isolation
-- Mock dependencies via test spies
-- Focus on domain and value objects
-- Count: 0 tests
-
-**Integration Tests**:
-- Test full stack with real data
-- Test use cases end-to-end
-- Test error conditions and edge cases
-- Count: 0 tests
-
-**Examples as Tests**:
-- Working examples that demonstrate usage
-- Validate real-world scenarios
-- Count: 0 examples
+| Level | Description | Location |
+|-------|-------------|----------|
+| **Unit Tests** | Test individual package operations in isolation | `test/unit/` |
+| **Coverage Analysis** | Statement + decision coverage via GNATcoverage | `coverage/` |
 
 ### 2.2 Testing Approach
 
-- **Test-Driven**: Tests written alongside or before code
-- **Railway-Oriented**: Test both success and error paths
-- **Comprehensive**: Cover normal, edge, and error cases
-- **Automated**: All tests runnable via `make test-all`
-
----
+- **Exhaustive Operation Testing**: Every public operation tested
+- **Both Paths**: Ok/Err, Some/None, Left/Right branches exercised
+- **Contract Verification**: Pre/Post conditions validated
+- **Edge Cases**: Empty values, error conditions, boundary inputs
 
 ## 3. Test Organization
 
@@ -61,180 +45,206 @@ This document covers:
 
 ```
 test/
-├── src/               # Test sources
-│   ├── test_result.adb      # Result<T,E> tests
-│   ├── test_option.adb      # Option<T> tests
-│   ├── test_either.adb      # Either<L,R> tests
-│   ├── test_try.adb         # Try_To_Result tests
-│   ├── test_try_option.adb  # Try_To_Option tests
-│   ├── test_framework.ads   # Test framework
-│   ├── test_framework.adb
-│   └── test_runner.adb      # Main test runner
-└── python/            # Architecture validation tests
-    └── test_arch_guard.py
+├── alire.toml              # Test crate manifest
+├── functional_tests.gpr    # Test GPR project
+├── bin/                    # Compiled test executables
+│   └── unit_runner
+├── common/                 # Shared test infrastructure
+│   ├── test_framework.ads  # Test framework spec
+│   └── test_framework.adb  # Test framework body
+├── config/                 # Alire-generated config
+│   └── functional_tests_config.ads
+└── unit/                   # Unit test sources
+    ├── unit_runner.adb     # Main test runner
+    ├── test_result.adb     # Result package tests
+    ├── test_option.adb     # Option package tests
+    ├── test_either.adb     # Either package tests
+    ├── test_try.adb        # Try package tests
+    └── test_try_option.adb # Try Option bridge tests
 ```
 
 ### 3.2 Test Naming Convention
 
-- **Pattern**: `test_<component>.adb`
-- **Example**: `test_result.adb` tests `Functional.Result`
-- **Runner**: Single runner executable runs all tests
-
----
+| Pattern | Description |
+|---------|-------------|
+| `test_<package>.adb` | Tests for `Functional.<Package>` |
+| `Test_<Operation>` | Procedure testing specific operation |
+| `unit_runner.adb` | Main entry point that runs all tests |
 
 ## 4. Running Tests
 
 ### 4.1 Quick Start
 
 ```bash
-# Run all tests (unit + integration)
+# Build and run all tests
 make test-all
 
 # Run only unit tests
 make test-unit
 
-# Run only integration tests
-make test-integration
-
-# Run with coverage
+# Run with coverage analysis
 make test-coverage
 ```
 
-### 4.2 Individual Test Execution
+### 4.2 Manual Execution
 
 ```bash
-# Run all Ada tests via runner
-./test/bin/test_runner
+# Build test crate
+cd test && alr build
 
-# Run Python architecture tests
-make test-python
+# Run unit tests directly
+./test/bin/unit_runner
 ```
 
-### 4.3 Test Output
+### 4.3 Expected Output
 
-**Success**:
 ```
-Test: Zone ID Creation
-  [PASS] Make_Zone_Id creates valid zone
-  [PASS] Zone ID length is correct
-====================================================
-  Results: 2 / 2 passed
-  Status: ALL TESTS PASSED
-====================================================
-```
+======================================================================
+Functional Library - Unit Test Suite
+======================================================================
 
-**Failure**:
-```
-Test: Zone ID Creation
-  [PASS] Make_Zone_Id creates valid zone
-  [FAIL] Zone ID length is incorrect
-====================================================
-  Results: 1 / 2 passed
-  Status: TESTS FAILED
-====================================================
-```
+Testing Result constructors...
+[PASS] Ok creates success result
+[PASS] Err creates error result
+...
 
----
+Testing Option constructors...
+[PASS] New_Some creates Some option
+[PASS] None creates empty option
+...
+
+======================================================================
+Test Summary
+======================================================================
+Total:  93
+Passed: 93
+Failed: 0
+
+All tests passed!
+```
 
 ## 5. Writing Tests
 
-### 5.1 Unit Test Structure
+### 5.1 Test File Structure
 
 ```ada
 pragma Ada_2022;
+--  ======================================================================
+--  Test_Package_Name
+--  ======================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
+--  SPDX-License-Identifier: BSD-3-Clause
+--  Purpose:
+--    Tests for Functional.Package operations.
+--    Target: 90%+ coverage
+--  ======================================================================
+
+with Ada.Text_IO;    use Ada.Text_IO;
+with Ada.Command_Line;
+with Functional.Package;
 with Test_Framework;
-with Domain.Value_Object.Zone_Id;
 
-procedure Test_Zone_Id is
-   use Domain.Value_Object.Zone_Id;
-   use Test_Framework;
+procedure Test_Package_Name is
 
+   --  Package instantiation
+   package My_Package is new Functional.Package (...);
+
+   --  Test counters
    Test_Count : Natural := 0;
    Pass_Count : Natural := 0;
+   Fail_Count : Natural := 0;
 
-   procedure Assert(Condition : Boolean; Test_Name : String) is
+   --  Local assert helper
+   procedure Assert (Condition : Boolean; Message : String) is
    begin
       Test_Count := Test_Count + 1;
       if Condition then
          Pass_Count := Pass_Count + 1;
-         Put_Line("  [PASS] " & Test_Name);
+         Put_Line ("[PASS] " & Message);
       else
-         Put_Line("  [FAIL] " & Test_Name);
+         Fail_Count := Fail_Count + 1;
+         Put_Line ("[FAIL] " & Message);
       end if;
    end Assert;
 
-begin
-   Put_Line("Test: Zone ID Creation");
+   --  ==========================================================================
+   --  Test: Operation_Name
+   --  ==========================================================================
 
-   -- Test case
-   declare
-      Zone : constant Zone_Id_Type := Make_Zone_Id("America/New_York");
+   procedure Test_Operation_Name is
+      --  Setup
+      Input : My_Package.Type := ...;
+      Expected : ... := ...;
+      Actual : ...;
    begin
-      Assert(To_String(Zone) = "America/New_York",
-             "Make_Zone_Id creates valid zone");
-   end;
+      Put_Line ("Testing Operation_Name...");
 
-   -- Final summary
-   Report_Results(Test_Count, Pass_Count);
-end Test_Zone_Id;
+      --  Execute
+      Actual := My_Package.Operation (Input);
+
+      --  Verify
+      Assert (Actual = Expected, "Operation_Name produces expected result");
+   end Test_Operation_Name;
+
+begin
+   Put_Line ("======================================================================");
+   Put_Line ("Package_Name Tests");
+   Put_Line ("======================================================================");
+   New_Line;
+
+   --  Run all tests
+   Test_Operation_Name;
+   --  ... more tests ...
+
+   --  Report results
+   New_Line;
+   Test_Framework.Register_Results (Pass_Count, Fail_Count);
+end Test_Package_Name;
 ```
 
-### 5.2 Integration Test Structure
+### 5.2 Test Categories
+
+Each test file should cover:
+
+| Category | Example Tests |
+|----------|---------------|
+| **Constructors** | `Test_Ok`, `Test_Err`, `Test_New_Some`, `Test_None` |
+| **Predicates** | `Test_Is_Ok`, `Test_Is_Err`, `Test_Is_Some`, `Test_Is_None` |
+| **Extractors** | `Test_Value_Ok`, `Test_Value_Err`, `Test_Error` |
+| **Transforms** | `Test_Map_Ok`, `Test_Map_Err`, `Test_And_Then_Ok`, `Test_And_Then_Err` |
+| **Recovery** | `Test_Fallback`, `Test_Recover`, `Test_Unwrap_Or` |
+
+### 5.3 Testing Both Paths
+
+Always test both discriminant branches:
 
 ```ada
-pragma Ada_2022;
-with Test_Framework;
-with Application.Usecase.Find_By_Id;
-with Infrastructure.Adapter.File_System.Repository;
-
-procedure Test_Find_By_Id is
-   use Test_Framework;
-
+--  Test Map with Ok input
+procedure Test_Map_Ok is
+   R : Int_Result.Result := Int_Result.Ok (5);
+   function Double is new Int_Result.Map (F => Times_Two);
 begin
-   Put_Line("Test: Find By ID - Basic Lookup");
+   Assert (Int_Result.Is_Ok (Double (R)), "Map Ok returns Ok");
+   Assert (Int_Result.Value (Double (R)) = 10, "Map transforms value");
+end Test_Map_Ok;
 
-   -- Setup real repository
-   declare
-      Repo : Infrastructure.Adapter.File_System.Repository.Repository_Type;
-      UC   : Application.Usecase.Find_By_Id.Use_Case_Type(Repo'Access);
-      Result : constant Find_By_Id_Result := UC.Execute("America/New_York");
-   begin
-      Assert(Result.Is_Ok, "Should find valid zone");
-      Assert(Result.Value.Get_Id = "America/New_York", "Zone ID matches");
-   end;
-
-   Report_Results(Test_Count, Pass_Count);
-end Test_Find_By_Id;
-```
-
-### 5.3 Using Test Spies
-
-```ada
--- Test use case without real infrastructure
-with Test_Spies.Find_By_Id_Spy;
-
-procedure Test_Use_Case is
-   Spy : Test_Spies.Find_By_Id_Spy.Spy_Type;
-   UC  : Application.Usecase.SomeCase.Use_Case_Type(Spy'Access);
+--  Test Map with Err input
+procedure Test_Map_Err is
+   R : Int_Result.Result := Int_Result.Err (Error_Value);
+   function Double is new Int_Result.Map (F => Times_Two);
 begin
-   -- Execute use case
-   UC.Execute(...);
-
-   -- Verify spy was called correctly
-   Assert(Spy.Was_Called, "Repository was called");
-   Assert(Spy.Call_Count = 1, "Called exactly once");
-end Test_Use_Case;
+   Assert (Int_Result.Is_Err (Double (R)), "Map Err returns Err unchanged");
+end Test_Map_Err;
 ```
-
----
 
 ## 6. Test Coverage
 
 ### 6.1 Coverage Goals
 
-- **Target**: > 90% line coverage
-- **Critical Code**: 100% coverage for error handling
-- **Domain Layer**: Near 100% coverage
+| Metric | Target | Current |
+|--------|--------|---------|
+| Statement Coverage | 90%+ | 95% |
+| Decision Coverage | 90%+ | 95% |
 
 ### 6.2 Running Coverage Analysis
 
@@ -246,122 +256,168 @@ make test-coverage
 open coverage/report/index.html
 ```
 
-### 6.3 Coverage Reports
+### 6.3 Coverage by Package
 
-Coverage reports show:
-- Lines executed vs total
-- Branches taken
-- Functions covered
-- Per-file statistics
+| Package | Coverage | Lines |
+|---------|----------|-------|
+| Functional.Result | 91% | 48/53 |
+| Functional.Option | 100% | 28/28 |
+| Functional.Either | 100% | 18/18 |
+| Functional.Try | 100% | 18/18 |
+| Functional.Try.To_Result | 100% | 8/8 |
+| Functional.Try.To_Option | 100% | 6/6 |
+| **Total** | **95%** | **152/160** |
 
----
+### 6.4 Improving Coverage
 
-## 7. Test Data
+To identify uncovered lines:
 
-### 7.1 Test Timezone Data
-
-**Location**: `/usr/share/zoneinfo` (system default)
-
-**Test Zones Used**:
-- `America/New_York`: Standard US timezone
-- `Europe/London`: European timezone with DST
-- `UTC`: Special timezone with no transitions
-- `America/Los_Angeles`: West coast timezone
-
-### 7.2 Test Cache Data
-
-Test caches are generated during tests and cleaned up after.
-
----
-
-## 8. Continuous Integration
-
-### 8.1 CI Pipeline
-
-```yaml
-steps:
-  - name: Build
-    run: alr build
-
-  - name: Unit Tests
-    run: make test-unit
-
-  - name: Integration Tests
-    run: make test-integration
-
-  - name: Coverage
-    run: make test-coverage
-
-  - name: Examples
-    run: make test-examples
+```bash
+# View detailed coverage report
+open coverage/report/functional-result.adb.html
 ```
 
-### 8.2 Success Criteria
+Look for red-highlighted lines (not covered) and add tests that exercise those code paths.
 
-All must pass:
-- ✅ Zero build warnings
-- ✅ All unit tests pass
-- ✅ All integration tests pass
-- ✅ All examples execute successfully
-- ✅ Coverage > 90%
+## 7. Test Framework
 
----
+### 7.1 Test_Framework Package
 
-## 9. Test Maintenance
+The shared test infrastructure in `test/common/`:
 
-### 9.1 Adding New Tests
+```ada
+package Test_Framework is
+   --  Global counters
+   Total_Pass : Natural := 0;
+   Total_Fail : Natural := 0;
 
-1. Create test file: `test/unit/test_<component>.adb`
-2. Write test procedure
-3. Add to runner if needed
-4. Update Makefile if required
+   --  Register test results from a test file
+   procedure Register_Results (Pass, Fail : Natural);
 
-### 9.2 Updating Tests
+   --  Print final summary (called by unit_runner)
+   procedure Print_Summary;
 
-- Update tests when requirements change
-- Keep tests in sync with code
-- Refactor tests alongside code
+   --  Return exit code based on results
+   function Exit_Code return Ada.Command_Line.Exit_Status;
+end Test_Framework;
+```
 
-### 9.3 Test Documentation
+### 7.2 Integration with unit_runner
 
-- Document test purpose in header
-- Comment complex test scenarios
-- Explain expected vs actual behavior
+```ada
+--  unit_runner.adb
+procedure Unit_Runner is
+begin
+   --  Run each test suite (they call Register_Results internally)
+   Test_Result;
+   Test_Option;
+   Test_Either;
+   Test_Try;
+   Test_Try_Option;
 
----
+   --  Print summary and exit
+   Test_Framework.Print_Summary;
+   Ada.Command_Line.Set_Exit_Status (Test_Framework.Exit_Code);
+end Unit_Runner;
+```
 
-## 10. Known Issues
+## 8. Test Data
 
-None at this time. All 0 tests pass.
+### 8.1 Standard Test Types
 
----
+Tests typically instantiate packages with simple types:
 
-## 11. Appendices
+```ada
+--  Integer results with string errors
+type Error is record
+   Kind    : Error_Kind;
+   Message : String (1 .. 100);
+   Length  : Natural;
+end record;
 
-### 11.1 Test Statistics
+package Int_Result is new Functional.Result (T => Integer, E => Error);
+package Int_Option is new Functional.Option (T => Integer);
+package Str_Int_Either is new Functional.Either (L => String, R => Integer);
+```
 
-- Total Tests: 0
-  - Unit: 0
-  - Integration: 0
-- Examples: 0
-- Test Framework: Custom Ada framework
-- Coverage Tool: gnatcov
+### 8.2 Test Helper Functions
+
+Common test utilities:
+
+```ada
+--  Create error with message
+function Make_Error (Kind : Error_Kind; Msg : String) return Error is
+begin
+   return (Kind, Msg & (Msg'Length + 1 .. 100 => ' '), Msg'Length);
+end Make_Error;
+
+--  Simple transformation functions
+function Double (X : Integer) return Integer is (X * 2);
+function Add_One (X : Integer) return Integer is (X + 1);
+function Is_Positive (X : Integer) return Boolean is (X > 0);
+```
+
+## 9. Continuous Integration
+
+### 9.1 CI Commands
+
+```bash
+# Full test suite (for CI)
+make test-all
+
+# Expected exit code: 0 (all tests pass)
+```
+
+### 9.2 Success Criteria
+
+- All 93 unit tests pass
+- Coverage >= 90% (statement + decision)
+- No compiler warnings in test code
+- Clean build with `alr build`
+
+## 10. Test Maintenance
+
+### 10.1 Adding New Tests
+
+1. Add test procedure to appropriate `test_<package>.adb`
+2. Call new test procedure from the test file's main block
+3. Run `make test-unit` to verify
+4. Run `make test-coverage` to check coverage impact
+
+### 10.2 Updating Tests
+
+When API changes:
+1. Update affected test procedures
+2. Add new tests for new operations
+3. Remove tests for removed operations
+4. Update test counts in documentation
+
+### 10.3 Test Documentation
+
+Each test file header should include:
+- Target coverage percentage
+- Number of tests in file
+- Brief description of what's tested
+
+## 11. Test Statistics
+
+### 11.1 Current Test Counts
+
+| Test File | Tests | Target Package |
+|-----------|-------|----------------|
+| test_result.adb | 35 | Functional.Result |
+| test_option.adb | 22 | Functional.Option |
+| test_either.adb | 16 | Functional.Either |
+| test_try.adb | 14 | Functional.Try |
+| test_try_option.adb | 6 | Try Option bridges |
+| **Total** | **93** | |
 
 ### 11.2 Test Commands Reference
 
-```bash
-make test-all          # Run all tests
-make test-unit         # Unit tests only
-make test-integration  # Integration tests only
-make test-coverage     # With coverage
-make clean-coverage    # Remove coverage data
-```
-
----
-
-**Document Control**:
-- Version: 1.0.0
-- Last Updated: 2025-11-13
-- Status: Released
-- Copyright © 2025 Michael Gardner, A Bit of Help, Inc.
-- License: BSD-3-Clause
+| Command | Description |
+|---------|-------------|
+| `make test-all` | Run all test suites |
+| `make test-unit` | Run unit tests only |
+| `make test-coverage` | Run with GNATcoverage |
+| `make clean-test` | Clean test artifacts |
+| `./test/bin/unit_runner` | Run tests directly |

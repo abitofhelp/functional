@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 2.3.0  
-**Date:** December 05, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause
-**License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
-**Status:** Released  
+**Version:** 2.3.0<br>
+**Date:** December 05, 2025<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root.<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 All notable changes to this project will be documented in this file.
 
@@ -24,6 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `Try.Try_To_Result_With_Param` (success and exception paths)
   - `Try.Try_To_Option_With_Param` (success and exception paths)
   - Coverage improved: 89% → 95% (exceeds 90% target)
+
+### Changed
+- **Documentation regeneration**: Complete refresh of all documentation per documentation agent standards
+  - **quick_start.md**: Regenerated with all 44 operations (Result: 20, Option: 11, Either: 10, Try: 5)
+    - Added Map, Map_Err, Bimap examples for Result
+    - Added Filter example for Option
+    - Added Map_Left, Map_Right, Bimap, Fold examples for Either
+    - Added Try_To_Option and Try_To_Option_With_Param sections
+    - Added Tap/logging pattern to Common Patterns
+  - **Formal docs (SRS, SDS, STG)**: Completely regenerated for functional library
+    - Previous content was from TZif project (incorrect)
+    - SDS now correctly describes nonhybrid utility library (not hexagonal architecture)
+  - **Source file docstrings**: Updated headers with operation counts and purpose descriptions
+  - **config/README.md**: Updated version to 2.3.0
+- **Project cleanup**: Removed orphaned shared/ directory (release script generates to src/version/)
+- **GPR cleanup**: Removed Documentation package reference (docs/api doesn't exist)
 
 ### Fixed
 - **Release script library detection**: Added GPR-based project type detection

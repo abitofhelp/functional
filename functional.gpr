@@ -172,13 +172,6 @@ project Functional is
       for Configuration use ".gnatformat.yaml";
    end Format;
 
-   -- ==========================================================================
-   -- Documentation Package: API Documentation
-   -- ==========================================================================
-   package Documentation is
-      for Documentation_Dir use "docs/api";
-   end Documentation;
-
    package Install is
       for Artifacts (".") use ("share");
    end Install;

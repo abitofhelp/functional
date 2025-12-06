@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Result monad.
---    Tests all 17 Result functions. Target: 90%+ code coverage.
+--    Tests all 20 Result operations. 35 tests. Target: 90%+ coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;

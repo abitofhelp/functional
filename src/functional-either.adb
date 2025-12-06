@@ -1,12 +1,13 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Either
+--  Functional.Either (Body)
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Either implementation.
+--    Implementation of Either type operations. Map variants apply functions
+--    to matching side only. Fold dispatches to appropriate handler function.
 --
 --  ===========================================================================
 

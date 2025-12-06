@@ -1,22 +1,26 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Option
+--  Functional.Option - Optional Values
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Option interface and type definitions.
+--    Generic Option type for representing optional values. Encodes presence
+--    (Some) or absence (None) in the type system, eliminating null references.
+--    Supports Preelaborate for use in domain layers with strict elaboration.
 --
 --  Key Types:
---    T
---    Option_Kind
---    Option
+--    Option_Kind  - Discriminant: K_Some or K_None
+--    Option       - Discriminated record holding Value when K_Some
 --
---  Dependencies:
---    Inline
---    Inline
---    Inline
+--  Operations (11):
+--    Constructors: New_Some, None
+--    Predicates:   Is_Some, Is_None
+--    Extractors:   Value
+--    Defaults:     Unwrap_Or, Unwrap_Or_With
+--    Transforms:   Map, And_Then, Filter
+--    Fallback:     Or_Else, Or_Else_With, Fallback (alias)
 --
 --  ===========================================================================
 

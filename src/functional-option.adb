@@ -1,12 +1,13 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Option
+--  Functional.Option (Body)
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Option implementation.
+--    Implementation of Option type operations. Transforms check Kind first
+--    and pass through None unchanged, applying functions only to Some values.
 --
 --  ===========================================================================
 
