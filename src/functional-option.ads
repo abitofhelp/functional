@@ -28,8 +28,8 @@ pragma Ada_2022;
 
 generic
    type T is private;
-package Functional.Option with
-  Preelaborate
+package Functional.Option
+  with Preelaborate, SPARK_Mode => On
 is
 
    type Option (Has_Value : Boolean := False) is record
@@ -88,24 +88,33 @@ is
    --  Map: transform Some value
    generic
       with function F (X : T) return T;
-   function Map (O : Option) return Option;
+   function Map (O : Option) return Option
+   with
+     Post => (if O.Has_Value then Map'Result.Has_Value
+              else not Map'Result.Has_Value);
 
    --  And_Then: chain optional operations (monadic bind)
    generic
       with function F (X : T) return Option;
-   function And_Then (O : Option) return Option;
+   function And_Then (O : Option) return Option
+   with
+     Post => (if not O.Has_Value then not And_Then'Result.Has_Value);
 
    --  Filter: keep value only if predicate holds
    generic
       with function Pred (X : T) return Boolean;
-   function Filter (O : Option) return Option;
+   function Filter (O : Option) return Option
+   with
+     Post => (if not O.Has_Value then not Filter'Result.Has_Value);
 
    --  ==========================================================================
    --  Fallback
    --  ==========================================================================
 
    --  Or_Else: fallback to alternative (eager evaluation)
-   function Or_Else (A, B : Option) return Option;
+   function Or_Else (A, B : Option) return Option
+   with
+     Post => (if A.Has_Value then Or_Else'Result.Has_Value);
 
    --  Or_Else_With: fallback to alternative (lazy evaluation)
    generic

@@ -26,7 +26,9 @@ pragma Ada_2022;
 generic
    type L is private;
    type R is private;
-package Functional.Either is
+package Functional.Either
+  with Preelaborate, SPARK_Mode => On
+is
 
    type Either (Is_Left : Boolean := True) is record
       case Is_Left is
@@ -73,23 +75,31 @@ package Functional.Either is
    --  Map_Left: transform Left value
    generic
       with function F (X : L) return L;
-   function Map_Left (E : Either) return Either;
+   function Map_Left (E : Either) return Either
+   with
+     Post => (Map_Left'Result.Is_Left = E.Is_Left);
 
    --  Map_Right: transform Right value
    generic
       with function F (X : R) return R;
-   function Map_Right (E : Either) return Either;
+   function Map_Right (E : Either) return Either
+   with
+     Post => (Map_Right'Result.Is_Left = E.Is_Left);
 
    --  Bimap: transform both Left and Right values simultaneously
    generic
       with function Map_L (X : L) return L;
       with function Map_R (X : R) return R;
-   function Bimap (E : Either) return Either;
+   function Bimap (E : Either) return Either
+   with
+     Post => (Bimap'Result.Is_Left = E.Is_Left);
 
    --  Map: transform Right value (Right-biased convenience for common case)
    generic
       with function F (X : R) return R;
-   function Map (E : Either) return Either;
+   function Map (E : Either) return Either
+   with
+     Post => (Map'Result.Is_Left = E.Is_Left);
 
    --  Swap: exchange Left and Right values
    --  Useful for switching convention or reversing bias
@@ -103,7 +113,9 @@ package Functional.Either is
    --  On Right, applies function; on Left, propagates Left unchanged
    generic
       with function F (X : R) return Either;
-   function And_Then (E : Either) return Either;
+   function And_Then (E : Either) return Either
+   with
+     Post => (if E.Is_Left then And_Then'Result.Is_Left);
 
    --  Fold: reduce Either to single value by providing handlers for both cases
    generic

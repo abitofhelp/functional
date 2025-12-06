@@ -31,7 +31,12 @@ with Ada.Exceptions;
 with Functional.Result;
 with Functional.Option;
 
-package Functional.Try is
+--  SPARK_Mode => Off: This package is the exception boundary adapter.
+--  It converts exception-based external APIs to Result/Option types.
+--  By design, this is the ONLY place exceptions are handled in the library.
+package Functional.Try
+  with SPARK_Mode => Off
+is
 
    --  ========================================================================
    --  Try_To_Result - General bridge to any Result type

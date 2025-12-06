@@ -31,7 +31,9 @@ pragma Ada_2022;
 generic
    type T is private;
    type E is private;
-package Functional.Result is
+package Functional.Result
+  with Preelaborate, SPARK_Mode => On
+is
 
    type Result (Is_Ok : Boolean := True) is record
       case Is_Ok is
@@ -102,12 +104,17 @@ package Functional.Result is
    --  Map: transform Ok value (keeps same type)
    generic
       with function F (X : T) return T;
-   function Map (R : Result) return Result;
+   function Map (R : Result) return Result
+   with
+     Post => (if R.Is_Ok then Map'Result.Is_Ok
+              else not Map'Result.Is_Ok);
 
    --  And_Then: chain fallible operations (monadic bind - the workhorse!)
    generic
       with function F (X : T) return Result;
-   function And_Then (R : Result) return Result;
+   function And_Then (R : Result) return Result
+   with
+     Post => (if not R.Is_Ok then not And_Then'Result.Is_Ok);
 
    --  And_Then_Into: chain fallible operations with type transformation
    --  Transforms Result[T, E] -> Result[U, E] where U is a different success type
@@ -121,20 +128,27 @@ package Functional.Result is
    --  Map_Error: transform error value
    generic
       with function F (X : E) return E;
-   function Map_Error (R : Result) return Result;
+   function Map_Error (R : Result) return Result
+   with
+     Post => (if R.Is_Ok then Map_Error'Result.Is_Ok
+              else not Map_Error'Result.Is_Ok);
 
    --  Bimap: transform both Ok and Err values simultaneously
    generic
       with function Map_Ok (X : T) return T;
       with function Map_Error (E_Val : E) return E;
-   function Bimap (R : Result) return Result;
+   function Bimap (R : Result) return Result
+   with
+     Post => (Bimap'Result.Is_Ok = R.Is_Ok);
 
    --  ==========================================================================
    --  Fallback and recovery
    --  ==========================================================================
 
    --  Fallback: try alternative on error (eager evaluation)
-   function Fallback (A, B : Result) return Result;
+   function Fallback (A, B : Result) return Result
+   with
+     Post => (if A.Is_Ok then Fallback'Result.Is_Ok);
 
    --  Fallback_With: try alternative on error (lazy evaluation)
    generic
