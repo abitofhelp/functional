@@ -14,15 +14,16 @@ pragma Ada_2022;
 --    Result       - Discriminated record with Is_Ok : Boolean
 --                   When True, holds Ok_Value; when False, holds Error_Value
 --
---  Operations (22):
+--  Operations (25):
 --    Constructors: Ok, New_Error, From_Error
 --    Predicates:   Is_Ok, Is_Error
 --    Extractors:   Value, Error, Expect
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
---    Transforms:   Map, And_Then, And_Then_Into, Map_Error, Bimap
+--    Transforms:   Map, And_Then, And_Then_Into, Map_Error, Bimap, Zip_With, Flatten
 --    Recovery:     Fallback, Fallback_With, Recover, Recover_With
 --    Validation:   Ensure, With_Context
 --    Side Effects: Tap
+--    Conversion:   To_Option
 --    Operators:    "or" (Unwrap_Or), "or" (Fallback)
 --
 --  ===========================================================================
@@ -186,5 +187,42 @@ package Functional.Result is
    --  "or" for Fallback: Result or Result -> Result
    --  Usage: Config := Primary_Config or Backup_Config;
    function "or" (Left, Right : Result) return Result renames Fallback;
+
+   --  ==========================================================================
+   --  Combining and Flattening
+   --  ==========================================================================
+
+   --  Zip_With: combine two Results with a function
+   --  Returns Ok(Combine(A.Value, B.Value)) if both are Ok, else first Error
+   generic
+      type U is private;
+      type Result_U is private;
+      with function Is_Ok_U (R : Result_U) return Boolean;
+      with function Value_U (R : Result_U) return U;
+      with function Error_U (R : Result_U) return E;
+      with function Combine (A : T; B : U) return T;
+   function Zip_With (A : Result; B : Result_U) return Result;
+
+   --  Flatten: Result[Result[T,E],E] -> Result[T,E]
+   --  Ok(Ok(v)) -> Ok(v), Ok(Err(e)) -> Err(e), Err(e) -> Err(e)
+   --  Note: Convert allows T to be accessed as Inner_Result (identity when T = Inner_Result)
+   generic
+      type Inner_Result is private;
+      with function Convert (V : T) return Inner_Result;
+      with function Is_Ok_Inner (R : Inner_Result) return Boolean;
+      with function Value_Inner (R : Inner_Result) return T;
+      with function Error_Inner (R : Inner_Result) return E;
+   function Flatten (Outer : Result) return Result;
+
+   --  ==========================================================================
+   --  Conversion to Option
+   --  ==========================================================================
+
+   --  To_Option: convert to Option - Ok(v) -> Some(v), Error(_) -> None
+   generic
+      type Option_Type is private;
+      with function Make_Some (V : T) return Option_Type;
+      with function Make_None return Option_Type;
+   function To_Option (R : Result) return Option_Type;
 
 end Functional.Result;

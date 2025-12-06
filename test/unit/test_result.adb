@@ -12,6 +12,7 @@ pragma Ada_2022;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Command_Line;
 with Functional.Result;
+with Functional.Option;
 with Test_Framework;
 
 procedure Test_Result is
@@ -507,6 +508,156 @@ procedure Test_Result is
          "Tap calls On_Error for Err result");
    end Test_Tap;
 
+   --  ==========================================================================
+   --  Test: Zip_With (combine two Results)
+   --  ==========================================================================
+
+   procedure Test_Zip_With is
+      --  Second Result type for testing
+      package Int_Result2 is new Functional.Result (T => Integer, E => Error);
+
+      function Is_Ok_2 (R : Int_Result2.Result) return Boolean
+      is (Int_Result2.Is_Ok (R));
+
+      function Value_2 (R : Int_Result2.Result) return Integer
+      is (Int_Result2.Value (R));
+
+      function Error_2 (R : Int_Result2.Result) return Error
+      is (Int_Result2.Error (R));
+
+      function Multiply (A : Integer; B : Integer) return Integer
+      is (A * B);
+
+      function Zip_Ints is new Int_Result.Zip_With
+        (U => Integer,
+         Result_U => Int_Result2.Result,
+         Is_Ok_U => Is_Ok_2,
+         Value_U => Value_2,
+         Error_U => Error_2,
+         Combine => Multiply);
+
+      R_Ok1 : constant Int_Result.Result := Int_Result.Ok (3);
+      R_Ok2 : constant Int_Result2.Result := Int_Result2.Ok (4);
+      R_Err1 : constant Int_Result.Result :=
+         Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+      R_Err2 : constant Int_Result2.Result :=
+         Int_Result2.New_Error ((IO_Error, [others => ' '], 0));
+      Result : Int_Result.Result;
+   begin
+      Put_Line ("Testing Zip_With...");
+      --  Both Ok
+      Result := Zip_Ints (R_Ok1, R_Ok2);
+      Assert (Int_Result.Is_Ok (Result) and then Int_Result.Value (Result) = 12,
+              "Zip_With combines values when both Ok");
+
+      --  First is Error
+      Result := Zip_Ints (R_Err1, R_Ok2);
+      Assert (Int_Result.Is_Error (Result) and then
+              Int_Result.Error (Result).Kind = Parse_Error,
+              "Zip_With returns first Error");
+
+      --  Second is Error
+      Result := Zip_Ints (R_Ok1, R_Err2);
+      Assert (Int_Result.Is_Error (Result) and then
+              Int_Result.Error (Result).Kind = IO_Error,
+              "Zip_With returns second Error when first Ok");
+   end Test_Zip_With;
+
+   --  ==========================================================================
+   --  Test: Flatten (Result[Result[T,E],E] -> Result[T,E])
+   --  ==========================================================================
+
+   procedure Test_Flatten is
+      --  Nested Result: Result[Result[Integer, Error], Error]
+      package Nested_Result is new Functional.Result
+        (T => Int_Result.Result, E => Error);
+
+      --  Identity conversion
+      function Convert (V : Int_Result.Result) return Int_Result.Result
+      is (V);
+
+      function Is_Ok_Inner (R : Int_Result.Result) return Boolean
+      is (Int_Result.Is_Ok (R));
+
+      --  Value_Inner extracts the T from Inner_Result
+      --  For Nested_Result, T = Int_Result.Result, so Value_Inner returns Int_Result.Result
+      function Value_Inner (R : Int_Result.Result) return Int_Result.Result
+      is (R);
+
+      function Error_Inner (R : Int_Result.Result) return Error
+      is (Int_Result.Error (R));
+
+      function Do_Flatten is new Nested_Result.Flatten
+        (Inner_Result => Int_Result.Result,
+         Convert => Convert,
+         Is_Ok_Inner => Is_Ok_Inner,
+         Value_Inner => Value_Inner,
+         Error_Inner => Error_Inner);
+
+      Inner_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
+      Inner_Err : constant Int_Result.Result :=
+         Int_Result.New_Error ((Validation_Error, [others => ' '], 0));
+      Outer_Ok_Ok  : constant Nested_Result.Result := Nested_Result.Ok (Inner_Ok);
+      Outer_Ok_Err : constant Nested_Result.Result := Nested_Result.Ok (Inner_Err);
+      Outer_Err    : constant Nested_Result.Result :=
+         Nested_Result.New_Error ((IO_Error, [others => ' '], 0));
+      Result : Nested_Result.Result;
+   begin
+      Put_Line ("Testing Flatten...");
+      --  Ok(Ok(42)) -> Ok(42)
+      Result := Do_Flatten (Outer_Ok_Ok);
+      Assert (Nested_Result.Is_Ok (Result) and then
+              Int_Result.Value (Nested_Result.Value (Result)) = 42,
+              "Flatten Ok(Ok) returns Ok with inner value");
+
+      --  Ok(Err) -> Err (inner error)
+      Result := Do_Flatten (Outer_Ok_Err);
+      Assert (Nested_Result.Is_Error (Result) and then
+              Nested_Result.Error (Result).Kind = Validation_Error,
+              "Flatten Ok(Err) returns inner Error");
+
+      --  Err -> Err (outer error)
+      Result := Do_Flatten (Outer_Err);
+      Assert (Nested_Result.Is_Error (Result) and then
+              Nested_Result.Error (Result).Kind = IO_Error,
+              "Flatten Err returns outer Error");
+   end Test_Flatten;
+
+   --  ==========================================================================
+   --  Test: To_Option (Result -> Option conversion)
+   --  ==========================================================================
+
+   procedure Test_To_Option is
+      package Int_Option is new Functional.Option (T => Integer);
+
+      function Make_Some (V : Integer) return Int_Option.Option
+      is (Int_Option.New_Some (V));
+
+      function Make_None return Int_Option.Option
+      is (Int_Option.None);
+
+      function To_Opt is new Int_Result.To_Option
+        (Option_Type => Int_Option.Option,
+         Make_Some => Make_Some,
+         Make_None => Make_None);
+
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err : constant Int_Result.Result :=
+         Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+      Opt : Int_Option.Option;
+   begin
+      Put_Line ("Testing To_Option...");
+      --  Ok -> Some
+      Opt := To_Opt (R_Ok);
+      Assert (Int_Option.Is_Some (Opt) and then Int_Option.Value (Opt) = 42,
+              "To_Option converts Ok to Some");
+
+      --  Error -> None
+      Opt := To_Opt (R_Err);
+      Assert (Int_Option.Is_None (Opt),
+              "To_Option converts Error to None");
+   end Test_To_Option;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Result Unit Tests");
@@ -529,6 +680,9 @@ begin
    Test_Ensure;
    Test_With_Context;
    Test_Tap;
+   Test_Zip_With;
+   Test_Flatten;
+   Test_To_Option;
 
    New_Line;
    Put_Line ("======================================");

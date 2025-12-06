@@ -209,4 +209,44 @@ package body Functional.Result is
       return R;
    end Tap;
 
+   --  Zip_With: combine two Results with a function
+   function Zip_With (A : Result; B : Result_U) return Result is
+   begin
+      if not A.Is_Ok then
+         return A;
+      elsif not Is_Ok_U (B) then
+         return New_Error (Error_U (B));
+      else
+         return Ok (Combine (A.Ok_Value, Value_U (B)));
+      end if;
+   end Zip_With;
+
+   --  Flatten: Result[Result[T,E],E] -> Result[T,E]
+   function Flatten (Outer : Result) return Result is
+   begin
+      if not Outer.Is_Ok then
+         return Outer;
+      end if;
+
+      declare
+         Inner : constant Inner_Result := Convert (Outer.Ok_Value);
+      begin
+         if Is_Ok_Inner (Inner) then
+            return Ok (Value_Inner (Inner));
+         else
+            return New_Error (Error_Inner (Inner));
+         end if;
+      end;
+   end Flatten;
+
+   --  To_Option: convert to Option - Ok(v) -> Some(v), Error(_) -> None
+   function To_Option (R : Result) return Option_Type is
+   begin
+      if R.Is_Ok then
+         return Make_Some (R.Ok_Value);
+      else
+         return Make_None;
+      end if;
+   end To_Option;
+
 end Functional.Result;
