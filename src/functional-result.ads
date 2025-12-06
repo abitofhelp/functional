@@ -47,6 +47,11 @@ package Functional.Result is
    function Err (E_Val : E) return Result
    with Inline;
 
+   --  From_Error: construct Result from pre-existing error value
+   --  Used at infrastructure boundaries when converting exceptions to Results
+   function From_Error (E_Val : E) return Result
+   with Inline;
+
    --  ==========================================================================
    --  Predicates
    --  ==========================================================================
@@ -98,6 +103,15 @@ package Functional.Result is
    generic
       with function F (X : T) return Result;
    function And_Then (R : Result) return Result;
+
+   --  And_Then_Into: chain fallible operations with type transformation
+   --  Transforms Result[T, E] -> Result[U, E] where U is a different success type
+   --  Requires caller to provide target Result error constructor for error propagation
+   generic
+      type Result_U is private;
+      with function Err_U (E_Val : E) return Result_U;
+      with function F (X : T) return Result_U;
+   function And_Then_Into (R : Result) return Result_U;
 
    --  Map_Err: transform error value
    generic

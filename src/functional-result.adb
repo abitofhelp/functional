@@ -19,6 +19,9 @@ package body Functional.Result is
    function Err (E_Val : E) return Result
    is ((Kind => K_Err, Err_Value => E_Val));
 
+   function From_Error (E_Val : E) return Result
+   is ((Kind => K_Err, Err_Value => E_Val));
+
    --  Predicates
    function Is_Ok (R : Result) return Boolean
    is (R.Kind = K_Ok);
@@ -82,6 +85,18 @@ package body Functional.Result is
             return R;
       end case;
    end And_Then;
+
+   --  And_Then_Into: chain with type transformation
+   function And_Then_Into (R : Result) return Result_U is
+   begin
+      case R.Kind is
+         when K_Ok =>
+            return F (R.Ok_Value);
+
+         when K_Err =>
+            return Err_U (R.Err_Value);
+      end case;
+   end And_Then_Into;
 
    --  Map_Err: transform error value
    function Map_Err (R : Result) return Result is
