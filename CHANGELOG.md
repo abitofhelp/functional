@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2025-12-05
 
 ### Added
+
 - **Expanded test coverage**: Added tests for previously uncovered functions
   - `Either.Map_Left` (both Left and Right input paths)
   - `Either.Map_Right` (both Left and Right input paths)

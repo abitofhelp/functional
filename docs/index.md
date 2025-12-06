@@ -1,7 +1,7 @@
 # Functional Documentation Index
 
-**Version:** 2.2.1  
-**Date:** December 02, 2025  
+**Version:** 2.3.0  
+**Date:** December 05, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
