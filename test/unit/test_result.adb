@@ -1,13 +1,13 @@
 pragma Ada_2022;
---  ============================================================================
---  Test_Result - Comprehensive unit tests for Functional.Result
---  ============================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ======================================================================
+--  Test_Result
+--  ======================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
---
---  Target: 90%+ code coverage
---  Tests all 17 Result functions
---  ============================================================================
+--  Purpose:
+--    Comprehensive unit tests for Functional.Result monad.
+--    Tests all 17 Result functions. Target: 90%+ code coverage.
+--  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Command_Line;

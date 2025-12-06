@@ -1,13 +1,13 @@
 pragma Ada_2022;
---  ============================================================================
---  Test_Try - Comprehensive unit tests for Functional.Try.To_Result
---  ============================================================================
---  Copyright (c) 2025 A Bit of Help, Inc.
+--  ======================================================================
+--  Test_Try
+--  ======================================================================
+--  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
---
---  Target: 90%+ code coverage
---  Tests Try.To_Result exception conversion
---  ============================================================================
+--  Purpose:
+--    Comprehensive unit tests for Functional.Try.To_Result.
+--    Tests exception-to-Result conversion. Target: 90%+ code coverage.
+--  ======================================================================
 
 with Ada.Text_IO;    use Ada.Text_IO;
 with Ada.Command_Line;
