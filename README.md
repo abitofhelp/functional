@@ -1,73 +1,55 @@
-# Type-Safe Functional Error Handling
+# Functional Programming Library for Ada 2022
 
-[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Friendly-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Compatible-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 3.0.0
+**Date:** December 06, 2025
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ## Overview
 
-A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either<L,R>` types for functional error handling in Ada 2022. Enables railway-oriented programming with composable operations like Map, And_Then, and Recover.
+A production-ready Ada 2022 library providing functional programming abstractions for type-safe computation. Implements `Result<T,E>`, `Option<T>`, and `Either<L,R>` monadic types with 87 composable operations enabling railway-oriented programming, explicit error handling, and optional value management.
+
+Designed for safety-critical, embedded, and high-assurance applications with full SPARK compatibility.
 
 ## Features
 
-### Core Types
+### Core Types (87 operations)
 
-- **Result[T,E]** - Type-safe error handling (34 operations)
-- **Option[T]** - Optional values (25 operations)
-- **Either[L,R]** - Disjoint union type (16 operations)
-- **Try Module** - Convert exceptions to functional types (5 functions)
+| Type | Operations | Purpose |
+|------|------------|---------|
+| **Result[T,E]** | 36 | Success/failure with typed errors |
+| **Option[T]** | 26 | Optional values (presence/absence) |
+| **Either[L,R]** | 20 | Disjoint unions (one of two types) |
+| **Try** | 5 | Exception-to-functional bridges |
 
 ### SPARK Formal Verification
 
-- **SPARK_Mode => On** for Option, Result, Either (formally verifiable)
+- **SPARK_Mode => On** for Option, Result, Either, Version (formally verifiable)
+- **SPARK_Mode => Off** for Try only (exception boundary, by design)
 - **Postconditions** on all transform operations for prover assistance
 - **Preconditions** on all extractors preventing invalid access
-- **Exception boundary isolation** - Try module is the only SPARK_Mode => Off code
 
 ### Embedded Systems Ready
 
 - **Preelaborate/Pure** categorization on all packages
-- **Zero heap allocation** - All stack-based discriminated records
+- **Zero heap allocation** - Stack-based discriminated records only
 - **No controlled types** - No finalization overhead
 - **No tasking dependencies** - Ravenscar profile compatible
-- **Bounded memory** - Fixed-size structures, no dynamic allocation
-- **No OS dependencies** - Pure Ada 2022 (except Try boundary)
+- **Bounded memory** - Fixed-size structures
+- **No OS dependencies** - Pure Ada 2022
 
 ### Production Quality
 
-- **Pure packages** - No side effects, compile-time guarantees
-- **Zero dependencies** - Just Ada 2022 standard library
-- **135 unit tests** - 95%+ code coverage
+- **227 unit tests** with 95%+ code coverage
+- **Zero dependencies** - Ada 2022 standard library only
 - **Comprehensive contracts** - Pre/Post conditions throughout
-
-## Platform Support
-
-| Platform | Status | Notes |
-|----------|--------|-------|
-| **Desktop** | Full | Standard Ada runtime |
-| **Embedded** | Full | Pure packages, no heap allocation, no I/O |
+- **Cross-platform** - POSIX and Windows tested
 
 ## Quick Start
-
-### Clone with Submodules
-
-This repository uses git submodules for shared tooling:
-
-```bash
-git clone --recurse-submodules https://github.com/abitofhelp/functional.git
-```
-
-Or if already cloned without submodules:
-
-```bash
-git submodule update --init --recursive
-# Or: make submodule-init
-```
 
 ### Installation
 
@@ -84,32 +66,42 @@ Then build:
 alr build
 ```
 
+### Clone with Submodules
+
+```bash
+git clone --recurse-submodules https://github.com/abitofhelp/functional.git
+
+# Or if already cloned:
+git submodule update --init --recursive
+```
+
 ## Usage
 
-### Result<T,E> - For Error Handling
+### Result\<T,E\> - Success or Failure
 
 ```ada
 with Functional.Result;
 
---  Instantiate for your types
-package Str_Result is new Functional.Result (T => String, E => Error);
+package Int_Result is new Functional.Result (T => Integer, E => Error);
 
 --  Create results
-return Str_Result.Ok (Value);           --  Success
-return Str_Result.New_Error (Error_Info);  --  Failure
+R := Int_Result.Ok (42);                    --  Success
+R := Int_Result.New_Error (Parse_Failed);   --  Failure
 
 --  Check and extract
-if Str_Result.Is_Ok (R) then
-   Put_Line (Str_Result.Value (R));
-else
-   Handle (Str_Result.Error (R));
+if Int_Result.Is_Ok (R) then
+   Process (Int_Result.Value (R));
 end if;
 
---  Get with default
-Val : constant String := Str_Result.Unwrap_Or (R, "default");
+--  With default (or use operator syntax: R or 0)
+Val := Int_Result.Unwrap_Or (R, 0);
+
+--  Transform (railway-oriented)
+function Double is new Int_Result.Map (F => Times_Two);
+R := Double (R);  --  Ok(42) -> Ok(84), Error stays Error
 ```
 
-### Option<T> - For Optional Values
+### Option\<T\> - Presence or Absence
 
 ```ada
 with Functional.Option;
@@ -117,14 +109,18 @@ with Functional.Option;
 package Int_Option is new Functional.Option (T => Integer);
 
 --  Create options
-return Int_Option.New_Some (42);        --  Has value
-return Int_Option.None;                 --  No value
+O := Int_Option.New_Some (42);   --  Has value
+O := Int_Option.None;            --  No value
 
---  Get with default
-Age : constant Integer := Int_Option.Unwrap_Or (Opt, 0);
+--  With default (or use operator syntax: O or 0)
+Age := Int_Option.Unwrap_Or (O, 0);
+
+--  Chain operations
+function Parse is new Int_Option.And_Then (F => Try_Parse);
+O := Parse (Input);  --  Some -> parse it, None -> stays None
 ```
 
-### Either<L,R> - For Neutral Choices
+### Either\<L,R\> - One of Two Types
 
 ```ada
 with Functional.Either;
@@ -132,90 +128,69 @@ with Functional.Either;
 package Str_Int is new Functional.Either (L => String, R => Integer);
 
 --  Create either
-return Str_Int.Left ("text");           --  Left variant
-return Str_Int.Right (42);              --  Right variant
+E := Str_Int.Left ("text");    --  Left variant
+E := Str_Int.Right (42);       --  Right variant
+
+--  Fold to single value
+Result := Str_Int.Fold (E, On_String'Access, On_Integer'Access);
 ```
 
-### Try Module - Exception Boundaries
+### Try - Exception Boundaries
 
 ```ada
 with Functional.Try;
 
---  Bridge exception-based code to Result types
-function Try_Read is new Functional.Try.Try_To_Result
-  (T => Integer_32, E => Error_Type, Result_Type => Int32_Result.Result,
-   Ok => Int32_Result.Ok, New_Error => Int32_Result.From_Error,
-   Map_Exception => From_Exception, Action => Raw_Read);
+--  Bridge exception-based code to Result
+function Safe_Parse is new Functional.Try.Try_To_Functional_Result
+  (T => Integer, E => Error, Result_Pkg => Int_Result,
+   Map_Exception => To_Error, Action => Integer'Value);
+
+R := Safe_Parse;  --  Never raises, returns Result
 ```
 
-## Testing
+## API Reference
 
-```bash
-# Run the test suite
-make test
+### Result<T,E> (36 operations)
 
-# Or directly
-alr run test_runner
-```
+| Category | Operations |
+|----------|------------|
+| **Constructors** | `Ok`, `New_Error`, `From_Error` |
+| **Predicates** | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Is_Ok_Or`, `Is_Error_Or`, `Contains` |
+| **Extractors** | `Value`, `Error`, `Expect`, `Expect_Error`, `Unwrap_Error` |
+| **Defaults** | `Unwrap_Or`, `Unwrap_Or_With` |
+| **Transforms** | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten`, `To_Option` |
+| **Recovery** | `Fallback`, `Fallback_With`, `Recover`, `Recover_With` |
+| **Validation** | `Ensure`, `With_Context` |
+| **Side Effects** | `Tap`, `Tap_Ok`, `Tap_Error` |
+| **Operators** | `"or"` (Unwrap_Or, Fallback), `"="` (Contains) |
 
-## Documentation
+### Option<T> (26 operations)
 
-- **[Cheatsheet](docs/guides/cheatsheet.md)** - All types and operators on 1-2 pages
-- **[User Guide](docs/guides/user_guide.md)** - Design philosophy, SPARK, embedded, best practices
-- **[Quick Start Guide](docs/quick_start.md)** - Get started in minutes
-- **[CHANGELOG](CHANGELOG.md)** - Release history
+| Category | Operations |
+|----------|------------|
+| **Constructors** | `New_Some`, `None` |
+| **Predicates** | `Is_Some`, `Is_None`, `Is_Some_And`, `Is_None_Or`, `Contains` |
+| **Extractors** | `Value`, `Expect` |
+| **Defaults** | `Unwrap_Or`, `Unwrap_Or_With` |
+| **Transforms** | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `Filter`, `Zip_With`, `Flatten` |
+| **Fallback** | `Or_Else`, `Or_Else_With`, `Fallback` |
+| **Side Effects** | `Tap` |
+| **Conversion** | `Ok_Or`, `Ok_Or_Else` |
+| **Operators** | `"or"`, `"and"`, `"xor"`, `"="` |
 
-### API Reference
+### Either<L,R> (20 operations)
 
-**Result<T,E>** (34 operations):
+| Category | Operations |
+|----------|------------|
+| **Constructors** | `Left`, `Right` |
+| **Predicates** | `Is_Left`, `Is_Right`, `Is_Left_And`, `Is_Right_And`, `Is_Left_Or`, `Is_Right_Or`, `Contains` |
+| **Extractors** | `Left_Value`, `Right_Value`, `Get_Or_Else` |
+| **Transforms** | `Map`, `Map_Left`, `Map_Right`, `Bimap`, `Swap`, `And_Then` |
+| **Reduction** | `Fold`, `Merge` |
+| **Conversion** | `To_Option`, `To_Result` |
+| **Operators** | `"="` (Contains) |
 
-| Category | Operations | Purpose |
-|----------|------------|---------|
-| **Construct** | `Ok(v)`, `New_Error(e)`, `From_Error(e)` | Create success or error result |
-| **Predicates** | `Is_Ok(r)`, `Is_Error(r)`, `Is_Ok_And(r)`, `Is_Error_And(r)`, `Contains(r, v)` | Test result state |
-| **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)`, `Expect_Error(r, msg)`, `Unwrap_Error(r)` | Get value (with Pre) |
-| **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
-| **Transform** | `Map(r)`, `Map_Or(r, d)`, `Map_Or_Else(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value |
-| **Error Map** | `Map_Error(r)`, `Bimap(r)` | Transform error, transform both sides |
-| **Fallback** | `Fallback(a, b)`, `Fallback_With(r)` | Try alternative on error (eager/lazy) |
-| **Recovery** | `Recover(r)`, `Recover_With(r)` | Convert error to value or new Result |
-| **Validation** | `Ensure(r)`, `With_Context(r, msg)` | Validate predicate, add error breadcrumbs |
-| **Side Effects** | `Tap(r)`, `Tap_Ok(r)`, `Tap_Error(r)` | Run callbacks without changing Result |
-| **Combine** | `Zip_With(a, b)`, `Flatten(r)` | Combine Results, unwrap nested Result |
-| **Convert** | `To_Option(r)` | Ok(v)->Some(v), Error(_)->None |
-| **Operators** | `r or default`, `a or b`, `r = v` | Aliases for Unwrap_Or, Fallback, Contains |
-
-**Option<T>** (25 operations):
-
-| Category | Operations | Purpose |
-|----------|------------|---------|
-| **Construct** | `New_Some(v)`, `None` | Create present or absent value |
-| **Predicates** | `Is_Some(o)`, `Is_None(o)`, `Is_Some_And(o)`, `Contains(o, v)` | Test presence |
-| **Extract** | `Value(o)`, `Expect(o, msg)` | Get value (with Pre) |
-| **Defaults** | `Unwrap_Or(o, default)`, `Unwrap_Or_With(o)` | Get value or fallback (eager/lazy) |
-| **Transform** | `Map(o)`, `Map_Or(o, d)`, `Map_Or_Else(o)`, `And_Then(o)` | Transform Some value |
-| **Filter** | `Filter(o)` | Keep value only if predicate holds |
-| **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)` | Try alternative on None (eager/lazy) |
-| **Side Effects** | `Tap(o)` | Run callback on Some without changing |
-| **Combine** | `Zip_With(a, b)`, `Flatten(o)` | Combine Options, unwrap nested Option |
-| **Convert** | `Ok_Or(o, e)`, `Ok_Or_Else(o)` | Option to Result (eager/lazy error) |
-| **Operators** | `a and b`, `a xor b`, `o or default`, `a or b`, `o = v` | Logical and fallback operators |
-
-**Either<L,R>** (16 operations):
-
-| Category | Operations | Purpose |
-|----------|------------|---------|
-| **Construct** | `Left(v)`, `Right(v)` | Create left or right value |
-| **Predicates** | `Is_Left(e)`, `Is_Right(e)`, `Contains(e, v)` | Test which side |
-| **Extract** | `Left_Value(e)`, `Right_Value(e)`, `Get_Or_Else(e, d)` | Get value (with Pre) or default |
-| **Transform** | `Map(e)`, `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Right-biased Map, transform sides |
-| **Chain** | `And_Then(e)` | Right-biased monadic bind |
-| **Swap** | `Swap(e)` | Exchange Left and Right |
-| **Reduce** | `Fold(e)`, `Merge(e)` | Reduce to single value |
-| **Convert** | `To_Option(e)`, `To_Result(e)` | Right->Some/Ok, Left->None/Error |
-| **Operators** | `e = v` | Alias for Contains (Right value) |
-
-**Try Module** (5 functions):
+### Try Module (5 functions)
 
 | Function | Purpose |
 |----------|---------|
@@ -225,6 +200,31 @@ alr run test_runner
 | `Try_To_Result_With_Param` | Parameterized Result bridge |
 | `Try_To_Option_With_Param` | Parameterized Option bridge |
 
+## Testing
+
+```bash
+# Run all tests
+make test-all
+
+# Run unit tests only
+make test-unit
+
+# Run with coverage
+make test-coverage
+```
+
+**Results:** 227 tests passing (Result: 84, Option: 65, Either: 58, Try: 14, Try_Option: 6)
+
+## Documentation
+
+- **[Cheatsheet](docs/guides/cheatsheet.md)** - All 87 operations at a glance
+- **[User Guide](docs/guides/user_guide.md)** - Design philosophy, SPARK, embedded, best practices
+- **[Quick Start](docs/quick_start.md)** - Get started in minutes
+- **[SRS](docs/formal/software_requirements_specification.md)** - Requirements specification
+- **[SDS](docs/formal/software_design_specification.md)** - Design specification
+- **[STG](docs/formal/software_test_guide.md)** - Test guide
+- **[CHANGELOG](CHANGELOG.md)** - Release history
+
 ## Code Standards
 
 This project follows:
@@ -233,22 +233,10 @@ This project follows:
 
 ## Submodule Management
 
-This project uses git submodules for shared Python tooling:
-
-- `scripts/python` - Build, release, and architecture scripts
-- `test/python` - Shared test fixtures and configuration
-
-### Commands
-
 ```bash
-# After fresh clone
-make submodule-init
-
-# Pull latest from submodule repos
-make submodule-update
-
-# Check current submodule commits
-make submodule-status
+make submodule-init      # After fresh clone
+make submodule-update    # Pull latest
+make submodule-status    # Check commits
 ```
 
 ## Contributing
@@ -278,17 +266,17 @@ Licensed under the BSD-3-Clause License. See [LICENSE](LICENSE) for details.
 
 Michael Gardner
 A Bit of Help, Inc.
-https://github.com/abitofhelp
+[github.com/abitofhelp](https://github.com/abitofhelp)
 
 ## Project Status
 
 **Status**: Production Ready (v3.0.0)
 
-- Result[T,E] with 34 operations
-- Option[T] with 25 operations
-- Either[L,R] with 16 operations
-- Try module with 5 exception bridges
-- Pure packages (no side effects)
-- Zero external dependencies
-- Comprehensive test suite (135 unit tests)
-- Alire publication
+- ✅ Result[T,E] - 36 operations
+- ✅ Option[T] - 26 operations
+- ✅ Either[L,R] - 20 operations
+- ✅ Try module - 5 exception bridges
+- ✅ SPARK compatible (Option, Result, Either, Version)
+- ✅ 227 unit tests, 95%+ coverage
+- ✅ Zero external dependencies
+- ✅ Cross-platform (POSIX, Windows)
