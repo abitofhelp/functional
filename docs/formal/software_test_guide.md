@@ -35,9 +35,10 @@ This document covers:
 ### 2.2 Testing Approach
 
 - **Exhaustive Operation Testing**: Every public operation tested
-- **Both Paths**: Ok/Err, Some/None, Left/Right branches exercised
+- **Both Paths**: Ok/Error, Some/None, Left/Right branches exercised
 - **Contract Verification**: Pre/Post conditions validated
 - **Edge Cases**: Empty values, error conditions, boundary inputs
+- **Lenient/Strict Predicates**: Both predicate types tested for correct semantics
 
 ## 3. Test Organization
 
@@ -45,8 +46,7 @@ This document covers:
 
 ```
 test/
-├── alire.toml              # Test crate manifest
-├── functional_tests.gpr    # Test GPR project
+├── alire.toml              # Test crate manifest (v3.0.0)
 ├── bin/                    # Compiled test executables
 │   └── unit_runner
 ├── common/                 # Shared test infrastructure
@@ -55,12 +55,13 @@ test/
 ├── config/                 # Alire-generated config
 │   └── functional_tests_config.ads
 └── unit/                   # Unit test sources
+    ├── unit_tests.gpr      # Unit test GPR project
     ├── unit_runner.adb     # Main test runner
-    ├── test_result.adb     # Result package tests
-    ├── test_option.adb     # Option package tests
-    ├── test_either.adb     # Either package tests
-    ├── test_try.adb        # Try package tests
-    └── test_try_option.adb # Try Option bridge tests
+    ├── test_result.adb     # Result package tests (84)
+    ├── test_option.adb     # Option package tests (65)
+    ├── test_either.adb     # Either package tests (58)
+    ├── test_try.adb        # Try package tests (14)
+    └── test_try_option.adb # Try Option bridge tests (6)
 ```
 
 ### 3.2 Test Naming Convention
@@ -103,24 +104,41 @@ cd test && alr build
 Functional Library - Unit Test Suite
 ======================================================================
 
-Testing Result constructors...
-[PASS] Ok creates success result
-[PASS] Err creates error result
+======================================
+  Test_Result - Result Operations
+======================================
+[PASS] Test_Ok_Constructor
+[PASS] Test_New_Error_Constructor
+[PASS] Test_Is_Ok_Predicate
 ...
 
-Testing Option constructors...
-[PASS] New_Some creates Some option
-[PASS] None creates empty option
+======================================
+  Test_Option - Option Operations
+======================================
+[PASS] Test_New_Some_Constructor
+[PASS] Test_None_Constructor
 ...
 
-======================================================================
-Test Summary
-======================================================================
-Total:  93
-Passed: 93
-Failed: 0
+======================================
+  Test_Either - Either Operations
+======================================
+[PASS] Test_Left_Constructor
+[PASS] Test_Right_Constructor
+...
 
-All tests passed!
+========================================
+        GRAND TOTAL - ALL UNIT TESTS
+========================================
+Total tests:   227
+Passed:        227
+Failed:        0
+
+########################################
+###
+###    UNIT TESTS: SUCCESS
+###    All  227 tests passed!
+###
+########################################
 ```
 
 ## 5. Writing Tests
@@ -208,11 +226,14 @@ Each test file should cover:
 
 | Category | Example Tests |
 |----------|---------------|
-| **Constructors** | `Test_Ok`, `Test_Err`, `Test_New_Some`, `Test_None` |
-| **Predicates** | `Test_Is_Ok`, `Test_Is_Err`, `Test_Is_Some`, `Test_Is_None` |
-| **Extractors** | `Test_Value_Ok`, `Test_Value_Err`, `Test_Error` |
-| **Transforms** | `Test_Map_Ok`, `Test_Map_Err`, `Test_And_Then_Ok`, `Test_And_Then_Err` |
+| **Constructors** | `Test_Ok`, `Test_New_Error`, `Test_New_Some`, `Test_None` |
+| **Predicates** | `Test_Is_Ok`, `Test_Is_Error`, `Test_Is_Some`, `Test_Is_None` |
+| **Lenient Predicates** | `Test_Is_Ok_Or`, `Test_Is_None_Or`, `Test_Is_Left_Or` |
+| **Strict Predicates** | `Test_Is_Ok_And`, `Test_Is_Some_And`, `Test_Is_Right_And` |
+| **Extractors** | `Test_Value_Ok`, `Test_Value_Error`, `Test_Error` |
+| **Transforms** | `Test_Map_Ok`, `Test_Map_Error`, `Test_And_Then_Ok`, `Test_And_Then_Error` |
 | **Recovery** | `Test_Fallback`, `Test_Recover`, `Test_Unwrap_Or` |
+| **Operators** | `Test_Or_Operator`, `Test_Equals_Operator`, `Test_And_Operator` |
 
 ### 5.3 Testing Both Paths
 
@@ -228,13 +249,43 @@ begin
    Assert (Int_Result.Value (Double (R)) = 10, "Map transforms value");
 end Test_Map_Ok;
 
---  Test Map with Err input
-procedure Test_Map_Err is
-   R : Int_Result.Result := Int_Result.Err (Error_Value);
+--  Test Map with Error input
+procedure Test_Map_Error is
+   R : Int_Result.Result := Int_Result.New_Error (Error_Value);
    function Double is new Int_Result.Map (F => Times_Two);
 begin
-   Assert (Int_Result.Is_Err (Double (R)), "Map Err returns Err unchanged");
-end Test_Map_Err;
+   Assert (Int_Result.Is_Error (Double (R)), "Map Error returns Error unchanged");
+end Test_Map_Error;
+```
+
+### 5.4 Testing Lenient vs Strict Predicates
+
+```ada
+--  Strict: Is_Some_And - must be Some AND predicate holds
+procedure Test_Is_Some_And is
+   Some_Pos : Int_Option.Option := Int_Option.New_Some (5);
+   Some_Neg : Int_Option.Option := Int_Option.New_Some (-5);
+   None_Val : Int_Option.Option := Int_Option.None;
+
+   function Check is new Int_Option.Is_Some_And (P => Is_Positive);
+begin
+   Assert (Check (Some_Pos), "Some(5) and positive = True");
+   Assert (not Check (Some_Neg), "Some(-5) and positive = False");
+   Assert (not Check (None_Val), "None and any = False");
+end Test_Is_Some_And;
+
+--  Lenient: Is_None_Or - None OR predicate holds
+procedure Test_Is_None_Or is
+   Some_Pos : Int_Option.Option := Int_Option.New_Some (5);
+   Some_Neg : Int_Option.Option := Int_Option.New_Some (-5);
+   None_Val : Int_Option.Option := Int_Option.None;
+
+   function Check is new Int_Option.Is_None_Or (P => Is_Positive);
+begin
+   Assert (Check (Some_Pos), "Some(5) or positive = True");
+   Assert (not Check (Some_Neg), "Some(-5) or positive = False");
+   Assert (Check (None_Val), "None or any = True");
+end Test_Is_None_Or;
 ```
 
 ## 6. Test Coverage
@@ -243,8 +294,8 @@ end Test_Map_Err;
 
 | Metric | Target | Current |
 |--------|--------|---------|
-| Statement Coverage | 90%+ | 95% |
-| Decision Coverage | 90%+ | 95% |
+| Statement Coverage | 90%+ | 95%+ |
+| Decision Coverage | 90%+ | 95%+ |
 
 ### 6.2 Running Coverage Analysis
 
@@ -258,15 +309,14 @@ open coverage/report/index.html
 
 ### 6.3 Coverage by Package
 
-| Package | Coverage | Lines |
-|---------|----------|-------|
-| Functional.Result | 91% | 48/53 |
-| Functional.Option | 100% | 28/28 |
-| Functional.Either | 100% | 18/18 |
-| Functional.Try | 100% | 18/18 |
-| Functional.Try.To_Result | 100% | 8/8 |
-| Functional.Try.To_Option | 100% | 6/6 |
-| **Total** | **95%** | **152/160** |
+| Package | Coverage | Status |
+|---------|----------|--------|
+| Functional.Result | 95%+ | Exceeds target |
+| Functional.Option | 95%+ | Exceeds target |
+| Functional.Either | 95%+ | Exceeds target |
+| Functional.Try | 95%+ | Exceeds target |
+| Functional.Try.To_Result | 95%+ | Exceeds target |
+| Functional.Try.To_Option | 95%+ | Exceeds target |
 
 ### 6.4 Improving Coverage
 
@@ -370,10 +420,16 @@ make test-all
 
 ### 9.2 Success Criteria
 
-- All 93 unit tests pass
+- All 227 unit tests pass
 - Coverage >= 90% (statement + decision)
 - No compiler warnings in test code
 - Clean build with `alr build`
+
+### 9.3 Platform Testing
+
+Tests run on:
+- **POSIX**: macOS, Linux
+- **Windows**: Windows Server 2022 (via GitHub Actions)
 
 ## 10. Test Maintenance
 
@@ -405,12 +461,12 @@ Each test file header should include:
 
 | Test File | Tests | Target Package |
 |-----------|-------|----------------|
-| test_result.adb | 35 | Functional.Result |
-| test_option.adb | 22 | Functional.Option |
-| test_either.adb | 16 | Functional.Either |
-| test_try.adb | 14 | Functional.Try |
+| test_result.adb | 84 | Functional.Result (36 operations) |
+| test_option.adb | 65 | Functional.Option (26 operations) |
+| test_either.adb | 58 | Functional.Either (20 operations) |
+| test_try.adb | 14 | Functional.Try (5 functions) |
 | test_try_option.adb | 6 | Try Option bridges |
-| **Total** | **93** | |
+| **Total** | **227** | **87 operations** |
 
 ### 11.2 Test Commands Reference
 
@@ -421,3 +477,36 @@ Each test file header should include:
 | `make test-coverage` | Run with GNATcoverage |
 | `make clean-test` | Clean test artifacts |
 | `./test/bin/unit_runner` | Run tests directly |
+
+### 11.3 v3.0.0 Test Additions
+
+The following operations were added in v3.0.0 and have full test coverage:
+
+**Result tests added:**
+- `Contains` / `"="` operator
+- `Is_Ok_And`, `Is_Error_And` (strict predicates)
+- `Is_Ok_Or`, `Is_Error_Or` (lenient predicates)
+- `Expect_Error`, `Unwrap_Error`
+- `Map_Or`, `Map_Or_Else`
+- `Tap_Ok`, `Tap_Error`
+- `Zip_With`, `Flatten`, `To_Option`
+
+**Option tests added:**
+- `Contains` / `"="` operator
+- `Is_Some_And` (strict predicate)
+- `Is_None_Or` (lenient predicate)
+- `Expect`
+- `Map_Or`, `Map_Or_Else`
+- `Tap`
+- `"and"`, `"xor"` operators
+- `Zip_With`, `Flatten`
+- `Ok_Or`, `Ok_Or_Else`
+
+**Either tests added:**
+- `Contains` / `"="` operator
+- `Is_Left_And`, `Is_Right_And` (strict predicates)
+- `Is_Left_Or`, `Is_Right_Or` (lenient predicates)
+- `Get_Or_Else`
+- `Map`, `Swap`, `And_Then`
+- `Merge`
+- `To_Option`, `To_Result`

@@ -22,6 +22,7 @@ This document covers:
 - Generic design patterns
 - Operation semantics and contracts
 - Memory model and performance considerations
+- SPARK compatibility design decisions
 
 **Note:** Functional is a **nonhybrid utility library** - it does not use hexagonal/clean architecture layers. It provides foundational types consumed by projects that do use layered architectures.
 
@@ -37,13 +38,13 @@ Functional follows a **flat package hierarchy** design:
 
 ```
 Functional (Pure, namespace only)
-├── Functional.Result      (Generic package)
-├── Functional.Option      (Generic package, Preelaborate)
-├── Functional.Either      (Generic package)
-├── Functional.Try         (Non-generic, contains generic functions)
+├── Functional.Result      (Generic package, Preelaborate, SPARK_Mode => On)
+├── Functional.Option      (Generic package, Preelaborate, SPARK_Mode => On)
+├── Functional.Either      (Generic package, Preelaborate, SPARK_Mode => On)
+├── Functional.Try         (Non-generic, SPARK_Mode => Off, exception boundary)
 │   ├── Functional.Try.To_Result  (Backwards-compat wrapper)
 │   └── Functional.Try.To_Option  (Backwards-compat wrapper)
-└── Functional.Version     (Version constants)
+└── Functional.Version     (Pure, version constants)
 ```
 
 ### 2.2 Design Principles
@@ -56,6 +57,31 @@ Functional (Pure, namespace only)
 | **Contract-First** | Pre/Post conditions document and enforce invariants |
 | **Generic Reusability** | Package-level generics work with any `private` type |
 | **SPARK Compatibility** | All core types are `SPARK_Mode => On` for formal verification |
+
+### 2.3 Package Dependencies
+
+```
+                    ┌─────────────────┐
+                    │   Functional    │ (Pure namespace)
+                    └────────┬────────┘
+           ┌─────────────────┼─────────────────┐
+           │                 │                 │
+    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
+    │   Result    │   │   Option    │   │   Either    │
+    │ SPARK: On   │   │ SPARK: On   │   │ SPARK: On   │
+    └─────────────┘   └─────────────┘   └─────────────┘
+           │                 │
+           └────────┬────────┘
+                    │
+             ┌──────┴──────┐
+             │    Try      │ ← with Ada.Exceptions
+             │ SPARK: Off  │
+             └──────┬──────┘
+           ┌────────┴────────┐
+    ┌──────┴──────┐   ┌──────┴──────┐
+    │ To_Result   │   │  To_Option  │ (child packages)
+    └─────────────┘   └─────────────┘
+```
 
 ### 2.4 SPARK Design Decisions
 
@@ -89,29 +115,6 @@ function Replace (O : in out Option; New_Value : T) return Option;
 This violates the SPARK principle that functions only compute and return values.
 
 **Design Decision:** Maintain `SPARK_Mode => On` for all core packages at the cost of excluding mutation-oriented operations. For mutation-heavy code, use explicit assignment sequences instead of functional-style Replace.
-
-### 2.3 Package Dependencies
-
-```
-                    ┌─────────────────┐
-                    │   Functional    │ (Pure namespace)
-                    └────────┬────────┘
-           ┌─────────────────┼─────────────────┐
-           │                 │                 │
-    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
-    │   Result    │   │   Option    │   │   Either    │
-    └─────────────┘   └─────────────┘   └─────────────┘
-           │                 │
-           └────────┬────────┘
-                    │
-             ┌──────┴──────┐
-             │    Try      │ ← with Ada.Exceptions
-             └──────┬──────┘
-           ┌────────┴────────┐
-    ┌──────┴──────┐   ┌──────┴──────┐
-    │ To_Result   │   │  To_Option  │ (child packages)
-    └─────────────┘   └─────────────┘
-```
 
 ## 3. Detailed Design
 
@@ -149,19 +152,18 @@ is
 | `Map` preserves Error unchanged | Implementation + Postcondition |
 | `And_Then` short-circuits on Error | Implementation + Postcondition |
 
-#### 3.1.3 Operation Categories (34 operations)
+#### 3.1.3 Operation Categories (36 operations)
 
 | Category | Operations | Pattern |
 |----------|------------|---------|
 | Constructors | `Ok`, `New_Error`, `From_Error` | Create Result from value |
-| Predicates | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Contains` | Query state |
+| Predicates | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Is_Ok_Or`, `Is_Error_Or`, `Contains` | Query state |
 | Extractors | `Value`, `Error`, `Expect`, `Expect_Error`, `Unwrap_Error` | Extract with precondition |
 | Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
-| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten` | Value transformation |
+| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten`, `To_Option` | Value transformation |
 | Recovery | `Fallback`, `Fallback_With`, `Recover`, `Recover_With` | Error recovery |
 | Validation | `Ensure`, `With_Context` | Ok value validation |
 | Side Effects | `Tap`, `Tap_Ok`, `Tap_Error` | Logging/debugging hooks |
-| Conversion | `To_Option` | Result to Option |
 | Operators | `"or"` (Unwrap_Or, Fallback), `"="` (Contains) | Operator aliases |
 
 ### 3.2 Functional.Option
@@ -196,12 +198,12 @@ is
 | `Map` preserves None unchanged | Implementation + Postcondition |
 | `Filter` converts Some to None on predicate failure | Implementation + Postcondition |
 
-#### 3.2.3 Operation Categories (25 operations)
+#### 3.2.3 Operation Categories (26 operations)
 
 | Category | Operations | Pattern |
 |----------|------------|---------|
 | Constructors | `New_Some`, `None` | Create Option |
-| Predicates | `Is_Some`, `Is_None`, `Is_Some_And`, `Contains` | Query state |
+| Predicates | `Is_Some`, `Is_None`, `Is_Some_And`, `Is_None_Or`, `Contains` | Query state |
 | Extractors | `Value`, `Expect` | Extract with precondition |
 | Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
 | Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `Filter`, `Zip_With`, `Flatten` | Value transformation |
@@ -235,12 +237,12 @@ is
 - Useful for parsing, validation with multiple outcomes
 - `Fold` reduces to single value via handler functions
 
-#### 3.3.2 Operation Categories (16 operations)
+#### 3.3.2 Operation Categories (20 operations)
 
 | Category | Operations | Pattern |
 |----------|------------|---------|
 | Constructors | `Left`, `Right` | Create Either |
-| Predicates | `Is_Left`, `Is_Right`, `Contains` | Query state |
+| Predicates | `Is_Left`, `Is_Right`, `Is_Left_And`, `Is_Right_And`, `Is_Left_Or`, `Is_Right_Or`, `Contains` | Query state |
 | Extractors | `Left_Value`, `Right_Value`, `Get_Or_Else` | Extract with precondition |
 | Transforms | `Map`, `Map_Left`, `Map_Right`, `Bimap`, `Swap`, `And_Then` | Value transformation |
 | Reduction | `Fold`, `Merge` | Reduce to single value |
@@ -266,7 +268,7 @@ Exception World          │         Result/Option World
 
 | Function | Generics | Purpose |
 |----------|----------|---------|
-| `Try_To_Result` | `T`, `E`, `Result_Type`, `Ok`, `Err`, `Map_Exception`, `Action` | Full control over result type |
+| `Try_To_Result` | `T`, `E`, `Result_Type`, `Ok`, `New_Error`, `Map_Exception`, `Action` | Full control over result type |
 | `Try_To_Functional_Result` | `T`, `E`, `Result_Pkg`, `Map_Exception`, `Action` | Convenience for Functional.Result |
 | `Try_To_Functional_Option` | `T`, `Option_Pkg`, `Action` | Convenience for Functional.Option |
 | `Try_To_Result_With_Param` | `T`, `E`, `Param (<>)`, `Result_Pkg`, `Map_Exception`, `Action` | Parameterized Result bridge |
@@ -290,17 +292,18 @@ Operations compose along two tracks:
 ```
 Ok Track:    Ok(v1) ──Map──→ Ok(v2) ──And_Then──→ Ok(v3) ──→ final Ok
                                           │
-Err Track:                    Err(e) ←────┘ (short-circuit)
+Error Track:                Error(e) ←────┘ (short-circuit)
 ```
 
-**Implementation:** Each transform checks `Kind` first:
+**Implementation:** Each transform checks discriminant first:
 ```ada
 function Map (R : Result) return Result is
 begin
-   case R.Kind is
-      when K_Ok  => return Ok (F (R.Ok_Value));
-      when K_Err => return R;  -- Pass through unchanged
-   end case;
+   if R.Is_Ok then
+      return Ok (F (R.Ok_Value));
+   else
+      return R;  -- Pass through unchanged
+   end if;
 end Map;
 ```
 
@@ -327,8 +330,28 @@ function And_Then (R : Result) return Result;
 ```
 
 **Semantics:**
-- If `R` is Ok, apply `F` to the value (which may return Ok or Err)
-- If `R` is Err, return Err unchanged (short-circuit)
+- If `R` is Ok, apply `F` to the value (which may return Ok or Error)
+- If `R` is Error, return Error unchanged (short-circuit)
+
+### 4.4 Lenient vs Strict Predicates
+
+Version 3.0.0 introduces predicate pairs for different use cases:
+
+**Strict predicates** (`Is_Ok_And`, `Is_Some_And`, etc.):
+- Return True only if the value exists AND the predicate holds
+- Short-circuit: if no value, return False without calling predicate
+
+**Lenient predicates** (`Is_Ok_Or`, `Is_None_Or`, etc.):
+- Return True if no value OR the predicate holds on the value
+- Useful for validation: "pass if empty or valid"
+
+```ada
+-- Strict: Must be Some AND positive
+if Is_Some_And (Age, Is_Positive'Access) then ...
+
+-- Lenient: Pass if None OR positive (optional field validation)
+if Is_None_Or (Age, Is_Positive'Access) then ...
+```
 
 ## 5. Data Flow
 
@@ -348,7 +371,7 @@ Input ──→ Validate ──→ Transform ──→ Persist ──→ Output
 ### 5.2 Error Propagation
 
 Errors propagate automatically through `And_Then` chains:
-1. First `Err` short-circuits the chain
+1. First `Error` short-circuits the chain
 2. Original error preserved (or enriched via `With_Context`)
 3. `Recover` or `Recover_With` can intercept and handle
 
@@ -387,18 +410,18 @@ Expected optimization: direct discriminant check, no function call overhead.
 Generated code should be equivalent to manual pattern matching:
 ```ada
 -- This Result code:
-Result := Input.And_Then (Validate'Access).And_Then (Transform'Access);
+Result := Chain (Validate (Transform (Parse (Input))));
 
 -- Should compile to equivalent of:
-if Input.Kind = K_Ok then
-   Temp := Validate (Input.Ok_Value);
-   if Temp.Kind = K_Ok then
-      Result := Transform (Temp.Ok_Value);
+if Parse_Result.Is_Ok then
+   Transform_Result := Transform (Parse_Result.Ok_Value);
+   if Transform_Result.Is_Ok then
+      Result := Validate (Transform_Result.Ok_Value);
    else
-      Result := Temp;
+      Result := Transform_Result;
    end if;
 else
-   Result := Input;
+   Result := Parse_Result;
 end if;
 ```
 
@@ -409,17 +432,18 @@ end if;
 Each package has dedicated test file:
 | File | Target | Tests |
 |------|--------|-------|
-| `test_result.adb` | Functional.Result | 35 |
-| `test_option.adb` | Functional.Option | 22 |
-| `test_either.adb` | Functional.Either | 16 |
+| `test_result.adb` | Functional.Result | 84 |
+| `test_option.adb` | Functional.Option | 65 |
+| `test_either.adb` | Functional.Either | 58 |
 | `test_try.adb` | Functional.Try | 14 |
 | `test_try_option.adb` | Try Option bridges | 6 |
+| **Total** | | **227** |
 
 ### 8.2 Coverage Target
 
 - Statement coverage: 90%+
 - Decision coverage: 90%+
-- Current: 95% (152/160 lines)
+- Current: 95%+
 
 ## 9. Build Configuration
 
@@ -443,7 +467,7 @@ for Library_Kind use Library_Type;
 
 ```
 functional/
-├── alire.toml              # Alire manifest
+├── alire.toml              # Alire manifest (v3.0.0)
 ├── functional.gpr          # GPRbuild project
 ├── src/
 │   ├── functional.ads      # Pure namespace
@@ -456,11 +480,34 @@ functional/
 │   └── version/
 │       └── functional-version.ads  # Auto-generated
 ├── test/
-│   ├── unit/               # Unit tests
-│   ├── common/             # Test framework
-│   └── alire.toml          # Test crate
+│   ├── alire.toml          # Test crate (v3.0.0)
+│   ├── unit/               # Unit tests (227 total)
+│   └── common/             # Test framework
 ├── config/                 # Build configuration
 └── docs/
     ├── formal/             # SRS, SDS, STG
+    ├── guides/             # User guide, cheatsheet
     └── index.md            # Documentation hub
 ```
+
+## 11. API Quick Reference
+
+### 11.1 Operation Totals
+
+| Package | Operations |
+|---------|------------|
+| Result | 36 |
+| Option | 26 |
+| Either | 20 |
+| Try | 5 |
+| **Total** | **87** |
+
+### 11.2 SPARK Status
+
+| Package | SPARK_Mode | Categorization |
+|---------|------------|----------------|
+| Option | On | Preelaborate |
+| Result | On | Preelaborate |
+| Either | On | Preelaborate |
+| Try | Off | Exception boundary |
+| Version | N/A | Pure |

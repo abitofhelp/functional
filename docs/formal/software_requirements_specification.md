@@ -23,15 +23,17 @@ Functional provides:
 - `Try` bridges for converting exception-based APIs to Result/Option types
 - Railway-oriented programming patterns for composable error handling
 - Full Ada 2022 contract support (Pre, Post, Inline aspects)
+- SPARK compatibility for formal verification
 
 ### 1.3 Definitions and Acronyms
 
-- **Result**: A discriminated record representing either a success value (Ok) or an error value (Err)
+- **Result**: A discriminated record representing either a success value (Ok) or an error value (Error)
 - **Option**: A discriminated record representing either a present value (Some) or absence (None)
 - **Either**: A discriminated record representing one of two possible values (Left or Right)
 - **Try**: Exception-to-Result/Option conversion utilities
-- **Railway-Oriented Programming (ROP)**: A pattern where operations chain along "happy path" (Ok/Some) or "error track" (Err/None)
+- **Railway-Oriented Programming (ROP)**: A pattern where operations chain along "happy path" (Ok/Some) or "error track" (Error/None)
 - **Monadic Bind**: The `And_Then` operation that chains fallible operations
+- **SPARK**: Subset of Ada designed for formal verification
 
 ### 1.4 References
 
@@ -39,6 +41,7 @@ Functional provides:
 - Semantic Versioning 2.0.0 (semver.org)
 - Railway-Oriented Programming (Scott Wlaschin)
 - Rust std::result::Result and std::option::Option documentation
+- SPARK 2014 Reference Manual
 
 ## 2. Overall Description
 
@@ -50,17 +53,19 @@ The library is designed to:
 - Replace exception-based error handling with explicit typed errors
 - Enable composition of fallible operations without nested conditionals
 - Provide a consistent API familiar to developers from Rust, Haskell, or F#
+- Support formal verification through SPARK compatibility
 
 ### 2.2 Product Features
 
 | Feature | Description |
 |---------|-------------|
-| **Result Type** | 20+ operations for error handling (Ok/Err, Map, And_Then, Map_Err, Recover, etc.) |
-| **Option Type** | 11 operations for optional values (Some/None, Map, And_Then, Filter, Or_Else, etc.) |
-| **Either Type** | 8 operations for disjoint unions (Left/Right, Map_Left, Map_Right, Bimap, Fold) |
+| **Result Type** | 36 operations for error handling (constructors, predicates, extractors, transforms, recovery, operators) |
+| **Option Type** | 26 operations for optional values (constructors, predicates, transforms, fallbacks, operators) |
+| **Either Type** | 20 operations for disjoint unions (constructors, predicates, transforms, conversions, operators) |
 | **Try Bridges** | 5 generic functions for exception-to-Result/Option conversion |
-| **Contract Support** | Pre/Post conditions, Inline aspects throughout |
-| **Preelaborate** | Option package supports preelaborate instantiation |
+| **SPARK Compatibility** | Option, Result, Either are `SPARK_Mode => On` for formal verification |
+| **Contract Support** | Pre/Post conditions with postconditions for prover assistance |
+| **Preelaborate** | Option, Result, Either packages support preelaborate instantiation |
 
 ### 2.3 User Classes
 
@@ -68,7 +73,8 @@ The library is designed to:
 |------------|-------------|
 | **Library Developers** | Build domain/application layers using Result/Option for all fallible operations |
 | **Infrastructure Developers** | Use Try bridges at I/O boundaries to convert exceptions to typed errors |
-| **API Consumers** | Instantiate generic packages and compose operations via railway-oriented patterns |
+| **SPARK Users** | Leverage formal verification for safety-critical applications |
+| **Embedded Developers** | Use zero-allocation types in resource-constrained environments |
 
 ### 2.4 Operating Environment
 
@@ -76,105 +82,164 @@ The library is designed to:
 - **Build System**: Alire 2.0+ with GPRbuild
 - **Platforms**: Any platform supported by GNAT (Linux, macOS, Windows, embedded)
 - **Memory Model**: No dynamic allocation in core types; stack-based discriminated records
+- **SPARK**: GNATprove compatible for formal verification
 
 ## 3. Functional Requirements
 
 ### 3.1 Result Type (FR-01)
 
-The `Functional.Result` generic package SHALL provide:
+The `Functional.Result` generic package SHALL provide 36 operations:
 
-**Constructors:**
+**Constructors (3):**
 - `Ok(V)` - Create success result containing value V
-- `Err(E)` - Create error result containing error E
-- `From_Error(E)` - Alias for Err (infrastructure convenience)
+- `New_Error(E)` - Create error result containing error E
+- `From_Error(E)` - Alias for New_Error (infrastructure convenience)
 
-**Predicates:**
+**Predicates (7):**
 - `Is_Ok(R)` - Returns True if R is Ok
-- `Is_Err(R)` - Returns True if R is Err
+- `Is_Error(R)` - Returns True if R is Error
+- `Is_Ok_And(R)` - True if Ok and predicate holds on value (strict)
+- `Is_Error_And(R)` - True if Error and predicate holds on error (strict)
+- `Is_Ok_Or(R)` - True if Error or predicate holds on Ok value (lenient)
+- `Is_Error_Or(R)` - True if Ok or predicate holds on Error value (lenient)
+- `Contains(R, V)` - True if Ok value equals V
 
-**Extractors:**
+**Extractors (5):**
 - `Value(R)` - Extract Ok value (Pre: Is_Ok)
-- `Error(R)` - Extract Err value (Pre: Is_Err)
+- `Error(R)` - Extract Error value (Pre: Is_Error)
 - `Expect(R, Msg)` - Extract Ok or raise with message
+- `Expect_Error(R, Msg)` - Extract Error or raise with message
+- `Unwrap_Error(R)` - Extract Error (Pre: Is_Error)
 
-**Defaults:**
+**Defaults (2):**
 - `Unwrap_Or(R, Default)` - Return value or default
 - `Unwrap_Or_With(R)` - Return value or call lazy function
 
-**Transformations:**
-- `Map(R)` - Transform Ok value, pass Err unchanged
+**Transformations (12):**
+- `Map(R)` - Transform Ok value, pass Error unchanged
+- `Map_Or(R, Default)` - Transform Ok value or return default (eager)
+- `Map_Or_Else(R)` - Transform Ok value or call default producer (lazy)
 - `And_Then(R)` - Chain fallible operation (monadic bind)
 - `And_Then_Into(R)` - Chain with type transformation
-- `Map_Err(R)` - Transform Err value, pass Ok unchanged
-- `Bimap(R)` - Transform both Ok and Err simultaneously
+- `Map_Error(R)` - Transform Error value, pass Ok unchanged
+- `Bimap(R)` - Transform both Ok and Error simultaneously
+- `Zip_With(R1, R2)` - Combine two Results with a function
+- `Flatten(R)` - Unwrap nested Result[Result[T,E],E] to Result[T,E]
+- `To_Option(R)` - Convert Ok(v) to Some(v), Error(_) to None
 
-**Recovery:**
+**Recovery (4):**
 - `Fallback(A, B)` - Return A if Ok, else B (eager)
 - `Fallback_With(R)` - Lazy fallback
-- `Recover(R)` - Convert Err to value
-- `Recover_With(R)` - Convert Err to Result
+- `Recover(R)` - Convert Error to value
+- `Recover_With(R)` - Convert Error to Result
 
-**Validation:**
+**Validation (2):**
 - `Ensure(R)` - Validate Ok value with predicate
-- `With_Context(R, Msg)` - Append context to Err
+- `With_Context(R, Msg)` - Append context to Error
 
-**Side Effects:**
-- `Tap(R)` - Execute callbacks without changing Result
+**Side Effects (3):**
+- `Tap(R)` - Execute callbacks on both Ok and Error
+- `Tap_Ok(R)` - Execute callback on Ok only
+- `Tap_Error(R)` - Execute callback on Error only
+
+**Operators (3):**
+- `"or"` for Unwrap_Or - `R or Default` syntax
+- `"or"` for Fallback - `A or B` syntax
+- `"="` for Contains - `R = V` syntax
 
 ### 3.2 Option Type (FR-02)
 
-The `Functional.Option` generic package SHALL provide:
+The `Functional.Option` generic package SHALL provide 26 operations:
 
-**Constructors:**
+**Constructors (2):**
 - `New_Some(V)` - Create Option containing value V
 - `None` - Create empty Option
 
-**Predicates:**
+**Predicates (5):**
 - `Is_Some(O)` - Returns True if O contains a value
 - `Is_None(O)` - Returns True if O is empty
+- `Is_Some_And(O)` - True if Some and predicate holds (strict)
+- `Is_None_Or(O)` - True if None or predicate holds on Some (lenient)
+- `Contains(O, V)` - True if Some value equals V
 
-**Extractors:**
-- `Value(O)` - Extract value (Pre: Is_Some)
+**Extractors (2):**
+- `Value(O)` - Extract value (Pre: Has_Value)
+- `Expect(O, Msg)` - Extract value or raise with message
 
-**Defaults:**
+**Defaults (2):**
 - `Unwrap_Or(O, Default)` - Return value or default
 - `Unwrap_Or_With(O)` - Return value or call lazy function
 
-**Transformations:**
+**Transformations (9):**
 - `Map(O)` - Transform Some value, pass None unchanged
+- `Map_Or(O, Default)` - Transform Some value or return default (eager)
+- `Map_Or_Else(O)` - Transform Some value or call default producer (lazy)
 - `And_Then(O)` - Chain optional operation (monadic bind)
 - `Filter(O)` - Keep value only if predicate holds
+- `Zip_With(O1, O2)` - Combine two Options with a function
+- `Flatten(O)` - Unwrap nested Option[Option[T]] to Option[T]
+- `Ok_Or(O, E)` - Convert Some(v) to Ok(v), None to Error(e) (eager)
+- `Ok_Or_Else(O)` - Convert Some(v) to Ok(v), None to Error(f()) (lazy)
 
-**Fallback:**
+**Fallback (3):**
 - `Or_Else(A, B)` - Return A if Some, else B (eager)
 - `Or_Else_With(O)` - Lazy fallback
 - `Fallback` - Alias for Or_Else
 
+**Side Effects (1):**
+- `Tap(O)` - Execute callback on Some value
+
+**Operators (4):**
+- `"or"` for Unwrap_Or - `O or Default` syntax
+- `"or"` for Or_Else - `A or B` syntax
+- `"and"` - Returns second when both have values
+- `"xor"` - Returns one when exactly one has value
+- `"="` for Contains - `O = V` syntax
+
 ### 3.3 Either Type (FR-03)
 
-The `Functional.Either` generic package SHALL provide:
+The `Functional.Either` generic package SHALL provide 20 operations:
 
-**Constructors:**
+**Constructors (2):**
 - `Left(V)` - Create Either with Left value
 - `Right(V)` - Create Either with Right value
 
-**Predicates:**
+**Predicates (7):**
 - `Is_Left(E)` - Returns True if E is Left
 - `Is_Right(E)` - Returns True if E is Right
+- `Is_Left_And(E)` - True if Left and predicate holds (strict)
+- `Is_Right_And(E)` - True if Right and predicate holds (strict)
+- `Is_Left_Or(E)` - True if Right or predicate holds on Left (lenient)
+- `Is_Right_Or(E)` - True if Left or predicate holds on Right (lenient)
+- `Contains(E, V)` - True if Right value equals V
 
-**Extractors:**
+**Extractors (3):**
 - `Left_Value(E)` - Extract Left value (Pre: Is_Left)
 - `Right_Value(E)` - Extract Right value (Pre: Is_Right)
+- `Get_Or_Else(E, Default)` - Get Right value or default
 
-**Transformations:**
+**Transformations (6):**
+- `Map(E)` - Right-biased transform (convenience)
 - `Map_Left(E)` - Transform Left value only
 - `Map_Right(E)` - Transform Right value only
 - `Bimap(E)` - Transform both values simultaneously
+- `Swap(E)` - Exchange Left and Right values
+- `And_Then(E)` - Right-biased monadic bind
+
+**Reduction (2):**
 - `Fold(E)` - Reduce to single value via handlers
+- `Merge(E)` - Extract value when L and R are same type
+
+**Conversion (2):**
+- `To_Option(E)` - Convert Right(v) to Some(v), Left(_) to None
+- `To_Result(E)` - Convert Right(v) to Ok(v), Left(e) to Error(e)
+
+**Operators (1):**
+- `"="` for Contains - `E = V` syntax
 
 ### 3.4 Try Bridges (FR-04)
 
-The `Functional.Try` package SHALL provide:
+The `Functional.Try` package SHALL provide 5 generic functions:
 
 **General Bridge:**
 - `Try_To_Result` - Convert exception-throwing action to any Result type
@@ -223,7 +288,14 @@ Backwards-compatible child packages SHALL provide legacy API:
 
 - API naming familiar to Rust/Haskell developers
 - Generic packages instantiable with any `private` type
-- Option package supports `Preelaborate` for strict elaboration contexts
+- Option, Result, Either packages support `Preelaborate` for strict elaboration contexts
+
+### 4.6 SPARK Compatibility (NFR-06)
+
+- Option, Result, Either SHALL be `SPARK_Mode => On`
+- Try SHALL be `SPARK_Mode => Off` (exception boundary by design)
+- All transform operations SHALL have postconditions for prover assistance
+- No heap allocation, no controlled types, Ravenscar compatible
 
 ## 5. System Requirements
 
@@ -237,6 +309,7 @@ None - pure library with no hardware dependencies.
 |-----------|-------------|
 | Ada Compiler | GNAT >= 13 (FSF or Pro) |
 | Build System | Alire >= 2.0, GPRbuild |
+| SPARK Prover | GNATprove (optional, for formal verification) |
 | Test Coverage | GNATcoverage (optional) |
 
 ## 6. Verification and Validation
@@ -245,12 +318,12 @@ None - pure library with no hardware dependencies.
 
 | Suite | Tests | Coverage Target |
 |-------|-------|-----------------|
-| Unit Tests | 93 | 90%+ stmt+decision |
-| Result | 35 | 91% |
-| Option | 22 | 100% |
-| Either | 16 | 100% |
-| Try | 14 | 100% |
-| Try_Option | 6 | 100% |
+| Unit Tests | 227 | 90%+ stmt+decision |
+| Result | 84 | 95%+ |
+| Option | 65 | 95%+ |
+| Either | 58 | 95%+ |
+| Try | 14 | 95%+ |
+| Try_Option | 6 | 95%+ |
 
 ### 6.2 Verification Methods
 
@@ -259,9 +332,10 @@ None - pure library with no hardware dependencies.
 | FR-01 to FR-05 | Unit tests exercising all operations |
 | NFR-01 | Code review for Inline aspects |
 | NFR-02 | Tests verify no exceptions from core operations |
-| NFR-03 | Build on multiple targets |
+| NFR-03 | Build on multiple targets (POSIX, Windows) |
 | NFR-04 | GNATcoverage analysis |
 | NFR-05 | API review against Rust documentation |
+| NFR-06 | GNATprove analysis (optional) |
 
 ## 7. Appendices
 
@@ -269,15 +343,28 @@ None - pure library with no hardware dependencies.
 
 | Package | Operations |
 |---------|------------|
-| Functional.Result | 20 (Ok, Err, Is_Ok, Is_Err, Value, Error, Expect, Unwrap_Or, Unwrap_Or_With, Map, And_Then, And_Then_Into, Map_Err, Bimap, Fallback, Fallback_With, Recover, Recover_With, Ensure, With_Context, Tap) |
-| Functional.Option | 11 (New_Some, None, Is_Some, Is_None, Value, Unwrap_Or, Unwrap_Or_With, Map, And_Then, Filter, Or_Else, Or_Else_With) |
-| Functional.Either | 8 (Left, Right, Is_Left, Is_Right, Left_Value, Right_Value, Map_Left, Map_Right, Bimap, Fold) |
-| Functional.Try | 5 (Try_To_Result, Try_To_Functional_Result, Try_To_Functional_Option, Try_To_Result_With_Param, Try_To_Option_With_Param) |
+| Functional.Result | 36 operations |
+| Functional.Option | 26 operations |
+| Functional.Either | 20 operations |
+| Functional.Try | 5 functions |
+| **Total** | **87 operations** |
 
 ### 7.2 Project Statistics
 
 - Source Files: 13
-- Test Files: 8
-- Total Tests: 93
+- Test Files: 6
+- Total Tests: 227
 - Code Coverage: 95% (stmt+decision)
-- Lines of Code: ~1,200 (excluding tests)
+- SPARK Packages: 3 (Option, Result, Either)
+
+### 7.3 v3.0.0 Breaking Changes Summary
+
+| Change | Old (2.x) | New (3.0.0) |
+|--------|-----------|-------------|
+| Option discriminant | `Kind : Kind_Type` | `Has_Value : Boolean` |
+| Result discriminant | `Kind : Kind_Type` | `Is_Ok : Boolean` |
+| Either discriminant | `Kind : Kind_Type` | `Is_Left : Boolean` |
+| Result constructor | `Err(e)` | `New_Error(e)` |
+| Result predicate | `Is_Err(r)` | `Is_Error(r)` |
+| Result transform | `Map_Err(r)` | `Map_Error(r)` |
+| Result field | `Err_Value` | `Error_Value` |
