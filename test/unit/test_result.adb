@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Result monad.
---    Tests all 20 Result operations. 43 tests. Target: 90%+ coverage.
+--    Tests all 34 Result operations. Target: 90%+ coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -662,6 +662,231 @@ procedure Test_Result is
               "To_Option converts Error to None");
    end Test_To_Option;
 
+   --  ==========================================================================
+   --  Test: Is_Ok_And (predicate on Ok value)
+   --  ==========================================================================
+
+   procedure Test_Is_Ok_And is
+      R_Ok_Pos : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Ok_Neg : constant Int_Result.Result := Int_Result.Ok (-5);
+      R_Err    : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+
+      function Is_Positive (X : Integer) return Boolean
+      is (X > 0);
+
+      function Check_Positive is new Int_Result.Is_Ok_And (Pred => Is_Positive);
+   begin
+      Put_Line ("Testing Is_Ok_And...");
+      Assert (Check_Positive (R_Ok_Pos),
+              "Is_Ok_And returns True when Ok and predicate holds");
+      Assert (not Check_Positive (R_Ok_Neg),
+              "Is_Ok_And returns False when Ok but predicate fails");
+      Assert (not Check_Positive (R_Err),
+              "Is_Ok_And returns False for Error");
+   end Test_Is_Ok_And;
+
+   --  ==========================================================================
+   --  Test: Is_Error_And (predicate on Error value)
+   --  ==========================================================================
+
+   procedure Test_Is_Error_And is
+      R_Ok         : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err_Parse  : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+      R_Err_IO     : constant Int_Result.Result :=
+        Int_Result.New_Error ((IO_Error, [others => ' '], 0));
+
+      function Is_Parse_Error (E : Error) return Boolean
+      is (E.Kind = Parse_Error);
+
+      function Check_Parse is new Int_Result.Is_Error_And (Pred => Is_Parse_Error);
+   begin
+      Put_Line ("Testing Is_Error_And...");
+      Assert (Check_Parse (R_Err_Parse),
+              "Is_Error_And returns True when Error and predicate holds");
+      Assert (not Check_Parse (R_Err_IO),
+              "Is_Error_And returns False when Error but predicate fails");
+      Assert (not Check_Parse (R_Ok),
+              "Is_Error_And returns False for Ok");
+   end Test_Is_Error_And;
+
+   --  ==========================================================================
+   --  Test: Contains and "=" operator
+   --  ==========================================================================
+
+   procedure Test_Contains is
+      R_42  : constant Int_Result.Result := Int_Result.Ok (42);
+      R_99  : constant Int_Result.Result := Int_Result.Ok (99);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+   begin
+      Put_Line ("Testing Contains and ""="" operator...");
+      Assert (Int_Result.Contains (R_42, 42),
+              "Contains returns True when value matches");
+      Assert (not Int_Result.Contains (R_42, 99),
+              "Contains returns False when value differs");
+      Assert (not Int_Result.Contains (R_Err, 42),
+              "Contains returns False for Error");
+
+      --  Test "=" operator alias
+      Assert (Int_Result."=" (R_42, 42),
+              """="" operator returns True when value matches");
+      Assert (not Int_Result."=" (R_99, 42),
+              """="" operator returns False when value differs");
+      Assert (not Int_Result."=" (R_Err, 42),
+              """="" operator returns False for Error");
+   end Test_Contains;
+
+   --  ==========================================================================
+   --  Test: Expect_Error (extract error or raise)
+   --  ==========================================================================
+
+   procedure Test_Expect_Error is
+      R_Err   : constant Int_Result.Result :=
+        Int_Result.New_Error ((IO_Error, "test error" & [11 .. 100 => ' '], 10));
+      Err_Val : Error;
+   begin
+      Put_Line ("Testing Expect_Error...");
+      Err_Val := Int_Result.Expect_Error (R_Err, "Expected Error value");
+      Assert (Err_Val.Kind = IO_Error, "Expect_Error returns error when Error");
+      --  Note: Cannot test Ok case as it raises Program_Error
+   end Test_Expect_Error;
+
+   --  ==========================================================================
+   --  Test: Unwrap_Error (extract error)
+   --  ==========================================================================
+
+   procedure Test_Unwrap_Error is
+      R_Err   : constant Int_Result.Result :=
+        Int_Result.New_Error ((Validation_Error, "invalid" & [8 .. 100 => ' '], 7));
+      Err_Val : Error;
+   begin
+      Put_Line ("Testing Unwrap_Error...");
+      Err_Val := Int_Result.Unwrap_Error (R_Err);
+      Assert (Err_Val.Kind = Validation_Error,
+              "Unwrap_Error extracts error value");
+   end Test_Unwrap_Error;
+
+   --  ==========================================================================
+   --  Test: Map_Or (transform Ok value or return default)
+   --  ==========================================================================
+
+   procedure Test_Map_Or is
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (5);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+
+      function Double (X : Integer) return Integer
+      is (X * 2);
+
+      function Map_Double is new Int_Result.Map_Or (F => Double);
+   begin
+      Put_Line ("Testing Map_Or...");
+      Assert (Map_Double (R_Ok, 0) = 10,
+              "Map_Or transforms Ok value");
+      Assert (Map_Double (R_Err, 99) = 99,
+              "Map_Or returns default for Error");
+   end Test_Map_Or;
+
+   --  ==========================================================================
+   --  Test: Map_Or_Else (transform Ok value or call default producer)
+   --  ==========================================================================
+
+   procedure Test_Map_Or_Else is
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (10);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+
+      function Triple (X : Integer) return Integer
+      is (X * 3);
+
+      function Get_Default return Integer
+      is (999);
+
+      function Map_Triple is new Int_Result.Map_Or_Else
+        (F => Triple, Default => Get_Default);
+   begin
+      Put_Line ("Testing Map_Or_Else...");
+      Assert (Map_Triple (R_Ok) = 30,
+              "Map_Or_Else transforms Ok value");
+      Assert (Map_Triple (R_Err) = 999,
+              "Map_Or_Else calls default producer for Error");
+   end Test_Map_Or_Else;
+
+   --  ==========================================================================
+   --  Test: Tap_Ok (side effect only on Ok)
+   --  ==========================================================================
+
+   procedure Test_Tap_Ok is
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+
+      Captured_Value : Integer := 0;
+
+      procedure Capture (V : Integer) is
+      begin
+         Captured_Value := V;
+      end Capture;
+
+      function Tap_Capture is new Int_Result.Tap_Ok (On_Ok => Capture);
+
+      Result : Int_Result.Result;
+   begin
+      Put_Line ("Testing Tap_Ok...");
+      --  Ok case: side effect runs
+      Captured_Value := 0;
+      Result := Tap_Capture (R_Ok);
+      Assert (Captured_Value = 42, "Tap_Ok runs side effect on Ok value");
+      Assert (Int_Result.Is_Ok (Result) and then Int_Result.Value (Result) = 42,
+              "Tap_Ok returns unchanged Result for Ok");
+
+      --  Error case: no side effect
+      Captured_Value := 0;
+      Result := Tap_Capture (R_Err);
+      Assert (Captured_Value = 0, "Tap_Ok does not run side effect on Error");
+      Assert (Int_Result.Is_Error (Result), "Tap_Ok returns unchanged Result for Error");
+   end Test_Tap_Ok;
+
+   --  ==========================================================================
+   --  Test: Tap_Error (side effect only on Error)
+   --  ==========================================================================
+
+   procedure Test_Tap_Error is
+      R_Ok  : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err : constant Int_Result.Result :=
+        Int_Result.New_Error ((IO_Error, [others => ' '], 0));
+
+      Error_Kind_Captured : Error_Kind := Validation_Error;
+
+      procedure Capture_Error (E : Error) is
+      begin
+         Error_Kind_Captured := E.Kind;
+      end Capture_Error;
+
+      function Tap_Capture is new Int_Result.Tap_Error (On_Error => Capture_Error);
+
+      Result : Int_Result.Result;
+   begin
+      Put_Line ("Testing Tap_Error...");
+      --  Error case: side effect runs
+      Error_Kind_Captured := Validation_Error;
+      Result := Tap_Capture (R_Err);
+      Assert (Error_Kind_Captured = IO_Error,
+              "Tap_Error runs side effect on Error value");
+      Assert (Int_Result.Is_Error (Result),
+              "Tap_Error returns unchanged Result for Error");
+
+      --  Ok case: no side effect
+      Error_Kind_Captured := Validation_Error;
+      Result := Tap_Capture (R_Ok);
+      Assert (Error_Kind_Captured = Validation_Error,
+              "Tap_Error does not run side effect on Ok");
+      Assert (Int_Result.Is_Ok (Result),
+              "Tap_Error returns unchanged Result for Ok");
+   end Test_Tap_Error;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Result Unit Tests");
@@ -687,6 +912,15 @@ begin
    Test_Zip_With;
    Test_Flatten;
    Test_To_Option;
+   Test_Is_Ok_And;
+   Test_Is_Error_And;
+   Test_Contains;
+   Test_Expect_Error;
+   Test_Unwrap_Error;
+   Test_Map_Or;
+   Test_Map_Or_Else;
+   Test_Tap_Ok;
+   Test_Tap_Error;
 
    New_Line;
    Put_Line ("======================================");
