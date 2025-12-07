@@ -422,7 +422,7 @@ R := Map (Input);
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Presentation Layer                                          │
+│  API Layer (Facade)                                          │
 │  - Receives Result/Option from Application                   │
 │  - Converts to HTTP responses, CLI output, etc.              │
 └─────────────────────────────────────────────────────────────┘
