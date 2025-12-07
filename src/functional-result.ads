@@ -51,9 +51,9 @@ is
    --  ==========================================================================
 
    function Ok (V : T) return Result
-   with Inline;
+   with Inline, Post => Is_Ok (Ok'Result);
    function New_Error (E_Val : E) return Result
-   with Inline;
+   with Inline, Post => not Is_Ok (New_Error'Result);
 
    --  From_Error: construct Result from pre-existing error value
    --  Used at infrastructure boundaries when converting exceptions to Results

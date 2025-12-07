@@ -17,7 +17,7 @@ PROJECT_NAME := functional
 		help prereqs rebuild refresh stats test test-all test-coverage \
 		test-unit test-integration test-e2e test-python test-windows \
 		install-tools build-coverage-runtime \
-		submodule-init submodule-update submodule-status
+		submodule-init submodule-update submodule-status spark-check spark-prove
 # FIX: ENABLE AFTER THE TARGETS CONVERT TO USING OUR ADAFMT TOOL, WHICH IS IN DEVELOPMENT.
 #       format format-all format-src format-tests
 
@@ -106,6 +106,8 @@ help: ## Display this help message
 	@echo "$(YELLOW)Quality & Architecture Commands:$(NC)"
 	@echo "  check              - Run static analysis"
 	@echo "  check-arch         - Validate architecture boundaries"
+	@echo "  spark-check        - Run SPARK CHECK formal verification"
+	@echo "  spark-prove        - Run SPARK PROVE formal verification"
 # FIX: ENABLE AFTER THE TARGETS CONVERT TO USING OUR ADAFMT TOOL, WHICH IS IN DEVELOPMENT.
 # 	@echo "  format-src         - Auto-format source code only"
 # 	@echo "  format-tests       - Auto-format test code only"
@@ -333,6 +335,34 @@ check-arch: ## Validate architecture boundaries
 	@echo "$(GREEN)Validating architecture boundaries...$(NC)"
 	-@PYTHONPATH=scripts/python $(PYTHON3) -m arch_guard
 	@echo "$(YELLOW)⚠ Architecture validation complete (violations are warnings, not errors)$(NC)"
+
+spark-check: ## Run SPARK CHECK formal verification
+	@echo "$(GREEN)Running SPARK CHECK verification...$(NC)"
+	@if [ ! -f "$(PROJECT_NAME)_spark.gpr" ]; then \
+		echo "$(RED)✗ SPARK project file not found: $(PROJECT_NAME)_spark.gpr$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -P ../$(PROJECT_NAME)_spark.gpr --mode=check 2>&1; \
+	if [ $$? -eq 0 ]; then \
+		echo "$(GREEN)✓ SPARK CHECK verification passed$(NC)"; \
+	else \
+		echo "$(RED)✗ SPARK CHECK verification failed$(NC)"; \
+		exit 1; \
+	fi
+
+spark-prove: ## Run SPARK PROVE formal verification
+	@echo "$(GREEN)Running SPARK PROVE verification...$(NC)"
+	@if [ ! -f "$(PROJECT_NAME)_spark.gpr" ]; then \
+		echo "$(RED)✗ SPARK project file not found: $(PROJECT_NAME)_spark.gpr$(NC)"; \
+		exit 1; \
+	fi
+	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -P ../$(PROJECT_NAME)_spark.gpr --mode=prove --level=2 2>&1; \
+	if [ $$? -eq 0 ]; then \
+		echo "$(GREEN)✓ SPARK PROVE verification passed$(NC)"; \
+	else \
+		echo "$(RED)✗ SPARK PROVE verification failed$(NC)"; \
+		exit 1; \
+	fi
 
 # FIXME: REPLACE WITH THE ADAFMT TOOL WE ARE CREATING WHEN IT IS COMPLETED.
 # THE CURRENT SCRIPT IS COMMENTING COMMENTS AND MESSING UP WITH INDEXED COMMENTS.

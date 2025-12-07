@@ -1,0 +1,42 @@
+--  ===========================================================================
+--  Functional SPARK Verification Project
+--  ===========================================================================
+--  Standalone project for SPARK formal verification of the functional library.
+--  No external dependencies required.
+--
+--  Usage:
+--    cd test && alr exec -- gnatprove -P ../functional_spark.gpr --mode=check
+--
+--  Or for full proof:
+--    cd test && alr exec -- gnatprove -P ../functional_spark.gpr --mode=prove --level=2
+--  ===========================================================================
+
+project Functional_SPARK is
+
+   for Source_Dirs use
+     ("src",
+      "src/version",
+      "config",
+      "test/spark");  --  SPARK test instantiations
+
+   for Object_Dir use "obj/spark";
+   for Create_Missing_Dirs use "True";
+
+   package Compiler is
+      for Default_Switches ("Ada") use
+        ("-gnat2022",
+         "-gnatwa",
+         "-gnatVa",
+         "-gnata");
+   end Compiler;
+
+   package Prove is
+      for Proof_Switches ("Ada") use
+        ("--level=2",
+         "--timeout=30",
+         "--prover=cvc5,z3,altergo",
+         "--warnings=continue",
+         "--report=all");
+   end Prove;
+
+end Functional_SPARK;

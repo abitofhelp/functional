@@ -48,9 +48,9 @@ is
    --  ==========================================================================
 
    function New_Some (V : T) return Option
-   with Inline;
+   with Inline, Post => Is_Some (New_Some'Result);
    function None return Option
-   with Inline;
+   with Inline, Post => Is_None (None'Result);
 
    --  ==========================================================================
    --  Predicates

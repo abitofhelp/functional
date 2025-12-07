@@ -47,9 +47,9 @@ is
    --  ==========================================================================
 
    function Left (V : L) return Either
-   with Inline;
+   with Inline, Post => Is_Left (Left'Result);
    function Right (V : R) return Either
-   with Inline;
+   with Inline, Post => not Is_Left (Right'Result);
 
    --  ==========================================================================
    --  Predicates
