@@ -2,7 +2,7 @@
 # Functional Library Makefile
 # =============================================================================
 # Project: functional
-# Purpose: Type-safe error handling library for Ada 2022
+# Purpose: Result, Option, Either for type-safe functional computation
 #
 # This Makefile provides:
 #   - Build targets (build, clean, rebuild)
