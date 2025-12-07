@@ -75,7 +75,7 @@ Add to your `alire.toml`:
 
 ```toml
 [[depends-on]]
-functional = "^2.0.0"
+functional = "^3.0.0"
 ```
 
 Then build:

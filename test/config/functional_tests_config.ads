@@ -5,7 +5,7 @@ pragma Style_Checks (Off);
 package Functional_Tests_Config is
    pragma Pure;
 
-   Crate_Version : constant String := "2.2.1";
+   Crate_Version : constant String := "3.0.0";
    Crate_Name : constant String := "functional_tests";
 
    Alire_Host_OS : constant String := "macos";
