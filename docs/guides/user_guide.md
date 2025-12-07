@@ -12,18 +12,18 @@ This guide explains the design philosophy, architecture decisions, and best prac
 
 ## Table of Contents
 
-1. [Design Philosophy](#1-design-philosophy)
-2. [Exception Boundary Pattern](#2-exception-boundary-pattern)
-3. [SPARK Compatibility](#3-spark-compatibility)
-4. [Embedded Systems Usage](#4-embedded-systems-usage)
-5. [Best Practices](#5-best-practices)
-6. [Common Pitfalls](#6-common-pitfalls)
-7. [Integration Patterns](#7-integration-patterns)
-8. [Migration from v2.x to v3.0.0](#8-migration-from-v2x-to-v300)
+1. [Design Philosophy](#design-philosophy)
+2. [Exception Boundary Pattern](#exception-boundary-pattern)
+3. [SPARK Compatibility](#spark-compatibility)
+4. [Embedded Systems Usage](#embedded-systems-usage)
+5. [Best Practices](#best-practices)
+6. [Common Pitfalls](#common-pitfalls)
+7. [Integration Patterns](#integration-patterns)
+8. [Migration from v2.x to v3.0.0](#migration-from-v2x-to-v300)
 
 ---
 
-## 1. Design Philosophy
+## Design Philosophy
 
 ### Railway-Oriented Programming
 
@@ -79,7 +79,7 @@ This provides:
 
 ---
 
-## 2. Exception Boundary Pattern
+## Exception Boundary Pattern
 
 ### The Core Principle
 
@@ -166,7 +166,7 @@ This is by design:
 
 ---
 
-## 3. SPARK Compatibility
+## SPARK Compatibility
 
 ### What is SPARK?
 
@@ -254,7 +254,7 @@ For mutation-heavy code, consider using procedures with explicit `out` parameter
 
 ---
 
-## 4. Embedded Systems Usage
+## Embedded Systems Usage
 
 ### Library Characteristics
 
@@ -300,7 +300,7 @@ For systems with limited resources:
 
 ---
 
-## 5. Best Practices
+## Best Practices
 
 ### Choosing the Right Type
 
@@ -361,7 +361,7 @@ R := With_Context (R, "for customer " & Customer_ID);
 
 ---
 
-## 6. Common Pitfalls
+## Common Pitfalls
 
 ### Pitfall 1: Passing Exception-Raising Functions
 
@@ -417,7 +417,7 @@ R := Map (Input);
 
 ---
 
-## 7. Integration Patterns
+## Integration Patterns
 
 ### Layered Architecture
 
@@ -498,7 +498,7 @@ end Successes_Only;
 
 ---
 
-## 8. Migration from v2.x to v3.0.0
+## Migration from v2.x to v3.0.0
 
 ### Overview of Breaking Changes
 
