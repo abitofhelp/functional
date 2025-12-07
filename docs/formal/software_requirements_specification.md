@@ -1,10 +1,10 @@
 # Software Requirements Specification (SRS)
 
 **Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 3.0.0
-**Date:** December 06, 2025
+**Version:** 3.0.0  
+**Date:** December 06, 2025  
 **Author:** Michael Gardner, A Bit of Help, Inc.
-**Status:** Released
+**Status:** Released  
 
 ---
 
