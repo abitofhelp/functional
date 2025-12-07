@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Option monad.
---    Tests all 9 Option functions. Target: 90%+ code coverage.
+--    Tests all 25 Option operations. Target: 90%+ code coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -430,6 +430,159 @@ procedure Test_Option is
               "Ok_Or_Else converts None to Error using lazy producer");
    end Test_Ok_Or;
 
+   --  ==========================================================================
+   --  Test: Is_Some_And (predicate on Some value)
+   --  ==========================================================================
+
+   procedure Test_Is_Some_And is
+      use Int_Option;
+
+      function Is_Positive (X : Integer) return Boolean
+      is (X > 0);
+
+      function Is_Even (X : Integer) return Boolean
+      is (X mod 2 = 0);
+
+      function Check_Positive is new Is_Some_And (Pred => Is_Positive);
+      function Check_Even is new Is_Some_And (Pred => Is_Even);
+
+      O_Pos  : constant Option := New_Some (42);
+      O_Neg  : constant Option := New_Some (-5);
+      O_None : constant Option := None;
+   begin
+      Put_Line ("Testing Is_Some_And...");
+      Assert (Check_Positive (O_Pos),
+              "Is_Some_And returns True when Some and predicate holds");
+      Assert (not Check_Positive (O_Neg),
+              "Is_Some_And returns False when Some but predicate fails");
+      Assert (not Check_Positive (O_None),
+              "Is_Some_And returns False for None");
+      Assert (Check_Even (O_Pos),
+              "Is_Some_And with Is_Even returns True for 42");
+   end Test_Is_Some_And;
+
+   --  ==========================================================================
+   --  Test: Contains and "=" operator
+   --  ==========================================================================
+
+   procedure Test_Contains is
+      use Int_Option;
+
+      O_42   : constant Option := New_Some (42);
+      O_99   : constant Option := New_Some (99);
+      O_None : constant Option := None;
+   begin
+      Put_Line ("Testing Contains and ""="" operator...");
+      Assert (Contains (O_42, 42), "Contains returns True when value matches");
+      Assert (not Contains (O_42, 99),
+              "Contains returns False when value differs");
+      Assert (not Contains (O_None, 42), "Contains returns False for None");
+
+      --  Test "=" operator alias
+      Assert (O_42 = 42, """="" operator returns True when value matches");
+      Assert (not (O_42 = 99), """="" operator returns False when value differs");
+      Assert (not (O_None = 42), """="" operator returns False for None");
+   end Test_Contains;
+
+   --  ==========================================================================
+   --  Test: Expect (extract or raise with message)
+   --  ==========================================================================
+
+   procedure Test_Expect is
+      use Int_Option;
+
+      O_Some : constant Option := New_Some (42);
+      Val    : Integer;
+   begin
+      Put_Line ("Testing Expect...");
+      Val := Expect (O_Some, "Value should be present");
+      Assert (Val = 42, "Expect returns value when Some");
+      --  Note: Cannot test None case without raising exception
+      --  That's by design - precondition enforces Some
+   end Test_Expect;
+
+   --  ==========================================================================
+   --  Test: Map_Or (transform or default)
+   --  ==========================================================================
+
+   procedure Test_Map_Or is
+      use Int_Option;
+
+      function Double (X : Integer) return Integer
+      is (X * 2);
+
+      function Map_Double is new Map_Or (F => Double);
+
+      O_Some : constant Option := New_Some (5);
+      O_None : constant Option := None;
+   begin
+      Put_Line ("Testing Map_Or...");
+      Assert (Map_Double (O_Some, 0) = 10,
+              "Map_Or transforms Some value");
+      Assert (Map_Double (O_None, 99) = 99,
+              "Map_Or returns default for None");
+   end Test_Map_Or;
+
+   --  ==========================================================================
+   --  Test: Map_Or_Else (transform or lazy default)
+   --  ==========================================================================
+
+   procedure Test_Map_Or_Else is
+      use Int_Option;
+
+      function Triple (X : Integer) return Integer
+      is (X * 3);
+
+      function Get_Default return Integer
+      is (999);
+
+      function Map_Triple is new Map_Or_Else (F => Triple, Default => Get_Default);
+
+      O_Some : constant Option := New_Some (10);
+      O_None : constant Option := None;
+   begin
+      Put_Line ("Testing Map_Or_Else...");
+      Assert (Map_Triple (O_Some) = 30,
+              "Map_Or_Else transforms Some value");
+      Assert (Map_Triple (O_None) = 999,
+              "Map_Or_Else calls default producer for None");
+   end Test_Map_Or_Else;
+
+   --  ==========================================================================
+   --  Test: Tap (side effect without changing Option)
+   --  ==========================================================================
+
+   procedure Test_Tap is
+      use Int_Option;
+
+      Captured_Value : Integer := 0;
+
+      procedure Capture (V : Integer) is
+      begin
+         Captured_Value := V;
+      end Capture;
+
+      function Tap_Capture is new Tap (On_Some => Capture);
+
+      O_Some : constant Option := New_Some (42);
+      O_None : constant Option := None;
+      Result : Option;
+   begin
+      Put_Line ("Testing Tap...");
+      --  Tap on Some: runs side effect
+      Captured_Value := 0;
+      Result := Tap_Capture (O_Some);
+      Assert (Captured_Value = 42, "Tap runs side effect on Some value");
+      Assert (Is_Some (Result) and then Value (Result) = 42,
+              "Tap returns unchanged Option for Some");
+
+      --  Tap on None: no side effect
+      Captured_Value := 0;
+      Result := Tap_Capture (O_None);
+      Assert (Captured_Value = 0, "Tap does not run side effect on None");
+      Assert (Is_None (Result), "Tap returns unchanged Option for None");
+   end Test_Tap;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Option Unit Tests");
@@ -449,6 +602,12 @@ begin
    Test_Zip_With;
    Test_Flatten;
    Test_Ok_Or;
+   Test_Is_Some_And;
+   Test_Contains;
+   Test_Expect;
+   Test_Map_Or;
+   Test_Map_Or_Else;
+   Test_Tap;
 
    New_Line;
    Put_Line ("======================================");
