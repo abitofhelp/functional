@@ -18,6 +18,7 @@ This guide explains the design philosophy, architecture decisions, and best prac
 5. [Best Practices](#5-best-practices)
 6. [Common Pitfalls](#6-common-pitfalls)
 7. [Integration Patterns](#7-integration-patterns)
+8. [Migration from v2.x to v3.0.0](#8-migration-from-v2x-to-v300)
 
 ---
 
@@ -463,6 +464,194 @@ begin
    return Items;
 end Successes_Only;
 ```
+
+---
+
+## 8. Migration from v2.x to v3.0.0
+
+### Overview of Breaking Changes
+
+Version 3.0.0 introduces several breaking changes to improve clarity, SPARK compatibility, and API consistency. This section provides comprehensive migration guidance.
+
+### 8.1 Discriminant Changes
+
+**What Changed**: Enumeration discriminants replaced with Boolean discriminants for SPARK compatibility and clarity.
+
+| Type | Old (2.x) | New (3.0.0) |
+|------|-----------|-------------|
+| Option | `Kind : Kind_Type` | `Has_Value : Boolean` |
+| Result | `Kind : Kind_Type` | `Is_Ok : Boolean` |
+| Either | `Kind : Kind_Type` | `Is_Left : Boolean` |
+
+**Migration Pattern**:
+
+```ada
+-- Old (2.x)
+if O.Kind = K_Some then ...
+if R.Kind = K_Ok then ...
+if E.Kind = K_Left then ...
+
+-- New (3.0.0)
+if O.Has_Value then ...
+if R.Is_Ok then ...
+if E.Is_Left then ...
+```
+
+**Search/Replace Patterns**:
+```
+.Kind = K_Some    →  .Has_Value
+.Kind = K_None    →  not .Has_Value
+.Kind = K_Ok      →  .Is_Ok
+.Kind = K_Err     →  not .Is_Ok
+.Kind = K_Left    →  .Is_Left
+.Kind = K_Right   →  not .Is_Left
+```
+
+### 8.2 Result API Renames
+
+**What Changed**: Error-related names standardized for clarity.
+
+| Category | Old (2.x) | New (3.0.0) |
+|----------|-----------|-------------|
+| Constructor | `Err(e)` | `New_Error(e)` |
+| Predicate | `Is_Err(r)` | `Is_Error(r)` |
+| Transform | `Map_Err(r)` | `Map_Error(r)` |
+| Field access | `Err_Value` | `Error_Value` |
+
+**Migration Pattern**:
+
+```ada
+-- Old (2.x)
+R := Str_Result.Err (Parse_Error);
+if Str_Result.Is_Err (R) then
+   Put_Line (Exception_Message (R.Err_Value.Ex));
+end if;
+function Transform is new Str_Result.Map_Err (F => Add_Context);
+
+-- New (3.0.0)
+R := Str_Result.New_Error (Parse_Error);
+if Str_Result.Is_Error (R) then
+   Put_Line (Exception_Message (R.Error_Value.Ex));
+end if;
+function Transform is new Str_Result.Map_Error (F => Add_Context);
+```
+
+**Search/Replace Patterns**:
+```
+\.Err (          →  .New_Error (
+\.Is_Err (       →  .Is_Error (
+\.Map_Err (      →  .Map_Error (
+\.Err_Value      →  .Error_Value
+```
+
+### 8.3 Try Module Changes
+
+**What Changed**: Generic formal parameter renamed.
+
+```ada
+-- Old (2.x)
+function Try_Read is new Functional.Try.Try_To_Result
+  (..., Err => Domain_Result.From_Error, ...);
+
+-- New (3.0.0)
+function Try_Read is new Functional.Try.Try_To_Result
+  (..., New_Error => Domain_Result.From_Error, ...);
+```
+
+### 8.4 New Operators (Non-Breaking)
+
+Version 3.0.0 adds operator aliases that don't require migration but offer cleaner syntax:
+
+```ada
+-- Result operators
+Val := R or Default;           -- Unwrap_Or
+R := Primary or Backup;        -- Fallback
+
+-- Option operators
+Val := O or Default;           -- Unwrap_Or
+O := Primary or Backup;        -- Or_Else
+O := A and B;                  -- Returns B when both have values
+O := A xor B;                  -- Returns one when exactly one has value
+```
+
+### 8.5 New Operations (Non-Breaking)
+
+**Result** (5 new):
+- `Zip_With` - Combine two Results with a function
+- `Flatten` - Unwrap nested `Result[Result[T,E],E]`
+- `To_Option` - Convert `Ok(v)` to `Some(v)`, `Error(_)` to `None`
+
+**Option** (8 new):
+- `Zip_With` - Combine two Options with a function
+- `Flatten` - Unwrap nested `Option[Option[T]]`
+- `Ok_Or` - Convert to Result with eager error
+- `Ok_Or_Else` - Convert to Result with lazy error
+
+**Either** (3 new):
+- `Map` - Right-biased transform (convenience)
+- `Swap` - Exchange Left and Right
+- `And_Then` - Right-biased monadic bind
+
+### 8.6 Migration Checklist
+
+Use this checklist to verify complete migration:
+
+- [ ] **Discriminant access**: Search for `.Kind =` patterns
+- [ ] **Result constructor**: Search for `\.Err (` (with backslash escape)
+- [ ] **Result predicate**: Search for `Is_Err`
+- [ ] **Result transform**: Search for `Map_Err`
+- [ ] **Result field**: Search for `Err_Value`
+- [ ] **Try generics**: Search for `Err =>` in Try instantiations
+- [ ] **Compile test**: Build should succeed with no errors
+- [ ] **Run tests**: All existing tests should pass
+
+### 8.7 Automated Migration Script
+
+For large codebases, consider this sed-based approach:
+
+```bash
+#!/bin/bash
+# migrate_functional_3.sh - Migrate from v2.x to v3.0.0
+
+find . -name "*.ads" -o -name "*.adb" | while read file; do
+  sed -i '' \
+    -e 's/\.Kind = K_Some/.Has_Value/g' \
+    -e 's/\.Kind = K_None/not .Has_Value/g' \
+    -e 's/\.Kind = K_Ok/.Is_Ok/g' \
+    -e 's/\.Kind = K_Err/not .Is_Ok/g' \
+    -e 's/\.Kind = K_Left/.Is_Left/g' \
+    -e 's/\.Kind = K_Right/not .Is_Left/g' \
+    -e 's/\.Err (/.New_Error (/g' \
+    -e 's/\.Is_Err (/.Is_Error (/g' \
+    -e 's/\.Map_Err (/.Map_Error (/g' \
+    -e 's/\.Err_Value/.Error_Value/g' \
+    -e 's/Err => /New_Error => /g' \
+    "$file"
+done
+```
+
+**Note**: Always review changes after running automated migration.
+
+### 8.8 Testing Migration Completeness
+
+After migration, verify with:
+
+```bash
+# Compile check
+alr build 2>&1 | grep -i "error\|warning"
+
+# Run tests
+alr run test_runner
+
+# Search for remaining old patterns
+grep -r "\.Kind = K_" src/
+grep -r "\.Err (" src/
+grep -r "Is_Err" src/
+grep -r "Map_Err" src/
+grep -r "Err_Value" src/
+```
+
+If any patterns remain, they indicate incomplete migration.
 
 ---
 
