@@ -1,6 +1,6 @@
 name = "functional_tests"
 description = "Test suite for functional"
-version = "2.3.0"
+version = "3.0.0"
 authors = ["Michael Gardner"]
 maintainers = ["Michael Gardner <mike@abitofhelp.com>"]
 licenses = "BSD-3-Clause"

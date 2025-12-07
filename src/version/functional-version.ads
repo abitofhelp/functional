@@ -26,9 +26,7 @@ pragma Ada_2022;
 --    - Build metadata: +build.N, +commit.HASH
 --  =========================================================================
 
-package Functional.Version
-  with Pure
-is
+package Functional.Version is
 
    --  Semantic Version Components
    Major : constant Natural := 3;
