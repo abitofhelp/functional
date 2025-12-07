@@ -53,7 +53,7 @@ jobs:
         shell: bash
         run: |
           echo "Building functional library for Windows..."
-          alr build -j4
+          alr build -- -j4
           echo "Library build complete"
 
       # -----------------------------------------------------------------------
