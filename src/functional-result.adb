@@ -28,37 +28,19 @@ package body Functional.Result is
    is (not R.Is_Ok);
 
    function Is_Ok_And (R : Result) return Boolean is
-   begin
-      case R.Is_Ok is
-         when True =>
-            return Pred (R.Ok_Value);
-
-         when False =>
-            return False;
-      end case;
-   end Is_Ok_And;
+     (R.Is_Ok and then Pred (R.Ok_Value));
 
    function Is_Error_And (R : Result) return Boolean is
-   begin
-      case R.Is_Ok is
-         when True =>
-            return False;
+     (not R.Is_Ok and then Pred (R.Error_Value));
 
-         when False =>
-            return Pred (R.Error_Value);
-      end case;
-   end Is_Error_And;
+   function Is_Ok_Or (R : Result) return Boolean is
+     (not R.Is_Ok or else Pred (R.Ok_Value));
+
+   function Is_Error_Or (R : Result) return Boolean is
+     (R.Is_Ok or else Pred (R.Error_Value));
 
    function Contains (R : Result; Value : T) return Boolean is
-   begin
-      case R.Is_Ok is
-         when True =>
-            return R.Ok_Value = Value;
-
-         when False =>
-            return False;
-      end case;
-   end Contains;
+     (R.Is_Ok and then R.Ok_Value = Value);
 
    --  Extractors
    function Value (R : Result) return T

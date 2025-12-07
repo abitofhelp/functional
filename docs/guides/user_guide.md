@@ -607,18 +607,25 @@ O := A xor B;                  -- Returns one when exactly one has value
 
 ### 8.5 New Operations (Non-Breaking)
 
-**Result** (5 new):
+**Result** (7 new):
+- `Is_Ok_Or` - Error or predicate holds on Ok value (lenient)
+- `Is_Error_Or` - Ok or predicate holds on Error value (lenient)
 - `Zip_With` - Combine two Results with a function
 - `Flatten` - Unwrap nested `Result[Result[T,E],E]`
 - `To_Option` - Convert `Ok(v)` to `Some(v)`, `Error(_)` to `None`
 
-**Option** (8 new):
+**Option** (9 new):
+- `Is_None_Or` - None or predicate holds on Some value (lenient)
 - `Zip_With` - Combine two Options with a function
 - `Flatten` - Unwrap nested `Option[Option[T]]`
 - `Ok_Or` - Convert to Result with eager error
 - `Ok_Or_Else` - Convert to Result with lazy error
 
-**Either** (3 new):
+**Either** (7 new):
+- `Is_Left_And` - Left and predicate holds on Left value (strict)
+- `Is_Right_And` - Right and predicate holds on Right value (strict)
+- `Is_Left_Or` - Right or predicate holds on Left value (lenient)
+- `Is_Right_Or` - Left or predicate holds on Right value (lenient)
 - `Map` - Right-biased transform (convenience)
 - `Swap` - Exchange Left and Right
 - `And_Then` - Right-biased monadic bind

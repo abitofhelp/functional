@@ -8,7 +8,7 @@
 
 ---
 
-## Result[T,E] — 34 Operations
+## Result[T,E] — 36 Operations
 
 ```ada
 package R is new Functional.Result (T => Integer, E => Error);
@@ -20,8 +20,10 @@ package R is new Functional.Result (T => Integer, E => Error);
 | `New_Error(e)` | `E → Result` | Failure |
 | `Is_Ok(r)` | `Result → Boolean` | Test success |
 | `Is_Error(r)` | `Result → Boolean` | Test failure |
-| `Is_Ok_And(r)` | `(T→Bool) → Result → Boolean` | Ok and predicate |
-| `Is_Error_And(r)` | `(E→Bool) → Result → Boolean` | Error and predicate |
+| `Is_Ok_And(r)` | `(T→Bool) → Result → Boolean` | Ok and predicate (strict) |
+| `Is_Error_And(r)` | `(E→Bool) → Result → Boolean` | Error and predicate (strict) |
+| `Is_Ok_Or(r)` | `(T→Bool) → Result → Boolean` | Error or predicate holds (lenient) |
+| `Is_Error_Or(r)` | `(E→Bool) → Result → Boolean` | Ok or predicate holds (lenient) |
 | `Contains(r,v)` | `Result × T → Boolean` | Ok equals value |
 | `r = v` | `Result × T → Boolean` | Operator alias |
 | `Value(r)` | `Result → T` | Extract (Pre: Is_Ok) |
@@ -58,7 +60,7 @@ package R is new Functional.Result (T => Integer, E => Error);
 
 ---
 
-## Option[T] — 25 Operations
+## Option[T] — 26 Operations
 
 ```ada
 package O is new Functional.Option (T => Integer);
@@ -70,7 +72,8 @@ package O is new Functional.Option (T => Integer);
 | `None` | `→ Option` | Absent |
 | `Is_Some(o)` | `Option → Boolean` | Test present |
 | `Is_None(o)` | `Option → Boolean` | Test absent |
-| `Is_Some_And(o)` | `(T→Bool) → Option → Boolean` | Some and predicate |
+| `Is_Some_And(o)` | `(T→Bool) → Option → Boolean` | Some and predicate (strict) |
+| `Is_None_Or(o)` | `(T→Bool) → Option → Boolean` | None or predicate holds (lenient) |
 | `Contains(o,v)` | `Option × T → Boolean` | Some equals value |
 | `o = v` | `Option × T → Boolean` | Operator alias |
 | `Value(o)` | `Option → T` | Extract (Pre: Has_Value) |
@@ -100,7 +103,7 @@ package O is new Functional.Option (T => Integer);
 
 ---
 
-## Either[L,R] — 16 Operations
+## Either[L,R] — 20 Operations
 
 ```ada
 package E is new Functional.Either (L => String, R => Integer);
@@ -112,6 +115,10 @@ package E is new Functional.Either (L => String, R => Integer);
 | `Right(v)` | `R → Either` | Right value |
 | `Is_Left(e)` | `Either → Boolean` | Test left |
 | `Is_Right(e)` | `Either → Boolean` | Test right |
+| `Is_Left_And(e)` | `(L→Bool) → Either → Boolean` | Left and predicate (strict) |
+| `Is_Right_And(e)` | `(R→Bool) → Either → Boolean` | Right and predicate (strict) |
+| `Is_Left_Or(e)` | `(L→Bool) → Either → Boolean` | Right or predicate holds (lenient) |
+| `Is_Right_Or(e)` | `(R→Bool) → Either → Boolean` | Left or predicate holds (lenient) |
 | `Contains(e,v)` | `Either × R → Boolean` | Right equals value |
 | `e = v` | `Either × R → Boolean` | Operator alias |
 | `Left_Value(e)` | `Either → L` | Extract (Pre: Is_Left) |
@@ -191,4 +198,4 @@ if E.Is_Left then ...      -- Either
 
 **SPARK**: Option, Result, Either are `SPARK_Mode => On`. Try is `SPARK_Mode => Off`.
 
-**Total Operations**: 80 (Result: 34, Option: 25, Either: 16, Try: 5)
+**Total Operations**: 87 (Result: 36, Option: 26, Either: 20, Try: 5)

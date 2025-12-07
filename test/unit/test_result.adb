@@ -850,6 +850,65 @@ procedure Test_Result is
    end Test_Tap_Ok;
 
    --  ==========================================================================
+   --  Test: Is_Ok_Or (Error or predicate holds on Ok)
+   --  ==========================================================================
+
+   procedure Test_Is_Ok_Or is
+      R_Ok_Pos : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Ok_Neg : constant Int_Result.Result := Int_Result.Ok (-5);
+      R_Err    : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+
+      function Is_Positive (X : Integer) return Boolean
+      is (X > 0);
+
+      function Check_Positive is new Int_Result.Is_Ok_Or (Pred => Is_Positive);
+   begin
+      Put_Line ("Testing Is_Ok_Or...");
+      --  Error case: always True (lenient - Error is acceptable)
+      Assert (Check_Positive (R_Err),
+              "Is_Ok_Or returns True for Error");
+
+      --  Ok with predicate satisfied: True
+      Assert (Check_Positive (R_Ok_Pos),
+              "Is_Ok_Or returns True when Ok and predicate holds");
+
+      --  Ok with predicate not satisfied: False
+      Assert (not Check_Positive (R_Ok_Neg),
+              "Is_Ok_Or returns False when Ok but predicate fails");
+   end Test_Is_Ok_Or;
+
+   --  ==========================================================================
+   --  Test: Is_Error_Or (Ok or predicate holds on Error)
+   --  ==========================================================================
+
+   procedure Test_Is_Error_Or is
+      R_Ok         : constant Int_Result.Result := Int_Result.Ok (42);
+      R_Err_Parse  : constant Int_Result.Result :=
+        Int_Result.New_Error ((Parse_Error, [others => ' '], 0));
+      R_Err_IO     : constant Int_Result.Result :=
+        Int_Result.New_Error ((IO_Error, [others => ' '], 0));
+
+      function Is_Parse_Error (E : Error) return Boolean
+      is (E.Kind = Parse_Error);
+
+      function Check_Parse is new Int_Result.Is_Error_Or (Pred => Is_Parse_Error);
+   begin
+      Put_Line ("Testing Is_Error_Or...");
+      --  Ok case: always True (lenient - Ok is acceptable)
+      Assert (Check_Parse (R_Ok),
+              "Is_Error_Or returns True for Ok");
+
+      --  Error with predicate satisfied: True
+      Assert (Check_Parse (R_Err_Parse),
+              "Is_Error_Or returns True when Error and predicate holds");
+
+      --  Error with predicate not satisfied: False
+      Assert (not Check_Parse (R_Err_IO),
+              "Is_Error_Or returns False when Error but predicate fails");
+   end Test_Is_Error_Or;
+
+   --  ==========================================================================
    --  Test: Tap_Error (side effect only on Error)
    --  ==========================================================================
 
@@ -914,6 +973,8 @@ begin
    Test_To_Option;
    Test_Is_Ok_And;
    Test_Is_Error_And;
+   Test_Is_Ok_Or;
+   Test_Is_Error_Or;
    Test_Contains;
    Test_Expect_Error;
    Test_Unwrap_Error;

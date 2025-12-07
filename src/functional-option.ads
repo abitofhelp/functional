@@ -14,9 +14,9 @@ pragma Ada_2022;
 --    Option       - Discriminated record with Has_Value : Boolean
 --                   When True, holds Value; when False, empty
 --
---  Operations (25):
+--  Operations (26):
 --    Constructors: New_Some, None
---    Predicates:   Is_Some, Is_None, Is_Some_And, Contains
+--    Predicates:   Is_Some, Is_None, Is_Some_And, Is_None_Or, Contains
 --    Extractors:   Value, Expect
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
 --    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, Filter, Zip_With, Flatten
@@ -65,6 +65,12 @@ is
    generic
       with function Pred (X : T) return Boolean;
    function Is_Some_And (O : Option) return Boolean;
+
+   --  Is_None_Or: test if None or predicate holds on Some value
+   --  Useful for validation: "empty is ok, or value must satisfy condition"
+   generic
+      with function Pred (X : T) return Boolean;
+   function Is_None_Or (O : Option) return Boolean;
 
    --  Contains: check if Some value equals given value
    --  Note: Uses predefined equality for type T

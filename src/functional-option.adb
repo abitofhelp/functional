@@ -28,26 +28,13 @@ package body Functional.Option is
    is (not O.Has_Value);
 
    function Is_Some_And (O : Option) return Boolean is
-   begin
-      case O.Has_Value is
-         when True =>
-            return Pred (O.Value);
+     (O.Has_Value and then Pred (O.Value));
 
-         when False =>
-            return False;
-      end case;
-   end Is_Some_And;
+   function Is_None_Or (O : Option) return Boolean is
+     (not O.Has_Value or else Pred (O.Value));
 
    function Contains (O : Option; Value : T) return Boolean is
-   begin
-      case O.Has_Value is
-         when True =>
-            return O.Value = Value;
-
-         when False =>
-            return False;
-      end case;
-   end Contains;
+     (O.Has_Value and then O.Value = Value);
 
    --  Extractors
    function Value (O : Option) return T

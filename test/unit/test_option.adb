@@ -462,6 +462,47 @@ procedure Test_Option is
    end Test_Is_Some_And;
 
    --  ==========================================================================
+   --  Test: Is_None_Or (None or predicate holds)
+   --  ==========================================================================
+
+   procedure Test_Is_None_Or is
+      use Int_Option;
+
+      function Is_Positive (X : Integer) return Boolean
+      is (X > 0);
+
+      function Is_Even (X : Integer) return Boolean
+      is (X mod 2 = 0);
+
+      function None_Or_Positive is new Is_None_Or (Pred => Is_Positive);
+      function None_Or_Even is new Is_None_Or (Pred => Is_Even);
+
+      O_Pos  : constant Option := New_Some (42);
+      O_Neg  : constant Option := New_Some (-5);
+      O_Odd  : constant Option := New_Some (7);
+      O_None : constant Option := None;
+   begin
+      Put_Line ("Testing Is_None_Or...");
+      --  None case: always True (empty is acceptable)
+      Assert (None_Or_Positive (O_None),
+              "Is_None_Or returns True for None");
+      Assert (None_Or_Even (O_None),
+              "Is_None_Or returns True for None (different predicate)");
+
+      --  Some with predicate satisfied: True
+      Assert (None_Or_Positive (O_Pos),
+              "Is_None_Or returns True when Some and predicate holds");
+      Assert (None_Or_Even (O_Pos),
+              "Is_None_Or returns True when Some(42) is even");
+
+      --  Some with predicate not satisfied: False
+      Assert (not None_Or_Positive (O_Neg),
+              "Is_None_Or returns False when Some but predicate fails");
+      Assert (not None_Or_Even (O_Odd),
+              "Is_None_Or returns False when Some(7) is odd");
+   end Test_Is_None_Or;
+
+   --  ==========================================================================
    --  Test: Contains and "=" operator
    --  ==========================================================================
 
@@ -469,7 +510,6 @@ procedure Test_Option is
       use Int_Option;
 
       O_42   : constant Option := New_Some (42);
-      O_99   : constant Option := New_Some (99);
       O_None : constant Option := None;
    begin
       Put_Line ("Testing Contains and ""="" operator...");
@@ -603,6 +643,7 @@ begin
    Test_Flatten;
    Test_Ok_Or;
    Test_Is_Some_And;
+   Test_Is_None_Or;
    Test_Contains;
    Test_Expect;
    Test_Map_Or;

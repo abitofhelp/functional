@@ -14,9 +14,9 @@ pragma Ada_2022;
 --    Result       - Discriminated record with Is_Ok : Boolean
 --                   When True, holds Ok_Value; when False, holds Error_Value
 --
---  Operations (34):
+--  Operations (36):
 --    Constructors: Ok, New_Error, From_Error
---    Predicates:   Is_Ok, Is_Error, Is_Ok_And, Is_Error_And, Contains
+--    Predicates:   Is_Ok, Is_Error, Is_Ok_And, Is_Ok_Or, Is_Error_And, Is_Error_Or, Contains
 --    Extractors:   Value, Error, Expect, Expect_Error, Unwrap_Error
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
 --    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, And_Then_Into,
@@ -78,6 +78,18 @@ is
    generic
       with function Pred (X : E) return Boolean;
    function Is_Error_And (R : Result) return Boolean;
+
+   --  Is_Ok_Or: test if Error or (Ok and predicate holds)
+   --  Useful for validation: "error is ok, or value must satisfy condition"
+   generic
+      with function Pred (X : T) return Boolean;
+   function Is_Ok_Or (R : Result) return Boolean;
+
+   --  Is_Error_Or: test if Ok or (Error and predicate holds)
+   --  Useful for validation: "success is ok, or error must satisfy condition"
+   generic
+      with function Pred (X : E) return Boolean;
+   function Is_Error_Or (R : Result) return Boolean;
 
    --  Contains: check if Ok value equals given value
    --  Note: Uses predefined equality for type T

@@ -6,7 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Either type.
---    Tests all 16 Either operations. Target: 90%+ code coverage.
+--    Tests all 20 Either operations. Target: 90%+ code coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
@@ -379,6 +379,172 @@ procedure Test_Either is
    end Test_And_Then;
 
    --  ==========================================================================
+   --  Test: Is_Left_And (predicate on Left value)
+   --  ==========================================================================
+
+   procedure Test_Is_Left_And is
+      E_Left_Err : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Left_Ok  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("ok" & [3 .. 20 => ' ']);
+      E_Right    : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function Starts_With_E (S : Fixed_String) return Boolean
+      is (S (1) = 'e');
+
+      function Is_Short (S : Fixed_String) return Boolean
+      is (S (3) = ' ');
+
+      function Check_Starts_E is new
+        Str_Int_Either.Is_Left_And (Pred => Starts_With_E);
+      function Check_Short is new
+        Str_Int_Either.Is_Left_And (Pred => Is_Short);
+   begin
+      Put_Line ("Testing Is_Left_And...");
+
+      --  Left with predicate satisfied
+      Assert (Check_Starts_E (E_Left_Err),
+              "Is_Left_And returns True when Left and predicate holds");
+      Assert (Check_Short (E_Left_Ok),
+              "Is_Left_And returns True when Left('ok') is short");
+
+      --  Left with predicate not satisfied
+      Assert (not Check_Starts_E (E_Left_Ok),
+              "Is_Left_And returns False when Left but predicate fails");
+      Assert (not Check_Short (E_Left_Err),
+              "Is_Left_And returns False when Left('error') is not short");
+
+      --  Right case: always False
+      Assert (not Check_Starts_E (E_Right),
+              "Is_Left_And returns False for Right");
+   end Test_Is_Left_And;
+
+   --  ==========================================================================
+   --  Test: Is_Right_And (predicate on Right value)
+   --  ==========================================================================
+
+   procedure Test_Is_Right_And is
+      E_Left    : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right42 : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+      E_Right7  : constant Str_Int_Either.Either := Str_Int_Either.Right (7);
+
+      function Is_Even (X : Integer) return Boolean
+      is (X mod 2 = 0);
+
+      function Is_Large (X : Integer) return Boolean
+      is (X > 10);
+
+      function Check_Even is new
+        Str_Int_Either.Is_Right_And (Pred => Is_Even);
+      function Check_Large is new
+        Str_Int_Either.Is_Right_And (Pred => Is_Large);
+   begin
+      Put_Line ("Testing Is_Right_And...");
+
+      --  Right with predicate satisfied
+      Assert (Check_Even (E_Right42),
+              "Is_Right_And returns True when Right(42) is even");
+      Assert (Check_Large (E_Right42),
+              "Is_Right_And returns True when Right(42) is large");
+
+      --  Right with predicate not satisfied
+      Assert (not Check_Even (E_Right7),
+              "Is_Right_And returns False when Right(7) is odd");
+      Assert (not Check_Large (E_Right7),
+              "Is_Right_And returns False when Right(7) is not large");
+
+      --  Left case: always False
+      Assert (not Check_Even (E_Left),
+              "Is_Right_And returns False for Left");
+   end Test_Is_Right_And;
+
+   --  ==========================================================================
+   --  Test: Is_Left_Or (Right or predicate holds on Left)
+   --  ==========================================================================
+
+   procedure Test_Is_Left_Or is
+      E_Left_Err : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Left_Ok  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("ok" & [3 .. 20 => ' ']);
+      E_Right    : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function Starts_With_E (S : Fixed_String) return Boolean
+      is (S (1) = 'e');
+
+      function Is_Short (S : Fixed_String) return Boolean
+      is (S (3) = ' ');
+
+      function Check_Starts_E is new
+        Str_Int_Either.Is_Left_Or (Pred => Starts_With_E);
+      function Check_Short is new
+        Str_Int_Either.Is_Left_Or (Pred => Is_Short);
+   begin
+      Put_Line ("Testing Is_Left_Or...");
+
+      --  Right case: always True (lenient - Right is acceptable)
+      Assert (Check_Starts_E (E_Right),
+              "Is_Left_Or returns True for Right");
+      Assert (Check_Short (E_Right),
+              "Is_Left_Or returns True for Right (different predicate)");
+
+      --  Left with predicate satisfied: True
+      Assert (Check_Starts_E (E_Left_Err),
+              "Is_Left_Or returns True when Left and predicate holds");
+      Assert (Check_Short (E_Left_Ok),
+              "Is_Left_Or returns True when Left('ok') is short");
+
+      --  Left with predicate not satisfied: False
+      Assert (not Check_Starts_E (E_Left_Ok),
+              "Is_Left_Or returns False when Left but predicate fails");
+      Assert (not Check_Short (E_Left_Err),
+              "Is_Left_Or returns False when Left('error') is not short");
+   end Test_Is_Left_Or;
+
+   --  ==========================================================================
+   --  Test: Is_Right_Or (Left or predicate holds on Right)
+   --  ==========================================================================
+
+   procedure Test_Is_Right_Or is
+      E_Left    : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right42 : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+      E_Right7  : constant Str_Int_Either.Either := Str_Int_Either.Right (7);
+
+      function Is_Even (X : Integer) return Boolean
+      is (X mod 2 = 0);
+
+      function Is_Large (X : Integer) return Boolean
+      is (X > 10);
+
+      function Check_Even is new
+        Str_Int_Either.Is_Right_Or (Pred => Is_Even);
+      function Check_Large is new
+        Str_Int_Either.Is_Right_Or (Pred => Is_Large);
+   begin
+      Put_Line ("Testing Is_Right_Or...");
+
+      --  Left case: always True (lenient - Left is acceptable)
+      Assert (Check_Even (E_Left),
+              "Is_Right_Or returns True for Left");
+      Assert (Check_Large (E_Left),
+              "Is_Right_Or returns True for Left (different predicate)");
+
+      --  Right with predicate satisfied: True
+      Assert (Check_Even (E_Right42),
+              "Is_Right_Or returns True when Right(42) is even");
+      Assert (Check_Large (E_Right42),
+              "Is_Right_Or returns True when Right(42) is large");
+
+      --  Right with predicate not satisfied: False
+      Assert (not Check_Even (E_Right7),
+              "Is_Right_Or returns False when Right(7) is odd");
+      Assert (not Check_Large (E_Right7),
+              "Is_Right_Or returns False when Right(7) is not large");
+   end Test_Is_Right_Or;
+
+   --  ==========================================================================
    --  Test: Contains (check if Right equals value)
    --  ==========================================================================
 
@@ -535,6 +701,10 @@ begin
    Test_Swap;
    Test_And_Then;
    Test_Fold;
+   Test_Is_Left_And;
+   Test_Is_Right_And;
+   Test_Is_Left_Or;
+   Test_Is_Right_Or;
    Test_Contains;
    Test_Get_Or_Else;
    Test_Merge;

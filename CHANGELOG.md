@@ -33,13 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/guides/cheatsheet.md` - All types and operators on 1-2 pages
 - `docs/guides/user_guide.md` - Design philosophy, SPARK, embedded, best practices
 
-**Result (34 operations, +14 new)**
+**Result (36 operations, +16 new)**
 - `Zip_With` - Combine two Results with a function
 - `Flatten` - Unwrap nested Result[Result[T,E],E] → Result[T,E]
 - `To_Option` - Convert Ok(v) → Some(v), Error(_) → None
 - `Contains` - Check if Ok value equals given value
-- `Is_Ok_And` - Test if Ok and predicate holds
-- `Is_Error_And` - Test if Error and predicate holds
+- `Is_Ok_And` - Test if Ok and predicate holds (strict)
+- `Is_Error_And` - Test if Error and predicate holds (strict)
+- `Is_Ok_Or` - Test if Error or predicate holds on Ok (lenient)
+- `Is_Error_Or` - Test if Ok or predicate holds on Error (lenient)
 - `Expect_Error` - Extract error or raise with message
 - `Unwrap_Error` - Extract error (Pre: Is_Error)
 - `Map_Or` - Transform Ok value or return default (eager)
@@ -50,7 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `"or"` operator for `Fallback` - `A or B` syntax
 - `"="` operator for `Contains` - `R = V` syntax
 
-**Option (25 operations, +14 new)**
+**Option (26 operations, +15 new)**
 - `"and"` operator - Returns second when both have values
 - `"xor"` operator - Returns one when exactly one has value
 - `Zip_With` - Combine two Options with a function
@@ -58,7 +60,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Ok_Or` - Convert Some(v) → Ok(v), None → Error(e) (eager)
 - `Ok_Or_Else` - Convert Some(v) → Ok(v), None → Error(f()) (lazy)
 - `Contains` - Check if Some value equals given value
-- `Is_Some_And` - Test if Some and predicate holds
+- `Is_Some_And` - Test if Some and predicate holds (strict)
+- `Is_None_Or` - Test if None or predicate holds on Some (lenient)
 - `Expect` - Extract value or raise with message
 - `Map_Or` - Transform Some value or return default (eager)
 - `Map_Or_Else` - Transform Some value or call default producer (lazy)
@@ -67,11 +70,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `"or"` operator for `Or_Else` - `A or B` syntax
 - `"="` operator for `Contains` - `O = V` syntax
 
-**Either (16 operations, +8 new)**
+**Either (20 operations, +12 new)**
 - `Map` - Right-biased transform (convenience for common case)
 - `Swap` - Exchange Left and Right values
 - `And_Then` - Right-biased monadic bind for chaining
 - `Contains` - Check if Right value equals given value
+- `Is_Left_And` - Test if Left and predicate holds (strict)
+- `Is_Right_And` - Test if Right and predicate holds (strict)
+- `Is_Left_Or` - Test if Right or predicate holds on Left (lenient)
+- `Is_Right_Or` - Test if Left or predicate holds on Right (lenient)
 - `Get_Or_Else` - Get Right value or default
 - `Merge` - Extract value when both types are the same
 - `To_Option` - Convert Right(v) → Some(v), Left(_) → None
@@ -120,10 +127,10 @@ function Transform is new Str_Result.Map_Error (F => ...);
 - Zero heap allocation, no controlled types, Ravenscar compatible
 
 ### Technical Details
-- All 135 unit tests passing (Result: 52, Option: 40, Either: 23, Try: 14, Try_Option: 6)
+- All 227 unit tests passing (Result: 84, Option: 65, Either: 58, Try: 14, Try_Option: 6)
 - Tested on POSIX (macOS, Linux) and Windows platforms
 - stmt+decision coverage: 95%+
-- Total operations: 80 (Result: 34, Option: 25, Either: 16, Try: 5)
+- Total operations: 87 (Result: 36, Option: 26, Either: 20, Try: 5)
 
 ---
 

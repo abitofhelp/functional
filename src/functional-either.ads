@@ -14,9 +14,9 @@ pragma Ada_2022;
 --    Either       - Discriminated record with Is_Left : Boolean
 --                   When True, holds Left_Value; when False, holds Right_Value
 --
---  Operations (16):
+--  Operations (20):
 --    Constructors:   Left, Right
---    Predicates:     Is_Left, Is_Right, Contains
+--    Predicates:     Is_Left, Is_Right, Is_Left_And, Is_Left_Or, Is_Right_And, Is_Right_Or, Contains
 --    Extractors:     Left_Value, Right_Value, Get_Or_Else
 --    Transforms:     Map, Map_Left, Map_Right, Bimap, Swap, And_Then
 --    Reduction:      Fold, Merge
@@ -59,6 +59,26 @@ is
    with Inline;
    function Is_Right (E : Either) return Boolean
    with Inline;
+
+   --  Is_Left_And: test if Left and predicate holds on Left value
+   generic
+      with function Pred (X : L) return Boolean;
+   function Is_Left_And (E : Either) return Boolean;
+
+   --  Is_Right_And: test if Right and predicate holds on Right value
+   generic
+      with function Pred (X : R) return Boolean;
+   function Is_Right_And (E : Either) return Boolean;
+
+   --  Is_Left_Or: test if Right or (Left and predicate holds)
+   generic
+      with function Pred (X : L) return Boolean;
+   function Is_Left_Or (E : Either) return Boolean;
+
+   --  Is_Right_Or: test if Left or (Right and predicate holds)
+   generic
+      with function Pred (X : R) return Boolean;
+   function Is_Right_Or (E : Either) return Boolean;
 
    --  Contains: check if Right value equals given value
    --  Note: Uses predefined equality for type R

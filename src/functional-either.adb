@@ -27,16 +27,20 @@ package body Functional.Either is
    function Is_Right (E : Either) return Boolean
    is (not E.Is_Left);
 
-   function Contains (E : Either; Value : R) return Boolean is
-   begin
-      case E.Is_Left is
-         when True =>
-            return False;
+   function Is_Left_And (E : Either) return Boolean is
+     (E.Is_Left and then Pred (E.Left_Value));
 
-         when False =>
-            return E.Right_Value = Value;
-      end case;
-   end Contains;
+   function Is_Right_And (E : Either) return Boolean is
+     (not E.Is_Left and then Pred (E.Right_Value));
+
+   function Is_Left_Or (E : Either) return Boolean is
+     (not E.Is_Left or else Pred (E.Left_Value));
+
+   function Is_Right_Or (E : Either) return Boolean is
+     (E.Is_Left or else Pred (E.Right_Value));
+
+   function Contains (E : Either; Value : R) return Boolean is
+     (not E.Is_Left and then E.Right_Value = Value);
 
    --  Extractors
    function Left_Value (E : Either) return L
@@ -46,15 +50,7 @@ package body Functional.Either is
    is (E.Right_Value);
 
    function Get_Or_Else (E : Either; Default : R) return R is
-   begin
-      case E.Is_Left is
-         when True =>
-            return Default;
-
-         when False =>
-            return E.Right_Value;
-      end case;
-   end Get_Or_Else;
+     (if E.Is_Left then Default else E.Right_Value);
 
    --  Map_Left: transform Left value
    function Map_Left (E : Either) return Either is
