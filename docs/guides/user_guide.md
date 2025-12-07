@@ -19,7 +19,6 @@ This guide explains the design philosophy, architecture decisions, and best prac
 5. [Best Practices](#best-practices)
 6. [Common Pitfalls](#common-pitfalls)
 7. [Integration Patterns](#integration-patterns)
-8. [Migration from v2.x to v3.0.0](#migration-from-v2x-to-v300)
 
 ---
 
