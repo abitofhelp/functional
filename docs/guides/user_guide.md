@@ -1,9 +1,10 @@
 # Functional Library User Guide
 
+**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
 **Version:** 3.0.0
 **Date:** December 06, 2025
-**SPDX-License-Identifier:** BSD-3-Clause
-**Copyright:** 2025 Michael Gardner, A Bit of Help, Inc.
+**Author:** Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 This guide explains the design philosophy, architecture decisions, and best practices for using the Functional library effectively.
 
@@ -220,6 +221,36 @@ For DO-178C, ISO 26262, or IEC 61508 projects:
 2. **Trusted Boundary**: Try module requires manual audit (~5% of complexity)
 3. **Traceability**: Postconditions document behavioral guarantees
 4. **Certification**: SPARK proofs provide evidence for certification
+
+### SPARK Design Trade-offs
+
+Some operations common in Rust/Haskell are intentionally excluded to maintain SPARK compatibility:
+
+| Excluded Operation | Reason | Alternative |
+|-------------------|--------|-------------|
+| `Option.Replace` | Functions cannot have `in out` parameters in SPARK | Use explicit assignment and save old value first |
+
+**Replace Example (excluded)**:
+```ada
+-- This would require:
+function Replace (O : in out Option; New_Value : T) return Option;
+-- SPARK prohibition: functions must be side-effect free
+```
+
+**Alternative Pattern**:
+```ada
+-- Pure SPARK-compatible approach
+Old_Option : constant Option := Current_Option;
+Current_Option := New_Some (New_Value);
+-- Now Old_Option holds the previous value
+```
+
+This design choice prioritizes:
+1. **Formal verification** over convenience for mutation patterns
+2. **Mathematical purity** of functions (no side effects)
+3. **Compile-time provability** of correctness properties
+
+For mutation-heavy code, consider using procedures with explicit `out` parameters instead of functional-style operations.
 
 ---
 

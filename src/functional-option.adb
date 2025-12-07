@@ -27,8 +27,33 @@ package body Functional.Option is
    function Is_None (O : Option) return Boolean
    is (not O.Has_Value);
 
+   function Is_Some_And (O : Option) return Boolean is
+   begin
+      case O.Has_Value is
+         when True =>
+            return Pred (O.Value);
+
+         when False =>
+            return False;
+      end case;
+   end Is_Some_And;
+
+   function Contains (O : Option; Value : T) return Boolean is
+   begin
+      case O.Has_Value is
+         when True =>
+            return O.Value = Value;
+
+         when False =>
+            return False;
+      end case;
+   end Contains;
+
    --  Extractors
    function Value (O : Option) return T
+   is (O.Value);
+
+   function Expect (O : Option; Msg : String) return T
    is (O.Value);
 
    --  Unwrap with default
@@ -65,6 +90,30 @@ package body Functional.Option is
             return O;
       end case;
    end Map;
+
+   --  Map_Or: transform Some value or return default
+   function Map_Or (O : Option; Default : T) return T is
+   begin
+      case O.Has_Value is
+         when True =>
+            return F (O.Value);
+
+         when False =>
+            return Default;
+      end case;
+   end Map_Or;
+
+   --  Map_Or_Else: transform Some value or call default producer
+   function Map_Or_Else (O : Option) return T is
+   begin
+      case O.Has_Value is
+         when True =>
+            return F (O.Value);
+
+         when False =>
+            return Default;
+      end case;
+   end Map_Or_Else;
 
    --  And_Then: chain optional operations (monadic bind)
    function And_Then (O : Option) return Option is
@@ -137,6 +186,15 @@ package body Functional.Option is
          return None;
       end if;
    end "xor";
+
+   --  Tap: run side effect without changing Option
+   function Tap (O : Option) return Option is
+   begin
+      if O.Has_Value then
+         On_Some (O.Value);
+      end if;
+      return O;
+   end Tap;
 
    --  Zip_With: combine two Options with a function
    function Zip_With (A : Option; B : Option_U) return Option is

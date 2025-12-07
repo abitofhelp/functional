@@ -14,15 +14,16 @@ pragma Ada_2022;
 --    Option       - Discriminated record with Has_Value : Boolean
 --                   When True, holds Value; when False, empty
 --
---  Operations (19):
+--  Operations (25):
 --    Constructors: New_Some, None
---    Predicates:   Is_Some, Is_None
---    Extractors:   Value
+--    Predicates:   Is_Some, Is_None, Is_Some_And, Contains
+--    Extractors:   Value, Expect
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
---    Transforms:   Map, And_Then, Filter, Zip_With, Flatten
+--    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, Filter, Zip_With, Flatten
 --    Fallback:     Or_Else, Or_Else_With, Fallback (alias)
+--    Side Effects: Tap
 --    Conversion:   Ok_Or, Ok_Or_Else
---    Operators:    "or" (Unwrap_Or), "or" (Or_Else), "and", "xor"
+--    Operators:    "or" (Unwrap_Or), "or" (Or_Else), "and", "xor", "=" (Contains)
 --
 --  ===========================================================================
 
@@ -60,12 +61,28 @@ is
    function Is_None (O : Option) return Boolean
    with Inline;
 
+   --  Is_Some_And: test if Some and predicate holds
+   generic
+      with function Pred (X : T) return Boolean;
+   function Is_Some_And (O : Option) return Boolean;
+
+   --  Contains: check if Some value equals given value
+   --  Note: Uses predefined equality for type T
+   function Contains (O : Option; Value : T) return Boolean
+   with
+     Post => (if not O.Has_Value then not Contains'Result);
+
    --  ==========================================================================
    --  Extractors
    --  ==========================================================================
 
    function Value (O : Option) return T
    with Pre => O.Has_Value, Inline;
+
+   --  Expect: extract value or raise with custom message
+   --  Forces programmer to document why they believe Option is Some
+   function Expect (O : Option; Msg : String) return T
+   with Pre => O.Has_Value or else raise Program_Error with Msg;
 
    --  ==========================================================================
    --  Unwrap with defaults
@@ -92,6 +109,17 @@ is
    with
      Post => (if O.Has_Value then Map'Result.Has_Value
               else not Map'Result.Has_Value);
+
+   --  Map_Or: transform Some value or return default (eager)
+   generic
+      with function F (X : T) return T;
+   function Map_Or (O : Option; Default : T) return T;
+
+   --  Map_Or_Else: transform Some value or call default producer (lazy)
+   generic
+      with function F (X : T) return T;
+      with function Default return T;
+   function Map_Or_Else (O : Option) return T;
 
    --  And_Then: chain optional operations (monadic bind)
    generic
@@ -125,6 +153,15 @@ is
    function Fallback (A, B : Option) return Option renames Or_Else;
 
    --  ==========================================================================
+   --  Side Effects
+   --  ==========================================================================
+
+   --  Tap: run side effect without changing Option (for logging/debugging)
+   generic
+      with procedure On_Some (V : T);
+   function Tap (O : Option) return Option;
+
+   --  ==========================================================================
    --  Operator Aliases (Ada idioms for ergonomic syntax)
    --  ==========================================================================
 
@@ -143,6 +180,10 @@ is
    --  "xor": returns the value if exactly one has a value
    --  Usage: Choice := Option_A xor Option_B;
    function "xor" (A, B : Option) return Option;
+
+   --  "=" for Contains: Option = T -> Boolean
+   --  Usage: if Port_Option = 8080 then ...
+   function "=" (O : Option; Value : T) return Boolean renames Contains;
 
    --  ==========================================================================
    --  Combining and Flattening

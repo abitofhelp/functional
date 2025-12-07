@@ -17,9 +17,9 @@ A clean, Ada-idiomatic library providing `Result<T,E>`, `Option<T>`, and `Either
 
 ### Core Types
 
-- **Result[T,E]** - Type-safe error handling (25 operations)
-- **Option[T]** - Optional values (19 operations)
-- **Either[L,R]** - Disjoint union type (11 operations)
+- **Result[T,E]** - Type-safe error handling (34 operations)
+- **Option[T]** - Optional values (25 operations)
+- **Either[L,R]** - Disjoint union type (16 operations)
 - **Try Module** - Convert exceptions to functional types (5 functions)
 
 ### SPARK Formal Verification
@@ -167,50 +167,53 @@ alr run test_runner
 
 ### API Reference
 
-**Result<T,E>** (25 operations):
+**Result<T,E>** (34 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `Ok(v)`, `New_Error(e)`, `From_Error(e)` | Create success or error result |
-| **Predicates** | `Is_Ok(r)`, `Is_Error(r)` | Test result state |
-| **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)` | Get value (with Pre) or panic with message |
+| **Predicates** | `Is_Ok(r)`, `Is_Error(r)`, `Is_Ok_And(r)`, `Is_Error_And(r)`, `Contains(r, v)` | Test result state |
+| **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)`, `Expect_Error(r, msg)`, `Unwrap_Error(r)` | Get value (with Pre) |
 | **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
-| **Transform** | `Map(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value, chain operations |
+| **Transform** | `Map(r)`, `Map_Or(r, d)`, `Map_Or_Else(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value |
 | **Error Map** | `Map_Error(r)`, `Bimap(r)` | Transform error, transform both sides |
 | **Fallback** | `Fallback(a, b)`, `Fallback_With(r)` | Try alternative on error (eager/lazy) |
 | **Recovery** | `Recover(r)`, `Recover_With(r)` | Convert error to value or new Result |
 | **Validation** | `Ensure(r)`, `With_Context(r, msg)` | Validate predicate, add error breadcrumbs |
-| **Side Effects** | `Tap(r)` | Run callbacks without changing Result |
+| **Side Effects** | `Tap(r)`, `Tap_Ok(r)`, `Tap_Error(r)` | Run callbacks without changing Result |
 | **Combine** | `Zip_With(a, b)`, `Flatten(r)` | Combine Results, unwrap nested Result |
 | **Convert** | `To_Option(r)` | Ok(v)->Some(v), Error(_)->None |
-| **Operators** | `r or default`, `a or b` | Aliases for Unwrap_Or and Fallback |
+| **Operators** | `r or default`, `a or b`, `r = v` | Aliases for Unwrap_Or, Fallback, Contains |
 
-**Option<T>** (19 operations):
+**Option<T>** (25 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `New_Some(v)`, `None` | Create present or absent value |
-| **Predicates** | `Is_Some(o)`, `Is_None(o)` | Test presence |
-| **Extract** | `Value(o)` | Get value (with Pre) |
+| **Predicates** | `Is_Some(o)`, `Is_None(o)`, `Is_Some_And(o)`, `Contains(o, v)` | Test presence |
+| **Extract** | `Value(o)`, `Expect(o, msg)` | Get value (with Pre) |
 | **Defaults** | `Unwrap_Or(o, default)`, `Unwrap_Or_With(o)` | Get value or fallback (eager/lazy) |
-| **Transform** | `Map(o)`, `And_Then(o)` | Transform Some value, chain operations |
+| **Transform** | `Map(o)`, `Map_Or(o, d)`, `Map_Or_Else(o)`, `And_Then(o)` | Transform Some value |
 | **Filter** | `Filter(o)` | Keep value only if predicate holds |
 | **Fallback** | `Or_Else(a, b)`, `Or_Else_With(o)` | Try alternative on None (eager/lazy) |
+| **Side Effects** | `Tap(o)` | Run callback on Some without changing |
 | **Combine** | `Zip_With(a, b)`, `Flatten(o)` | Combine Options, unwrap nested Option |
 | **Convert** | `Ok_Or(o, e)`, `Ok_Or_Else(o)` | Option to Result (eager/lazy error) |
-| **Operators** | `a and b`, `a xor b`, `o or default`, `a or b` | Logical and fallback operators |
+| **Operators** | `a and b`, `a xor b`, `o or default`, `a or b`, `o = v` | Logical and fallback operators |
 
-**Either<L,R>** (11 operations):
+**Either<L,R>** (16 operations):
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `Left(v)`, `Right(v)` | Create left or right value |
-| **Predicates** | `Is_Left(e)`, `Is_Right(e)` | Test which side |
-| **Extract** | `Left_Value(e)`, `Right_Value(e)` | Get value (with Pre) |
+| **Predicates** | `Is_Left(e)`, `Is_Right(e)`, `Contains(e, v)` | Test which side |
+| **Extract** | `Left_Value(e)`, `Right_Value(e)`, `Get_Or_Else(e, d)` | Get value (with Pre) or default |
 | **Transform** | `Map(e)`, `Map_Left(e)`, `Map_Right(e)`, `Bimap(e)` | Right-biased Map, transform sides |
 | **Chain** | `And_Then(e)` | Right-biased monadic bind |
 | **Swap** | `Swap(e)` | Exchange Left and Right |
-| **Reduce** | `Fold(e)` | Reduce to single value |
+| **Reduce** | `Fold(e)`, `Merge(e)` | Reduce to single value |
+| **Convert** | `To_Option(e)`, `To_Result(e)` | Right->Some/Ok, Left->None/Error |
+| **Operators** | `e = v` | Alias for Contains (Right value) |
 
 **Try Module** (5 functions):
 
@@ -281,11 +284,11 @@ https://github.com/abitofhelp
 
 **Status**: Production Ready (v3.0.0)
 
-- Result<T,E> with 25 operations
-- Option<T> with 19 operations
-- Either<L,R> with 11 operations
+- Result[T,E] with 34 operations
+- Option[T] with 25 operations
+- Either[L,R] with 16 operations
 - Try module with 5 exception bridges
 - Pure packages (no side effects)
 - Zero external dependencies
-- Comprehensive test suite (134 unit tests)
+- Comprehensive test suite (135 unit tests)
 - Alire publication

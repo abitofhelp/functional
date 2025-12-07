@@ -27,12 +27,34 @@ package body Functional.Either is
    function Is_Right (E : Either) return Boolean
    is (not E.Is_Left);
 
+   function Contains (E : Either; Value : R) return Boolean is
+   begin
+      case E.Is_Left is
+         when True =>
+            return False;
+
+         when False =>
+            return E.Right_Value = Value;
+      end case;
+   end Contains;
+
    --  Extractors
    function Left_Value (E : Either) return L
    is (E.Left_Value);
 
    function Right_Value (E : Either) return R
    is (E.Right_Value);
+
+   function Get_Or_Else (E : Either; Default : R) return R is
+   begin
+      case E.Is_Left is
+         when True =>
+            return Default;
+
+         when False =>
+            return E.Right_Value;
+      end case;
+   end Get_Or_Else;
 
    --  Map_Left: transform Left value
    function Map_Left (E : Either) return Either is
@@ -117,5 +139,37 @@ package body Functional.Either is
             return On_Right (E.Right_Value);
       end case;
    end Fold;
+
+   --  Merge: extract value when both types are the same
+   function Merge (E : Either) return T is
+   begin
+      case E.Is_Left is
+         when True =>
+            return From_Left (E.Left_Value);
+
+         when False =>
+            return From_Right (E.Right_Value);
+      end case;
+   end Merge;
+
+   --  To_Option: convert to Option - Right(v) -> Some(v), Left(_) -> None
+   function To_Option (E : Either) return Option_Type is
+   begin
+      if E.Is_Left then
+         return Make_None;
+      else
+         return Make_Some (E.Right_Value);
+      end if;
+   end To_Option;
+
+   --  To_Result: convert to Result - Right(v) -> Ok(v), Left(e) -> Error(e)
+   function To_Result (E : Either) return Result_Type is
+   begin
+      if E.Is_Left then
+         return Make_Error (E.Left_Value);
+      else
+         return Make_Ok (E.Right_Value);
+      end if;
+   end To_Result;
 
 end Functional.Either;

@@ -1,8 +1,8 @@
 # Software Design Specification (SDS)
 
 **Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 2.3.0
-**Date:** December 05, 2025
+**Version:** 3.0.0
+**Date:** December 06, 2025
 **Author:** Michael Gardner, A Bit of Help, Inc.
 **Status:** Released
 
@@ -55,6 +55,40 @@ Functional (Pure, namespace only)
 | **Composition over Conditionals** | `And_Then`, `Map`, `Fallback` replace nested if/case |
 | **Contract-First** | Pre/Post conditions document and enforce invariants |
 | **Generic Reusability** | Package-level generics work with any `private` type |
+| **SPARK Compatibility** | All core types are `SPARK_Mode => On` for formal verification |
+
+### 2.4 SPARK Design Decisions
+
+The library is designed to be SPARK-compatible, enabling formal verification:
+
+| Package | SPARK_Mode | Categorization |
+|---------|------------|----------------|
+| `Functional.Option` | On | Preelaborate |
+| `Functional.Result` | On | Preelaborate |
+| `Functional.Either` | On | Preelaborate |
+| `Functional.Try` | Off | Exception boundary (by design) |
+| `Functional.Version` | N/A | Pure |
+
+#### 2.4.1 SPARK Trade-offs
+
+Some operations are intentionally excluded to maintain SPARK compatibility:
+
+| Excluded Operation | SPARK Prohibition | Alternative Pattern |
+|-------------------|-------------------|---------------------|
+| `Option.Replace` | Functions cannot have `in out` mode parameters | Use explicit assignment: `Old := Current; Current := New_Some(V);` |
+
+**Rationale:**
+
+SPARK prohibits functions with `out` or `in out` parameters because functions must be mathematically pure (no side effects). The `Replace` operation would require:
+
+```ada
+function Replace (O : in out Option; New_Value : T) return Option;
+--  Returns old option, modifies O to hold new value
+```
+
+This violates the SPARK principle that functions only compute and return values.
+
+**Design Decision:** Maintain `SPARK_Mode => On` for all core packages at the cost of excluding mutation-oriented operations. For mutation-heavy code, use explicit assignment sequences instead of functional-style Replace.
 
 ### 2.3 Package Dependencies
 
@@ -89,44 +123,46 @@ Functional (Pure, namespace only)
 generic
    type T is private;  -- Success value type
    type E is private;  -- Error value type
-package Functional.Result is
-
-   type Result_Kind is (K_Ok, K_Err);
-
-   type Result (Kind : Result_Kind := K_Ok) is record
-      case Kind is
-         when K_Ok  => Ok_Value  : T;
-         when K_Err => Err_Value : E;
+package Functional.Result
+  with Preelaborate, SPARK_Mode => On
+is
+   type Result (Is_Ok : Boolean := True) is record
+      case Is_Ok is
+         when True  => Ok_Value    : T;
+         when False => Error_Value : E;
       end case;
    end record;
 ```
 
 **Design Rationale:**
 - Discriminated record ensures only one value present at a time
-- Default discriminant `K_Ok` allows uninitialized declarations (Ada requirement)
+- Boolean discriminant `Is_Ok` enables SPARK compatibility (vs enumeration)
+- Default discriminant `True` allows uninitialized declarations (Ada requirement)
 - `T` and `E` are separate types; caller decides error representation
 
 #### 3.1.2 Invariants
 
 | Invariant | Enforcement |
 |-----------|-------------|
-| `Value` only valid when `Is_Ok` | `Pre => R.Kind = K_Ok` |
-| `Error` only valid when `Is_Err` | `Pre => R.Kind = K_Err` |
-| `Map` preserves Err unchanged | Implementation pattern |
-| `And_Then` short-circuits on Err | Implementation pattern |
+| `Value` only valid when `Is_Ok` | `Pre => R.Is_Ok` |
+| `Error` only valid when not `Is_Ok` | `Pre => not R.Is_Ok` |
+| `Map` preserves Error unchanged | Implementation + Postcondition |
+| `And_Then` short-circuits on Error | Implementation + Postcondition |
 
-#### 3.1.3 Operation Categories
+#### 3.1.3 Operation Categories (34 operations)
 
 | Category | Operations | Pattern |
 |----------|------------|---------|
-| Constructors | `Ok`, `Err`, `From_Error` | Create Result from value |
-| Predicates | `Is_Ok`, `Is_Err` | Query state without extraction |
-| Extractors | `Value`, `Error`, `Expect` | Extract with precondition |
+| Constructors | `Ok`, `New_Error`, `From_Error` | Create Result from value |
+| Predicates | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Contains` | Query state |
+| Extractors | `Value`, `Error`, `Expect`, `Expect_Error`, `Unwrap_Error` | Extract with precondition |
 | Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
-| Transforms | `Map`, `And_Then`, `And_Then_Into`, `Map_Err`, `Bimap` | Value transformation |
+| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten` | Value transformation |
 | Recovery | `Fallback`, `Fallback_With`, `Recover`, `Recover_With` | Error recovery |
 | Validation | `Ensure`, `With_Context` | Ok value validation |
-| Side Effects | `Tap` | Logging/debugging hooks |
+| Side Effects | `Tap`, `Tap_Ok`, `Tap_Error` | Logging/debugging hooks |
+| Conversion | `To_Option` | Result to Option |
+| Operators | `"or"` (Unwrap_Or, Fallback), `"="` (Contains) | Operator aliases |
 
 ### 3.2 Functional.Option
 
@@ -135,30 +171,44 @@ package Functional.Result is
 ```ada
 generic
    type T is private;
-package Functional.Option with Preelaborate is
-
-   type Option_Kind is (K_Some, K_None);
-
-   type Option (Kind : Option_Kind := K_None) is record
-      case Kind is
-         when K_Some => Value : T;
-         when K_None => null;
+package Functional.Option
+  with Preelaborate, SPARK_Mode => On
+is
+   type Option (Has_Value : Boolean := False) is record
+      case Has_Value is
+         when True  => Value : T;
+         when False => null;
       end case;
    end record;
 ```
 
 **Design Rationale:**
+- Boolean discriminant `Has_Value` enables SPARK compatibility
 - `Preelaborate` allows instantiation in preelaborable contexts (domain layers)
-- Default `K_None` represents "no value" naturally
+- Default `False` represents "no value" naturally
 - Simpler than Result (no error type needed)
 
 #### 3.2.2 Invariants
 
 | Invariant | Enforcement |
 |-----------|-------------|
-| `Value` only valid when `Is_Some` | `Pre => O.Kind = K_Some` |
-| `Map` preserves None unchanged | Implementation pattern |
-| `Filter` converts Some to None on predicate failure | Implementation pattern |
+| `Value` only valid when `Has_Value` | `Pre => O.Has_Value` |
+| `Map` preserves None unchanged | Implementation + Postcondition |
+| `Filter` converts Some to None on predicate failure | Implementation + Postcondition |
+
+#### 3.2.3 Operation Categories (25 operations)
+
+| Category | Operations | Pattern |
+|----------|------------|---------|
+| Constructors | `New_Some`, `None` | Create Option |
+| Predicates | `Is_Some`, `Is_None`, `Is_Some_And`, `Contains` | Query state |
+| Extractors | `Value`, `Expect` | Extract with precondition |
+| Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
+| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `Filter`, `Zip_With`, `Flatten` | Value transformation |
+| Fallback | `Or_Else`, `Or_Else_With`, `Fallback` | Alternative on None |
+| Side Effects | `Tap` | Logging/debugging hooks |
+| Conversion | `Ok_Or`, `Ok_Or_Else` | Option to Result |
+| Operators | `"or"`, `"and"`, `"xor"`, `"="` | Operator aliases |
 
 ### 3.3 Functional.Either
 
@@ -168,22 +218,34 @@ package Functional.Option with Preelaborate is
 generic
    type L is private;  -- Left type
    type R is private;  -- Right type
-package Functional.Either is
-
-   type Either_Kind is (K_Left, K_Right);
-
-   type Either (Kind : Either_Kind := K_Left) is record
-      case Kind is
-         when K_Left  => Left_Value  : L;
-         when K_Right => Right_Value : R;
+package Functional.Either
+  with Preelaborate, SPARK_Mode => On
+is
+   type Either (Is_Left : Boolean := True) is record
+      case Is_Left is
+         when True  => Left_Value  : L;
+         when False => Right_Value : R;
       end case;
    end record;
 ```
 
 **Design Rationale:**
+- Boolean discriminant `Is_Left` enables SPARK compatibility
 - Symmetric union (neither side is "error" or "success")
 - Useful for parsing, validation with multiple outcomes
 - `Fold` reduces to single value via handler functions
+
+#### 3.3.2 Operation Categories (16 operations)
+
+| Category | Operations | Pattern |
+|----------|------------|---------|
+| Constructors | `Left`, `Right` | Create Either |
+| Predicates | `Is_Left`, `Is_Right`, `Contains` | Query state |
+| Extractors | `Left_Value`, `Right_Value`, `Get_Or_Else` | Extract with precondition |
+| Transforms | `Map`, `Map_Left`, `Map_Right`, `Bimap`, `Swap`, `And_Then` | Value transformation |
+| Reduction | `Fold`, `Merge` | Reduce to single value |
+| Conversion | `To_Option`, `To_Result` | Either to Option/Result |
+| Operators | `"="` (Contains) | Operator alias |
 
 ### 3.4 Functional.Try
 

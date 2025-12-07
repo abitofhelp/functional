@@ -14,17 +14,18 @@ pragma Ada_2022;
 --    Result       - Discriminated record with Is_Ok : Boolean
 --                   When True, holds Ok_Value; when False, holds Error_Value
 --
---  Operations (25):
+--  Operations (34):
 --    Constructors: Ok, New_Error, From_Error
---    Predicates:   Is_Ok, Is_Error
---    Extractors:   Value, Error, Expect
+--    Predicates:   Is_Ok, Is_Error, Is_Ok_And, Is_Error_And, Contains
+--    Extractors:   Value, Error, Expect, Expect_Error, Unwrap_Error
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
---    Transforms:   Map, And_Then, And_Then_Into, Map_Error, Bimap, Zip_With, Flatten
+--    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, And_Then_Into,
+--                  Map_Error, Bimap, Zip_With, Flatten
 --    Recovery:     Fallback, Fallback_With, Recover, Recover_With
 --    Validation:   Ensure, With_Context
---    Side Effects: Tap
+--    Side Effects: Tap, Tap_Ok, Tap_Error
 --    Conversion:   To_Option
---    Operators:    "or" (Unwrap_Or), "or" (Fallback)
+--    Operators:    "or" (Unwrap_Or), "or" (Fallback), "=" (Contains)
 --
 --  ===========================================================================
 
@@ -68,6 +69,22 @@ is
    function Is_Error (R : Result) return Boolean
    with Inline;
 
+   --  Is_Ok_And: test if Ok and predicate holds
+   generic
+      with function Pred (X : T) return Boolean;
+   function Is_Ok_And (R : Result) return Boolean;
+
+   --  Is_Error_And: test if Error and predicate holds
+   generic
+      with function Pred (X : E) return Boolean;
+   function Is_Error_And (R : Result) return Boolean;
+
+   --  Contains: check if Ok value equals given value
+   --  Note: Uses predefined equality for type T
+   function Contains (R : Result; Value : T) return Boolean
+   with
+     Post => (if not R.Is_Ok then not Contains'Result);
+
    --  ==========================================================================
    --  Extractors
    --  ==========================================================================
@@ -82,6 +99,16 @@ is
    --  Forces programmer to document why they believe Result is Ok
    function Expect (R : Result; Msg : String) return T
    with Pre => R.Is_Ok or else raise Program_Error with Msg;
+
+   --  Expect_Error: extract error or raise with custom message
+   --  Forces programmer to document why they believe Result is Error
+   function Expect_Error (R : Result; Msg : String) return E
+   with Pre => not R.Is_Ok or else raise Program_Error with Msg;
+
+   --  Unwrap_Error: extract error, raise Program_Error if Ok
+   --  For use when error is expected (e.g., in test assertions)
+   function Unwrap_Error (R : Result) return E
+   with Pre => not R.Is_Ok;
 
    --  ==========================================================================
    --  Unwrap with defaults
@@ -108,6 +135,17 @@ is
    with
      Post => (if R.Is_Ok then Map'Result.Is_Ok
               else not Map'Result.Is_Ok);
+
+   --  Map_Or: transform Ok value or return default (eager)
+   generic
+      with function F (X : T) return T;
+   function Map_Or (R : Result; Default : T) return T;
+
+   --  Map_Or_Else: transform Ok value or call default producer (lazy)
+   generic
+      with function F (X : T) return T;
+      with function Default return T;
+   function Map_Or_Else (R : Result) return T;
 
    --  And_Then: chain fallible operations (monadic bind - the workhorse!)
    generic
@@ -190,6 +228,16 @@ is
       with procedure On_Error (E_Val : E);
    function Tap (R : Result) return Result;
 
+   --  Tap_Ok: run side effect only on Ok value
+   generic
+      with procedure On_Ok (V : T);
+   function Tap_Ok (R : Result) return Result;
+
+   --  Tap_Error: run side effect only on Error value
+   generic
+      with procedure On_Error (E_Val : E);
+   function Tap_Error (R : Result) return Result;
+
    --  ==========================================================================
    --  Operator Aliases (Ada idioms for ergonomic syntax)
    --  ==========================================================================
@@ -201,6 +249,10 @@ is
    --  "or" for Fallback: Result or Result -> Result
    --  Usage: Config := Primary_Config or Backup_Config;
    function "or" (Left, Right : Result) return Result renames Fallback;
+
+   --  "=" for Contains: Result = T -> Boolean
+   --  Usage: if Port_Result = 8080 then ...
+   function "=" (R : Result; Value : T) return Boolean renames Contains;
 
    --  ==========================================================================
    --  Combining and Flattening

@@ -27,6 +27,39 @@ package body Functional.Result is
    function Is_Error (R : Result) return Boolean
    is (not R.Is_Ok);
 
+   function Is_Ok_And (R : Result) return Boolean is
+   begin
+      case R.Is_Ok is
+         when True =>
+            return Pred (R.Ok_Value);
+
+         when False =>
+            return False;
+      end case;
+   end Is_Ok_And;
+
+   function Is_Error_And (R : Result) return Boolean is
+   begin
+      case R.Is_Ok is
+         when True =>
+            return False;
+
+         when False =>
+            return Pred (R.Error_Value);
+      end case;
+   end Is_Error_And;
+
+   function Contains (R : Result; Value : T) return Boolean is
+   begin
+      case R.Is_Ok is
+         when True =>
+            return R.Ok_Value = Value;
+
+         when False =>
+            return False;
+      end case;
+   end Contains;
+
    --  Extractors
    function Value (R : Result) return T
    is (R.Ok_Value);
@@ -36,6 +69,12 @@ package body Functional.Result is
 
    function Expect (R : Result; Msg : String) return T
    is (R.Ok_Value);
+
+   function Expect_Error (R : Result; Msg : String) return E
+   is (R.Error_Value);
+
+   function Unwrap_Error (R : Result) return E
+   is (R.Error_Value);
 
    --  Unwrap with default
    function Unwrap_Or (R : Result; Default : T) return T is
@@ -71,6 +110,30 @@ package body Functional.Result is
             return R;
       end case;
    end Map;
+
+   --  Map_Or: transform Ok value or return default
+   function Map_Or (R : Result; Default : T) return T is
+   begin
+      case R.Is_Ok is
+         when True =>
+            return F (R.Ok_Value);
+
+         when False =>
+            return Default;
+      end case;
+   end Map_Or;
+
+   --  Map_Or_Else: transform Ok value or call default producer
+   function Map_Or_Else (R : Result) return T is
+   begin
+      case R.Is_Ok is
+         when True =>
+            return F (R.Ok_Value);
+
+         when False =>
+            return Default;
+      end case;
+   end Map_Or_Else;
 
    --  And_Then: chain fallible operations (monadic bind)
    function And_Then (R : Result) return Result is
@@ -208,6 +271,24 @@ package body Functional.Result is
       end case;
       return R;
    end Tap;
+
+   --  Tap_Ok: run side effect only on Ok value
+   function Tap_Ok (R : Result) return Result is
+   begin
+      if R.Is_Ok then
+         On_Ok (R.Ok_Value);
+      end if;
+      return R;
+   end Tap_Ok;
+
+   --  Tap_Error: run side effect only on Error value
+   function Tap_Error (R : Result) return Result is
+   begin
+      if not R.Is_Ok then
+         On_Error (R.Error_Value);
+      end if;
+      return R;
+   end Tap_Error;
 
    --  Zip_With: combine two Results with a function
    function Zip_With (A : Result; B : Result_U) return Result is

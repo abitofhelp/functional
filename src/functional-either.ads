@@ -14,12 +14,14 @@ pragma Ada_2022;
 --    Either       - Discriminated record with Is_Left : Boolean
 --                   When True, holds Left_Value; when False, holds Right_Value
 --
---  Operations (11):
+--  Operations (16):
 --    Constructors:   Left, Right
---    Predicates:     Is_Left, Is_Right
---    Extractors:     Left_Value, Right_Value
+--    Predicates:     Is_Left, Is_Right, Contains
+--    Extractors:     Left_Value, Right_Value, Get_Or_Else
 --    Transforms:     Map, Map_Left, Map_Right, Bimap, Swap, And_Then
---    Reduction:      Fold
+--    Reduction:      Fold, Merge
+--    Conversion:     To_Option, To_Result
+--    Operators:      "=" (Contains)
 --
 --  ===========================================================================
 
@@ -58,6 +60,12 @@ is
    function Is_Right (E : Either) return Boolean
    with Inline;
 
+   --  Contains: check if Right value equals given value
+   --  Note: Uses predefined equality for type R
+   function Contains (E : Either; Value : R) return Boolean
+   with
+     Post => (if E.Is_Left then not Contains'Result);
+
    --  ==========================================================================
    --  Extractors
    --  ==========================================================================
@@ -67,6 +75,9 @@ is
 
    function Right_Value (E : Either) return R
    with Pre => not E.Is_Left, Inline;
+
+   --  Get_Or_Else: get Right value or default
+   function Get_Or_Else (E : Either; Default : R) return R;
 
    --  ==========================================================================
    --  Transformations
@@ -123,5 +134,39 @@ is
       with function On_Left (X : L) return U;
       with function On_Right (X : R) return U;
    function Fold (E : Either) return U;
+
+   --  Merge: extract value when both types are the same
+   --  Requires L = R (caller instantiates with identity conversions)
+   generic
+      type T is private;
+      with function From_Left (X : L) return T;
+      with function From_Right (X : R) return T;
+   function Merge (E : Either) return T;
+
+   --  ==========================================================================
+   --  Conversion
+   --  ==========================================================================
+
+   --  To_Option: convert to Option - Right(v) -> Some(v), Left(_) -> None
+   generic
+      type Option_Type is private;
+      with function Make_Some (V : R) return Option_Type;
+      with function Make_None return Option_Type;
+   function To_Option (E : Either) return Option_Type;
+
+   --  To_Result: convert to Result - Right(v) -> Ok(v), Left(e) -> Error(e)
+   generic
+      type Result_Type is private;
+      with function Make_Ok (V : R) return Result_Type;
+      with function Make_Error (E_Val : L) return Result_Type;
+   function To_Result (E : Either) return Result_Type;
+
+   --  ==========================================================================
+   --  Operator Aliases
+   --  ==========================================================================
+
+   --  "=" for Contains: Either = R -> Boolean
+   --  Usage: if Parse_Result = 42 then ...
+   function "=" (E : Either; Value : R) return Boolean renames Contains;
 
 end Functional.Either;

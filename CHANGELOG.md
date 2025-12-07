@@ -33,27 +33,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/guides/cheatsheet.md` - All types and operators on 1-2 pages
 - `docs/guides/user_guide.md` - Design philosophy, SPARK, embedded, best practices
 
-**Result (25 operations, +5 new)**
+**Result (34 operations, +14 new)**
 - `Zip_With` - Combine two Results with a function
 - `Flatten` - Unwrap nested Result[Result[T,E],E] → Result[T,E]
 - `To_Option` - Convert Ok(v) → Some(v), Error(_) → None
+- `Contains` - Check if Ok value equals given value
+- `Is_Ok_And` - Test if Ok and predicate holds
+- `Is_Error_And` - Test if Error and predicate holds
+- `Expect_Error` - Extract error or raise with message
+- `Unwrap_Error` - Extract error (Pre: Is_Error)
+- `Map_Or` - Transform Ok value or return default (eager)
+- `Map_Or_Else` - Transform Ok value or call default producer (lazy)
+- `Tap_Ok` - Side effect on Ok only
+- `Tap_Error` - Side effect on Error only
 - `"or"` operator for `Unwrap_Or` - `R or Default` syntax
 - `"or"` operator for `Fallback` - `A or B` syntax
+- `"="` operator for `Contains` - `R = V` syntax
 
-**Option (19 operations, +8 new)**
+**Option (25 operations, +14 new)**
 - `"and"` operator - Returns second when both have values
 - `"xor"` operator - Returns one when exactly one has value
 - `Zip_With` - Combine two Options with a function
 - `Flatten` - Unwrap nested Option[Option[T]] → Option[T]
 - `Ok_Or` - Convert Some(v) → Ok(v), None → Error(e) (eager)
 - `Ok_Or_Else` - Convert Some(v) → Ok(v), None → Error(f()) (lazy)
+- `Contains` - Check if Some value equals given value
+- `Is_Some_And` - Test if Some and predicate holds
+- `Expect` - Extract value or raise with message
+- `Map_Or` - Transform Some value or return default (eager)
+- `Map_Or_Else` - Transform Some value or call default producer (lazy)
+- `Tap` - Side effect on Some value
 - `"or"` operator for `Unwrap_Or` - `O or Default` syntax
 - `"or"` operator for `Or_Else` - `A or B` syntax
+- `"="` operator for `Contains` - `O = V` syntax
 
-**Either (11 operations, +3 new)**
+**Either (16 operations, +8 new)**
 - `Map` - Right-biased transform (convenience for common case)
 - `Swap` - Exchange Left and Right values
 - `And_Then` - Right-biased monadic bind for chaining
+- `Contains` - Check if Right value equals given value
+- `Get_Or_Else` - Get Right value or default
+- `Merge` - Extract value when both types are the same
+- `To_Option` - Convert Right(v) → Some(v), Left(_) → None
+- `To_Result` - Convert Right(v) → Ok(v), Left(e) → Error(e)
+- `"="` operator for `Contains` - `E = V` syntax
 
 ### Migration Guide (2.x → 3.0.0)
 
@@ -100,7 +123,7 @@ function Transform is new Str_Result.Map_Error (F => ...);
 - All 135 unit tests passing (Result: 52, Option: 40, Either: 23, Try: 14, Try_Option: 6)
 - Tested on POSIX (macOS, Linux) and Windows platforms
 - stmt+decision coverage: 95%+
-- Total operations: 55 (Result: 25, Option: 19, Either: 11)
+- Total operations: 80 (Result: 34, Option: 25, Either: 16, Try: 5)
 
 ---
 

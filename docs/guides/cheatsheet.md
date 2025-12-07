@@ -1,10 +1,14 @@
 # Functional Library Cheatsheet
 
-**v3.0.0** | Result[T,E] • Option[T] • Either[L,R] • Try
+**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
+**Version:** 3.0.0
+**Date:** December 06, 2025
+**Author:** Michael Gardner, A Bit of Help, Inc.
+**Status:** Released
 
 ---
 
-## Result[T,E] — 25 Operations
+## Result[T,E] — 34 Operations
 
 ```ada
 package R is new Functional.Result (T => Integer, E => Error);
@@ -16,9 +20,15 @@ package R is new Functional.Result (T => Integer, E => Error);
 | `New_Error(e)` | `E → Result` | Failure |
 | `Is_Ok(r)` | `Result → Boolean` | Test success |
 | `Is_Error(r)` | `Result → Boolean` | Test failure |
+| `Is_Ok_And(r)` | `(T→Bool) → Result → Boolean` | Ok and predicate |
+| `Is_Error_And(r)` | `(E→Bool) → Result → Boolean` | Error and predicate |
+| `Contains(r,v)` | `Result × T → Boolean` | Ok equals value |
+| `r = v` | `Result × T → Boolean` | Operator alias |
 | `Value(r)` | `Result → T` | Extract (Pre: Is_Ok) |
 | `Error(r)` | `Result → E` | Extract (Pre: Is_Error) |
 | `Expect(r,msg)` | `Result × String → T` | Extract or raise |
+| `Expect_Error(r,msg)` | `Result × String → E` | Extract error or raise |
+| `Unwrap_Error(r)` | `Result → E` | Extract error (Pre: Is_Error) |
 | `Unwrap_Or(r,d)` | `Result × T → T` | Value or default |
 | `r or d` | `Result × T → T` | Operator alias |
 | `a or b` | `Result × Result → Result` | Fallback operator |
@@ -28,6 +38,8 @@ package R is new Functional.Result (T => Integer, E => Error);
 | Operation | Type | Description |
 |-----------|------|-------------|
 | `Map` | `(T→T) → Result→Result` | Transform Ok |
+| `Map_Or` | `(T→T) → Result×T→T` | Transform Ok or default |
+| `Map_Or_Else` | `(T→T,→T) → Result→T` | Transform Ok or lazy default |
 | `And_Then` | `(T→Result) → Result→Result` | Chain (monadic bind) |
 | `And_Then_Into` | `(T→Result_U) → Result→Result_U` | Chain + type change |
 | `Map_Error` | `(E→E) → Result→Result` | Transform Error |
@@ -37,14 +49,16 @@ package R is new Functional.Result (T => Integer, E => Error);
 | `Recover_With` | `(E→Result) → Result→Result` | Error to Result |
 | `Ensure` | `(T→Bool,T→E) → Result→Result` | Validate predicate |
 | `With_Context` | `(E×String→E) → Result×String→Result` | Add error context |
-| `Tap` | `(T→,E→) → Result→Result` | Side effects |
+| `Tap` | `(T→,E→) → Result→Result` | Side effects (both) |
+| `Tap_Ok` | `(T→) → Result→Result` | Side effect on Ok |
+| `Tap_Error` | `(E→) → Result→Result` | Side effect on Error |
 | `Zip_With` | `(T×U→T) → Result×Result_U→Result` | Combine two |
 | `Flatten` | `Result[Result[T,E],E] → Result[T,E]` | Unwrap nested |
 | `To_Option` | `Result → Option` | Ok→Some, Error→None |
 
 ---
 
-## Option[T] — 19 Operations
+## Option[T] — 25 Operations
 
 ```ada
 package O is new Functional.Option (T => Integer);
@@ -56,7 +70,11 @@ package O is new Functional.Option (T => Integer);
 | `None` | `→ Option` | Absent |
 | `Is_Some(o)` | `Option → Boolean` | Test present |
 | `Is_None(o)` | `Option → Boolean` | Test absent |
+| `Is_Some_And(o)` | `(T→Bool) → Option → Boolean` | Some and predicate |
+| `Contains(o,v)` | `Option × T → Boolean` | Some equals value |
+| `o = v` | `Option × T → Boolean` | Operator alias |
 | `Value(o)` | `Option → T` | Extract (Pre: Has_Value) |
+| `Expect(o,msg)` | `Option × String → T` | Extract or raise |
 | `Unwrap_Or(o,d)` | `Option × T → T` | Value or default |
 | `o or d` | `Option × T → T` | Operator alias |
 | `a or b` | `Option × Option → Option` | Or_Else operator |
@@ -68,10 +86,13 @@ package O is new Functional.Option (T => Integer);
 | Operation | Type | Description |
 |-----------|------|-------------|
 | `Map` | `(T→T) → Option→Option` | Transform Some |
+| `Map_Or` | `(T→T) → Option×T→T` | Transform Some or default |
+| `Map_Or_Else` | `(T→T,→T) → Option→T` | Transform Some or lazy default |
 | `And_Then` | `(T→Option) → Option→Option` | Chain (monadic bind) |
 | `Filter` | `(T→Bool) → Option→Option` | Keep if predicate |
 | `Or_Else_With` | `(→Option) → Option→Option` | Lazy alternative |
 | `Unwrap_Or_With` | `(→T) → Option→T` | Lazy default |
+| `Tap` | `(T→) → Option→Option` | Side effect on Some |
 | `Zip_With` | `(T×U→T) → Option×Option_U→Option` | Combine two |
 | `Flatten` | `Option[Option[T]] → Option[T]` | Unwrap nested |
 | `Ok_Or` | `Option × E → Result` | Some→Ok, None→Error |
@@ -79,7 +100,7 @@ package O is new Functional.Option (T => Integer);
 
 ---
 
-## Either[L,R] — 11 Operations
+## Either[L,R] — 16 Operations
 
 ```ada
 package E is new Functional.Either (L => String, R => Integer);
@@ -91,8 +112,11 @@ package E is new Functional.Either (L => String, R => Integer);
 | `Right(v)` | `R → Either` | Right value |
 | `Is_Left(e)` | `Either → Boolean` | Test left |
 | `Is_Right(e)` | `Either → Boolean` | Test right |
+| `Contains(e,v)` | `Either × R → Boolean` | Right equals value |
+| `e = v` | `Either × R → Boolean` | Operator alias |
 | `Left_Value(e)` | `Either → L` | Extract (Pre: Is_Left) |
 | `Right_Value(e)` | `Either → R` | Extract (Pre: Is_Right) |
+| `Get_Or_Else(e,d)` | `Either × R → R` | Right or default |
 
 **Transforms** (generic instantiation required):
 
@@ -105,6 +129,9 @@ package E is new Functional.Either (L => String, R => Integer);
 | `And_Then` | `(R→Either) → Either→Either` | Right-biased chain |
 | `Swap` | `Either[L,R] → Either[R,L]` | Exchange sides |
 | `Fold` | `(L→U,R→U) → Either→U` | Reduce to single |
+| `Merge` | `(L→T,R→T) → Either→T` | Extract when L=R |
+| `To_Option` | `Either → Option` | Right→Some, Left→None |
+| `To_Result` | `Either → Result` | Right→Ok, Left→Error |
 
 ---
 
@@ -140,6 +167,9 @@ Result := Chain (Validate (Transform (Parse (Input))));
 Config := Load_Primary or Load_Backup;
 Port := Port_Result or 8080;
 
+-- Contains check
+if Port_Result = 8080 then Handle_Default;
+
 -- Option to Result
 R := To_Result (Find_User (ID), User_Not_Found);
 
@@ -160,3 +190,5 @@ if E.Is_Left then ...      -- Either
 ---
 
 **SPARK**: Option, Result, Either are `SPARK_Mode => On`. Try is `SPARK_Mode => Off`.
+
+**Total Operations**: 80 (Result: 34, Option: 25, Either: 16, Try: 5)
