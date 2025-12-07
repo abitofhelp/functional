@@ -6,12 +6,14 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  Purpose:
 --    Comprehensive unit tests for Functional.Either type.
---    Tests all 11 Either functions. Target: 90%+ code coverage.
+--    Tests all 16 Either operations. Target: 90%+ code coverage.
 --  ======================================================================
 
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Command_Line;
 with Functional.Either;
+with Functional.Option;
+with Functional.Result;
 with Test_Framework;
 
 procedure Test_Either is
@@ -376,6 +378,146 @@ procedure Test_Either is
          "And_Then propagates Left from function");
    end Test_And_Then;
 
+   --  ==========================================================================
+   --  Test: Contains (check if Right equals value)
+   --  ==========================================================================
+
+   procedure Test_Contains is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+   begin
+      Put_Line ("Testing Contains...");
+
+      Assert
+        (Str_Int_Either.Contains (E_Right, 42),
+         "Contains returns True when Right equals value");
+      Assert
+        (not Str_Int_Either.Contains (E_Right, 99),
+         "Contains returns False when Right differs");
+      Assert
+        (not Str_Int_Either.Contains (E_Left, 42),
+         "Contains returns False for Left");
+
+      --  Test "=" operator alias
+      Assert
+        (Str_Int_Either."=" (E_Right, 42),
+         """="" operator works for Right match");
+      Assert
+        (not Str_Int_Either."=" (E_Left, 42),
+         """="" operator returns False for Left");
+   end Test_Contains;
+
+   --  ==========================================================================
+   --  Test: Get_Or_Else (get Right or default)
+   --  ==========================================================================
+
+   procedure Test_Get_Or_Else is
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+   begin
+      Put_Line ("Testing Get_Or_Else...");
+
+      Assert
+        (Str_Int_Either.Get_Or_Else (E_Right, 0) = 42,
+         "Get_Or_Else returns Right value when present");
+      Assert
+        (Str_Int_Either.Get_Or_Else (E_Left, 99) = 99,
+         "Get_Or_Else returns default for Left");
+   end Test_Get_Or_Else;
+
+   --  ==========================================================================
+   --  Test: Merge (extract when both types same)
+   --  ==========================================================================
+
+   procedure Test_Merge is
+      --  For Merge, we need L = R, so use Integer for both
+      package Int_Int_Either is new
+        Functional.Either (L => Integer, R => Integer);
+
+      E_Left  : constant Int_Int_Either.Either := Int_Int_Either.Left (10);
+      E_Right : constant Int_Int_Either.Either := Int_Int_Either.Right (42);
+
+      function Id (X : Integer) return Integer is (X);
+
+      function Do_Merge is new
+        Int_Int_Either.Merge (T => Integer, From_Left => Id, From_Right => Id);
+   begin
+      Put_Line ("Testing Merge...");
+
+      Assert (Do_Merge (E_Left) = 10, "Merge extracts Left value");
+      Assert (Do_Merge (E_Right) = 42, "Merge extracts Right value");
+   end Test_Merge;
+
+   --  ==========================================================================
+   --  Test: To_Option (convert to Option)
+   --  ==========================================================================
+
+   procedure Test_To_Option is
+      package Int_Option is new Functional.Option (T => Integer);
+
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error" & [6 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function Convert is new
+        Str_Int_Either.To_Option
+          (Option_Type => Int_Option.Option,
+           Make_Some   => Int_Option.New_Some,
+           Make_None   => Int_Option.None);
+
+      Result_L : Int_Option.Option;
+      Result_R : Int_Option.Option;
+   begin
+      Put_Line ("Testing To_Option...");
+
+      Result_R := Convert (E_Right);
+      Assert
+        (Int_Option.Is_Some (Result_R)
+         and then Int_Option.Value (Result_R) = 42,
+         "To_Option converts Right to Some");
+
+      Result_L := Convert (E_Left);
+      Assert (Int_Option.Is_None (Result_L), "To_Option converts Left to None");
+   end Test_To_Option;
+
+   --  ==========================================================================
+   --  Test: To_Result (convert to Result)
+   --  ==========================================================================
+
+   procedure Test_To_Result is
+      package Int_Result is new
+        Functional.Result (T => Integer, E => Fixed_String);
+
+      E_Left  : constant Str_Int_Either.Either :=
+        Str_Int_Either.Left ("error message" & [14 .. 20 => ' ']);
+      E_Right : constant Str_Int_Either.Either := Str_Int_Either.Right (42);
+
+      function Convert is new
+        Str_Int_Either.To_Result
+          (Result_Type => Int_Result.Result,
+           Make_Ok     => Int_Result.Ok,
+           Make_Error  => Int_Result.New_Error);
+
+      Result_L : Int_Result.Result;
+      Result_R : Int_Result.Result;
+   begin
+      Put_Line ("Testing To_Result...");
+
+      Result_R := Convert (E_Right);
+      Assert
+        (Int_Result.Is_Ok (Result_R)
+         and then Int_Result.Value (Result_R) = 42,
+         "To_Result converts Right to Ok");
+
+      Result_L := Convert (E_Left);
+      Assert
+        (Int_Result.Is_Error (Result_L)
+         and then Int_Result.Error (Result_L) (1 .. 13) = "error message",
+         "To_Result converts Left to Error");
+   end Test_To_Result;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Either Unit Tests");
@@ -393,6 +535,11 @@ begin
    Test_Swap;
    Test_And_Then;
    Test_Fold;
+   Test_Contains;
+   Test_Get_Or_Else;
+   Test_Merge;
+   Test_To_Option;
+   Test_To_Result;
 
    New_Line;
    Put_Line ("======================================");
