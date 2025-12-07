@@ -25,7 +25,10 @@ generic
    with
      function Map_Exception
        (Occ : Ada.Exceptions.Exception_Occurrence) return E is <>;
-package Functional.Try.To_Result is
+--  SPARK_Mode => Off: Exception boundary (inherited from parent, explicit for visibility)
+package Functional.Try.To_Result
+  with SPARK_Mode => Off
+is
 
    --  Run the action and convert exceptions to Result
    function Run return T_Result.Result;

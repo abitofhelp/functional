@@ -19,7 +19,10 @@ generic
    type T is private;
    with package T_Option is new Functional.Option (T => T);
    with function Action return T;
-package Functional.Try.To_Option is
+--  SPARK_Mode => Off: Exception boundary (inherited from parent, explicit for visibility)
+package Functional.Try.To_Option
+  with SPARK_Mode => Off
+is
 
    --  Run the action and convert exceptions to Option
    function Run return T_Option.Option;
