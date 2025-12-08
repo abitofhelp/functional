@@ -17,5 +17,8 @@ functional = "*"
 [[depends-on]]
 gnatcov = "^22.0.1"
 
+[[depends-on]]
+gnatprove = "*"
+
 [[pins]]
 functional = { path = ".." }

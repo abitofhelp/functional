@@ -290,12 +290,28 @@ Backwards-compatible child packages SHALL provide legacy API:
 - Generic packages instantiable with any `private` type
 - Option, Result, Either packages support `Preelaborate` for strict elaboration contexts
 
-### 4.6 SPARK Compatibility (NFR-06)
+### 4.6 SPARK Formal Verification (NFR-06)
 
-- Option, Result, Either SHALL be `SPARK_Mode => On`
-- Try SHALL be `SPARK_Mode => Off` (exception boundary by design)
-- All transform operations SHALL have postconditions for prover assistance
-- No heap allocation, no controlled types, Ravenscar compatible
+| ID | Requirement |
+|----|-------------|
+| NFR-06.1 | Library SHALL pass SPARK legality checking (gnatprove --mode=check) |
+| NFR-06.2 | Option, Result, Either, Version packages SHALL use `SPARK_Mode => On` |
+| NFR-06.3 | Try package SHALL use `SPARK_Mode => Off` (exception boundary by design) |
+| NFR-06.4 | All transform operations SHALL have postconditions for prover assistance |
+| NFR-06.5 | No runtime errors provable (overflow, range, division by zero) |
+| NFR-06.6 | All variables SHALL be properly initialized before use |
+| NFR-06.7 | SPARK verification SHALL be runnable via `make spark-check` |
+| NFR-06.8 | No heap allocation, no controlled types, Ravenscar compatible |
+
+**Verification Scope:**
+
+| Package | SPARK_Mode | Rationale |
+|---------|-----------|-----------|
+| Functional.Result | On | Core monad, formally verifiable |
+| Functional.Option | On | Core monad, formally verifiable |
+| Functional.Either | On | Core type, formally verifiable |
+| Functional.Version | On | Pure data, formally verifiable |
+| Functional.Try | Off | Exception boundary by design |
 
 ## 5. System Requirements
 

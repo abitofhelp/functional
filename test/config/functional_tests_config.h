@@ -2,7 +2,7 @@
 #ifndef FUNCTIONAL_TESTS_CONFIG_H
 #define FUNCTIONAL_TESTS_CONFIG_H
 
-#define CRATE_VERSION "2.2.1"
+#define CRATE_VERSION "3.0.0"
 #define CRATE_NAME "functional_tests"
 
 #define ALIRE_HOST_OS "macos"
