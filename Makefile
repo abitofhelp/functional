@@ -342,7 +342,7 @@ spark-check: ## Run SPARK CHECK formal verification
 		echo "$(RED)✗ SPARK project file not found: $(PROJECT_NAME)_spark.gpr$(NC)"; \
 		exit 1; \
 	fi
-	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -P ../$(PROJECT_NAME)_spark.gpr --mode=check 2>&1; \
+	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -j12 -P ../$(PROJECT_NAME)_spark.gpr --mode=check 2>&1; \
 	if [ $$? -eq 0 ]; then \
 		echo "$(GREEN)✓ SPARK CHECK verification passed$(NC)"; \
 	else \
@@ -356,7 +356,7 @@ spark-prove: ## Run SPARK PROVE formal verification
 		echo "$(RED)✗ SPARK project file not found: $(PROJECT_NAME)_spark.gpr$(NC)"; \
 		exit 1; \
 	fi
-	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -P ../$(PROJECT_NAME)_spark.gpr --mode=prove --level=2 2>&1; \
+	@cd $(TEST_DIR) && $(ALR) exec -- gnatprove -j12 -P ../$(PROJECT_NAME)_spark.gpr --mode=prove --level=2 2>&1; \
 	if [ $$? -eq 0 ]; then \
 		echo "$(GREEN)✓ SPARK PROVE verification passed$(NC)"; \
 	else \
