@@ -300,8 +300,9 @@ Backwards-compatible child packages SHALL provide legacy API:
 | NFR-06.4 | All transform operations SHALL have postconditions for prover assistance |
 | NFR-06.5 | No runtime errors provable (overflow, range, division by zero) |
 | NFR-06.6 | All variables SHALL be properly initialized before use |
-| NFR-06.7 | SPARK verification SHALL be runnable via `make spark-check` |
-| NFR-06.8 | No heap allocation, no controlled types, Ravenscar compatible |
+| NFR-06.7 | SPARK legality verification SHALL be runnable via `make spark-check` |
+| NFR-06.8 | SPARK proof verification SHALL be runnable via `make spark-prove` |
+| NFR-06.9 | No heap allocation, no controlled types, Ravenscar compatible |
 
 **Verification Scope:**
 
