@@ -91,7 +91,7 @@ The `Try` module uses `SPARK_Mode => Off` because it bridges exception-based cod
 
 ### Production Quality
 
-- **227 unit tests** with 95%+ code coverage
+- **Comprehensive test coverage** (90%+ code coverage)
 - **Zero dependencies** - Ada 2022 standard library only
 - **Comprehensive contracts** - Pre/Post conditions throughout
 - **Cross-platform** - POSIX and Windows tested
@@ -324,6 +324,6 @@ A Bit of Help, Inc.
 - ✅ Either[L,R] - 20 operations
 - ✅ Try module - 5 exception bridges
 - ✅ SPARK compatible (Option, Result, Either, Version)
-- ✅ 227 unit tests, 95%+ coverage
+- ✅ Comprehensive test coverage (90%+)
 - ✅ Zero external dependencies
 - ✅ Cross-platform (POSIX, Windows)

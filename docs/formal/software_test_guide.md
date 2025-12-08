@@ -420,7 +420,7 @@ make test-all
 
 ### 9.2 Success Criteria
 
-- All 227 unit tests pass
+- All unit tests pass
 - Coverage >= 90% (statement + decision)
 - No compiler warnings in test code
 - Clean build with `alr build`
