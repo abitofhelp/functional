@@ -1,35 +1,36 @@
 # =============================================================================
-# Windows CI Workflow
+# Windows Release Validation Workflow
 # =============================================================================
 # Purpose:
-#   Validates library builds and tests pass on Windows platform.
-#   Runs on every push and PR to main/develop branches.
+#   Pre-flight check for Windows compatibility during release preparation.
+#   Called by release.py prepare script BEFORE tags are created.
+#   Development is done on macOS; this workflow ensures Windows compatibility.
+#
+# Triggers:
+#   - Manual dispatch only (called by release.py prepare)
+#   - Can also be triggered manually from GitHub Actions UI for testing
 #
 # Tests:
-#   - Library build
-#   - Unit tests
-#
-# Platform:
-#   - Windows Server 2022 (windows-latest)
-#   - GNAT FSF via Alire
+#   - Library builds on Windows
+#   - All unit tests pass on Windows
 # =============================================================================
 
-name: Windows CI
+name: Windows Release Validation
 
 on:
-  push:
-    branches: [main, develop, "feature/**"]
-  pull_request:
-    branches: [main, develop]
   workflow_dispatch:
     inputs:
-      debug_enabled:
-        description: 'Enable debug logging'
+      version:
+        description: 'Version being validated (e.g., 1.0.0)'
         required: false
-        default: 'false'
+        default: 'dev'
+      ref:
+        description: 'Git ref to checkout (branch, tag, or SHA)'
+        required: false
+        default: ''
 
 jobs:
-  windows-build-and-test:
+  windows-validation:
     name: Windows Build & Test
     runs-on: windows-latest
 
@@ -40,6 +41,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
           submodules: recursive
 
       # -----------------------------------------------------------------------
@@ -83,17 +85,16 @@ jobs:
           echo "Unit tests complete"
 
       # -----------------------------------------------------------------------
-      # Test Summary
+      # Summary
       # -----------------------------------------------------------------------
       - name: Test Summary
         if: always()
         shell: bash
         run: |
           echo "========================================"
-          echo "Windows CI Complete"
+          echo "Windows Release Validation Complete"
           echo "========================================"
-          echo "Platform: windows-latest (Windows Server 2022)"
+          echo "Version: ${{ github.event.inputs.version || 'dev' }}"
+          echo "Ref: ${{ github.event.inputs.ref || github.ref }}"
+          echo "Platform: windows-latest"
           echo "Alire: 2.0.2"
-          echo ""
-          echo "Tests executed:"
-          echo "  - Unit tests"
