@@ -14,10 +14,10 @@ pragma Ada_2022;
 --    Result       - Discriminated record with Is_Ok : Boolean
 --                   When True, holds Ok_Value; when False, holds Error_Value
 --
---  Operations (36):
+--  Operations (30):
 --    Constructors: Ok, New_Error, From_Error
 --    Predicates:   Is_Ok, Is_Error, Is_Ok_And, Is_Ok_Or, Is_Error_And, Is_Error_Or, Contains
---    Extractors:   Value, Error, Expect, Expect_Error, Unwrap_Error
+--    Extractors:   Value, Error
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
 --    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, And_Then_Into,
 --                  Map_Error, Bimap, Zip_With, Flatten
@@ -106,21 +106,6 @@ is
 
    function Error (R : Result) return E
    with Pre => not R.Is_Ok, Inline;
-
-   --  Expect: extract value or raise with custom message
-   --  Forces programmer to document why they believe Result is Ok
-   function Expect (R : Result; Msg : String) return T
-   with Pre => R.Is_Ok or else raise Program_Error with Msg;
-
-   --  Expect_Error: extract error or raise with custom message
-   --  Forces programmer to document why they believe Result is Error
-   function Expect_Error (R : Result; Msg : String) return E
-   with Pre => not R.Is_Ok or else raise Program_Error with Msg;
-
-   --  Unwrap_Error: extract error, raise Program_Error if Ok
-   --  For use when error is expected (e.g., in test assertions)
-   function Unwrap_Error (R : Result) return E
-   with Pre => not R.Is_Ok;
 
    --  ==========================================================================
    --  Unwrap with defaults

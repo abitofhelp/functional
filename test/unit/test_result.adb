@@ -104,20 +104,6 @@ procedure Test_Result is
    end Test_Extractors;
 
    --  ==========================================================================
-   --  Test: Expect (extract with custom error message)
-   --  ==========================================================================
-
-   procedure Test_Expect is
-      R_Ok : constant Int_Result.Result := Int_Result.Ok (42);
-      Val  : Integer;
-   begin
-      Put_Line ("Testing Expect...");
-      Val := Int_Result.Expect (R_Ok, "Expected Ok value");
-      Assert (Val = 42, "Expect returns value for Ok result");
-      --  Note: Cannot test Err case as it raises Program_Error
-   end Test_Expect;
-
-   --  ==========================================================================
    --  Test: Unwrap_Or and Unwrap_Or_With
    --  ==========================================================================
 
@@ -739,36 +725,6 @@ procedure Test_Result is
    end Test_Contains;
 
    --  ==========================================================================
-   --  Test: Expect_Error (extract error or raise)
-   --  ==========================================================================
-
-   procedure Test_Expect_Error is
-      R_Err   : constant Int_Result.Result :=
-        Int_Result.New_Error ((IO_Error, "test error" & [11 .. 100 => ' '], 10));
-      Err_Val : Error;
-   begin
-      Put_Line ("Testing Expect_Error...");
-      Err_Val := Int_Result.Expect_Error (R_Err, "Expected Error value");
-      Assert (Err_Val.Kind = IO_Error, "Expect_Error returns error when Error");
-      --  Note: Cannot test Ok case as it raises Program_Error
-   end Test_Expect_Error;
-
-   --  ==========================================================================
-   --  Test: Unwrap_Error (extract error)
-   --  ==========================================================================
-
-   procedure Test_Unwrap_Error is
-      R_Err   : constant Int_Result.Result :=
-        Int_Result.New_Error ((Validation_Error, "invalid" & [8 .. 100 => ' '], 7));
-      Err_Val : Error;
-   begin
-      Put_Line ("Testing Unwrap_Error...");
-      Err_Val := Int_Result.Unwrap_Error (R_Err);
-      Assert (Err_Val.Kind = Validation_Error,
-              "Unwrap_Error extracts error value");
-   end Test_Unwrap_Error;
-
-   --  ==========================================================================
    --  Test: Map_Or (transform Ok value or return default)
    --  ==========================================================================
 
@@ -956,7 +912,6 @@ begin
    Test_Constructors;
    Test_From_Error;
    Test_Extractors;
-   Test_Expect;
    Test_Unwrap;
    Test_Map;
    Test_And_Then;
@@ -976,8 +931,6 @@ begin
    Test_Is_Ok_Or;
    Test_Is_Error_Or;
    Test_Contains;
-   Test_Expect_Error;
-   Test_Unwrap_Error;
    Test_Map_Or;
    Test_Map_Or_Else;
    Test_Tap_Ok;

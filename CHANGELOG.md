@@ -14,6 +14,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ⚠️ BREAKING CHANGES
+- **Removed exception-raising functions from Result and Option**
+  - `Expect` removed from Result (was: extract value or raise Program_Error)
+  - `Expect_Error` removed from Result (was: extract error or raise Program_Error)
+  - `Unwrap_Error` removed from Result (was: extract error with precondition)
+  - `Expect` removed from Option (was: extract value or raise Program_Error)
+
+**Rationale:**
+1. **Functional programming principle**: Errors should be values, not exceptions.
+   Exception-based control flow violates the core tenet of functional error handling.
+2. **SPARK compatibility**: SPARK formal verification prohibits exceptions.
+   These functions were incompatible with SPARK_Mode => On despite the package annotation.
+3. **Architectural consistency**: The functional crate should model pure functional
+   patterns without exception escape hatches.
+
+**Migration:**
+```ada
+-- Old (3.0.0): Uses exception
+Val := Int_Result.Expect (R, "Expected Ok");
+
+-- New: Use precondition + Value (compile-time safety)
+pragma Assert (Int_Result.Is_Ok (R));
+Val := Int_Result.Value (R);
+
+-- Or: Use Unwrap_Or for default fallback
+Val := Int_Result.Unwrap_Or (R, Default_Value);
+```
+
+**Operation counts:**
+- Result: 36 → 30 operations (-3: Expect, Expect_Error, Unwrap_Error)
+- Option: 26 → 25 operations (-1: Expect)
+
 ## [3.0.0] - 2025-12-06
 
 ### ⚠️ BREAKING CHANGES
@@ -33,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `docs/guides/cheatsheet.md` - All types and operators on 1-2 pages
 - `docs/guides/user_guide.md` - Design philosophy, SPARK, embedded, best practices
 
-**Result (36 operations, +16 new)**
+**Result (30 operations, +13 new)**
 - `Zip_With` - Combine two Results with a function
 - `Flatten` - Unwrap nested Result[Result[T,E],E] → Result[T,E]
 - `To_Option` - Convert Ok(v) → Some(v), Error(_) → None
@@ -42,8 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Is_Error_And` - Test if Error and predicate holds (strict)
 - `Is_Ok_Or` - Test if Error or predicate holds on Ok (lenient)
 - `Is_Error_Or` - Test if Ok or predicate holds on Error (lenient)
-- `Expect_Error` - Extract error or raise with message
-- `Unwrap_Error` - Extract error (Pre: Is_Error)
 - `Map_Or` - Transform Ok value or return default (eager)
 - `Map_Or_Else` - Transform Ok value or call default producer (lazy)
 - `Tap_Ok` - Side effect on Ok only
@@ -52,7 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `"or"` operator for `Fallback` - `A or B` syntax
 - `"="` operator for `Contains` - `R = V` syntax
 
-**Option (26 operations, +15 new)**
+**Option (25 operations, +14 new)**
 - `"and"` operator - Returns second when both have values
 - `"xor"` operator - Returns one when exactly one has value
 - `Zip_With` - Combine two Options with a function
@@ -62,7 +92,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Contains` - Check if Some value equals given value
 - `Is_Some_And` - Test if Some and predicate holds (strict)
 - `Is_None_Or` - Test if None or predicate holds on Some (lenient)
-- `Expect` - Extract value or raise with message
 - `Map_Or` - Transform Some value or return default (eager)
 - `Map_Or_Else` - Transform Some value or call default producer (lazy)
 - `Tap` - Side effect on Some value
@@ -127,10 +156,10 @@ function Transform is new Str_Result.Map_Error (F => ...);
 - Zero heap allocation, no controlled types, Ravenscar compatible
 
 ### Technical Details
-- All 227 unit tests passing (Result: 84, Option: 65, Either: 58, Try: 14, Try_Option: 6)
+- All unit tests passing (Result, Option, Either, Try, Try_Option)
 - Tested on POSIX (macOS, Linux) and Windows platforms
 - stmt+decision coverage: 95%+
-- Total operations: 87 (Result: 36, Option: 26, Either: 20, Try: 5)
+- Total operations: 80 (Result: 30, Option: 25, Either: 20, Try: 5)
 
 ---
 

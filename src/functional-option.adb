@@ -40,9 +40,6 @@ package body Functional.Option is
    function Value (O : Option) return T
    is (O.Value);
 
-   function Expect (O : Option; Msg : String) return T
-   is (O.Value);
-
    --  Unwrap with default
    function Unwrap_Or (O : Option; Default : T) return T is
    begin

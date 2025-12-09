@@ -14,10 +14,10 @@ pragma Ada_2022;
 --    Option       - Discriminated record with Has_Value : Boolean
 --                   When True, holds Value; when False, empty
 --
---  Operations (26):
+--  Operations (25):
 --    Constructors: New_Some, None
 --    Predicates:   Is_Some, Is_None, Is_Some_And, Is_None_Or, Contains
---    Extractors:   Value, Expect
+--    Extractors:   Value
 --    Defaults:     Unwrap_Or, Unwrap_Or_With
 --    Transforms:   Map, Map_Or, Map_Or_Else, And_Then, Filter, Zip_With, Flatten
 --    Fallback:     Or_Else, Or_Else_With, Fallback (alias)
@@ -84,11 +84,6 @@ is
 
    function Value (O : Option) return T
    with Pre => O.Has_Value, Inline;
-
-   --  Expect: extract value or raise with custom message
-   --  Forces programmer to document why they believe Option is Some
-   function Expect (O : Option; Msg : String) return T
-   with Pre => O.Has_Value or else raise Program_Error with Msg;
 
    --  ==========================================================================
    --  Unwrap with defaults

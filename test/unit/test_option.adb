@@ -525,23 +525,6 @@ procedure Test_Option is
    end Test_Contains;
 
    --  ==========================================================================
-   --  Test: Expect (extract or raise with message)
-   --  ==========================================================================
-
-   procedure Test_Expect is
-      use Int_Option;
-
-      O_Some : constant Option := New_Some (42);
-      Val    : Integer;
-   begin
-      Put_Line ("Testing Expect...");
-      Val := Expect (O_Some, "Value should be present");
-      Assert (Val = 42, "Expect returns value when Some");
-      --  Note: Cannot test None case without raising exception
-      --  That's by design - precondition enforces Some
-   end Test_Expect;
-
-   --  ==========================================================================
    --  Test: Map_Or (transform or default)
    --  ==========================================================================
 
@@ -645,7 +628,6 @@ begin
    Test_Is_Some_And;
    Test_Is_None_Or;
    Test_Contains;
-   Test_Expect;
    Test_Map_Or;
    Test_Map_Or_Else;
    Test_Tap;

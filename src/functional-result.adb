@@ -49,15 +49,6 @@ package body Functional.Result is
    function Error (R : Result) return E
    is (R.Error_Value);
 
-   function Expect (R : Result; Msg : String) return T
-   is (R.Ok_Value);
-
-   function Expect_Error (R : Result; Msg : String) return E
-   is (R.Error_Value);
-
-   function Unwrap_Error (R : Result) return E
-   is (R.Error_Value);
-
    --  Unwrap with default
    function Unwrap_Or (R : Result; Default : T) return T is
    begin
