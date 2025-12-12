@@ -19,6 +19,7 @@ with Test_Option;
 with Test_Either;
 with Test_Try;
 with Test_Try_Option;
+with Test_Try_Map_To_Result;
 
 procedure Unit_Runner is
 
@@ -46,6 +47,7 @@ begin
    Test_Either;
    Test_Try;
    Test_Try_Option;
+   Test_Try_Map_To_Result;
 
    --  Get cumulative results
    Total  := Test_Framework.Grand_Total_Tests;

@@ -1,6 +1,6 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Try.Mapped - Implementation
+--  Functional.Try.Map_To_Result - Implementation
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
@@ -12,7 +12,7 @@ pragma Ada_2022;
 --
 --  ===========================================================================
 
-package body Functional.Try.Mapped is
+package body Functional.Try.Map_To_Result is
 
    use Ada.Exceptions;
 
@@ -38,10 +38,10 @@ package body Functional.Try.Mapped is
    end Find_Error_Kind;
 
    --  ========================================================================
-   --  Execute - Run action with exception mapping
+   --  Run - Run action with exception mapping
    --  ========================================================================
 
-   function Execute (Mappings : Mapping_Array) return Result_Type is
+   function Run (Mappings : Mapping_Array) return Result_Type is
    begin
       return Action;
    exception
@@ -49,13 +49,13 @@ package body Functional.Try.Mapped is
          return Make_Error
            (Kind    => Find_Error_Kind (Mappings, Occ),
             Message => Exception_Message (Occ));
-   end Execute;
+   end Run;
 
    --  ========================================================================
-   --  Execute_Catch_All - Run action with default error only
+   --  Run_Catch_All - Run action with default error only
    --  ========================================================================
 
-   function Execute_Catch_All return Result_Type is
+   function Run_Catch_All return Result_Type is
    begin
       return Action;
    exception
@@ -63,6 +63,6 @@ package body Functional.Try.Mapped is
          return Make_Error
            (Kind    => Default_Error_Kind,
             Message => Exception_Message (Occ));
-   end Execute_Catch_All;
+   end Run_Catch_All;
 
-end Functional.Try.Mapped;
+end Functional.Try.Map_To_Result;

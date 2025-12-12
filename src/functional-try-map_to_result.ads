@@ -1,6 +1,6 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Try.Mapped - Exception-to-Result with Declarative Mappings
+--  Functional.Try.Map_To_Result - Exception-to-Result with Declarative Mappings
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
@@ -15,7 +15,7 @@ pragma Ada_2022;
 --    - Unanticipated exceptions -> default error kind (fallback)
 --
 --  Usage:
---    package Try_Read is new Functional.Try.Mapped
+--    package Try_Read is new Functional.Try.Map_To_Result
 --      (Error_Kind_Type    => Domain.Error.Error_Kind,
 --       Result_Type        => Read_Result.Result,
 --       Make_Error         => Make_Read_Error,
@@ -26,7 +26,7 @@ pragma Ada_2022;
 --      [(Name_Error'Identity,  Not_Found_Error),
 --       (Use_Error'Identity,   IO_Error)];
 --
---    Result := Try_Read.Execute (Mappings);
+--    Result := Try_Read.Run (Mappings);
 --
 --  ===========================================================================
 
@@ -50,7 +50,7 @@ generic
    --  The action to execute (returns Result_Type directly)
    with function Action return Result_Type;
 
-package Functional.Try.Mapped with
+package Functional.Try.Map_To_Result with
   SPARK_Mode => Off
 is
 
@@ -71,22 +71,22 @@ is
    Empty_Mappings : constant Mapping_Array (1 .. 0) := [others => <>];
 
    --  ========================================================================
-   --  Execute with Mappings
+   --  Run with Mappings
    --  ========================================================================
    --  Runs Action. If an exception occurs:
    --    1. Search Mappings for matching Exception_Id
    --    2. If found: return Make_Error with mapped Error_Kind
    --    3. If not found: return Make_Error with Default_Error_Kind
 
-   function Execute (Mappings : Mapping_Array) return Result_Type;
+   function Run (Mappings : Mapping_Array) return Result_Type;
 
    --  ========================================================================
-   --  Execute Catch-All (no specific mappings)
+   --  Run Catch-All (no specific mappings)
    --  ========================================================================
-   --  Equivalent to Execute(Empty_Mappings).
+   --  Equivalent to Run(Empty_Mappings).
    --  All exceptions map to Default_Error_Kind.
    --  Use when you just want a safety net without specific discrimination.
 
-   function Execute_Catch_All return Result_Type;
+   function Run_Catch_All return Result_Type;
 
-end Functional.Try.Mapped;
+end Functional.Try.Map_To_Result;
