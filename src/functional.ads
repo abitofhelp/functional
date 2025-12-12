@@ -15,6 +15,7 @@ pragma Ada_2022;
 --    Functional.Option  - Optional values (Some/None)
 --    Functional.Either  - Disjoint unions (Left/Right)
 --    Functional.Try     - Exception-to-Result/Option bridges
+--    Functional.Scoped  - RAII resource guards for automatic cleanup
 --    Functional.Version - Library version information
 --
 --  ===========================================================================

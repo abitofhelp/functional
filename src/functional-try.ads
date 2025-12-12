@@ -11,11 +11,12 @@ pragma Ada_2022;
 --    railway-oriented programming flow.
 --
 --  Functions:
---    Try_To_Result                - No-param Result bridge
---    Try_To_Functional_Result     - Convenience wrapper for Functional.Result
---    Try_To_Functional_Option     - Convenience wrapper for Functional.Option
---    Try_To_Result_With_Param     - Parameterized Result bridge (NEW)
---    Try_To_Option_With_Param     - Parameterized Option bridge (NEW)
+--    Try_To_Result                   - No-param bridge to any Result type
+--    Try_To_Any_Result_With_Param    - Parameterized bridge to any Result type
+--    Try_To_Functional_Result        - Convenience for Functional.Result
+--    Try_To_Functional_Option        - Convenience for Functional.Option
+--    Try_To_Result_With_Param        - Parameterized Functional.Result bridge
+--    Try_To_Option_With_Param        - Parameterized Functional.Option bridge
 --
 --  Design Pattern:
 --    Exception handling at boundaries only. Domain/Application layers use
@@ -55,6 +56,27 @@ is
           (Occ : Ada.Exceptions.Exception_Occurrence) return E is <>;
       with function Action return T;
    function Try_To_Result return Result_Type;
+
+   --  ========================================================================
+   --  Try_To_Any_Result_With_Param - Parameterized bridge to any Result type
+   --  ========================================================================
+   --  Use when the action needs input context AND you're using a custom
+   --  domain Result type (not Functional.Result). Combines the flexibility
+   --  of Try_To_Result with parameter support.
+   --  Supports indefinite types like String via type Param (<>) is private.
+
+   generic
+      type T is private;
+      type E is private;
+      type Param (<>) is private;
+      type Result_Type is private;
+      with function Ok (Value : T) return Result_Type is <>;
+      with function New_Error (Error : E) return Result_Type is <>;
+      with
+        function Map_Exception
+          (Occ : Ada.Exceptions.Exception_Occurrence) return E;
+      with function Action (P : Param) return T;
+   function Try_To_Any_Result_With_Param (P : Param) return Result_Type;
 
    --  ========================================================================
    --  Try_To_Functional_Result - Convenience for Functional.Result

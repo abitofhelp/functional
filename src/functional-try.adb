@@ -31,6 +31,18 @@ package body Functional.Try is
    end Try_To_Result;
 
    --  ========================================================================
+   --  Try_To_Any_Result_With_Param - Parameterized bridge to any Result type
+   --  ========================================================================
+
+   function Try_To_Any_Result_With_Param (P : Param) return Result_Type is
+   begin
+      return Ok (Action (P));
+   exception
+      when Occ : others =>
+         return New_Error (Map_Exception (Occ));
+   end Try_To_Any_Result_With_Param;
+
+   --  ========================================================================
    --  Try_To_Functional_Result - Convenience wrapper
    --  ========================================================================
 
