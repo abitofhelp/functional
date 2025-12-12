@@ -10,6 +10,20 @@ pragma Ada_2022;
 --    Use at I/O boundaries to convert exception-prone operations into
 --    railway-oriented programming flow.
 --
+--  When to Use Try_To_Result (this package):
+--    1:1 mapping - one anticipated exception to one domain error
+--    - Single anticipated exception transforms to specific domain error
+--    - General catch-all with procedural Map_Exception function
+--    - Need to inspect Exception_Occurrence for custom error building
+--
+--  When to Use Map_To_Result (child package):
+--    1..N:1..N mapping - multiple exceptions to multiple domain errors
+--    - Declarative mapping table (data, not if/elsif chains)
+--    - Empty mapping = catch-all (like Try_To_Result with generic error)
+--    - 1 mapping = single exception discrimination
+--    - N mappings = multiple exception discrimination
+--    - RECOMMENDED for new code due to declarative, self-documenting nature
+--
 --  Functions:
 --    Try_To_Result                   - No-param bridge to any Result type
 --    Try_To_Any_Result_With_Param    - Parameterized bridge to any Result type

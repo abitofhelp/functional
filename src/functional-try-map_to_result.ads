@@ -7,14 +7,25 @@ pragma Ada_2022;
 --
 --  Purpose:
 --    Provides exception-to-Result conversion with declarative exception
---    mappings. Maps specific exceptions to specific domain error kinds,
---    with a fallback for unmapped (unexpected) exceptions.
+--    mappings. Supports 1..N:1..N mapping (multiple anticipated exceptions
+--    to multiple domain error kinds).
 --
---  Philosophy:
---    - Anticipated exceptions -> specific domain error kinds (via mapping)
---    - Unanticipated exceptions -> default error kind (fallback)
+--  Mapping Modes:
+--    Empty mapping (or Run_Catch_All):
+--      - Catch-all: any exception -> Default_Error_Kind
+--      - Equivalent to Try_To_Result with generic error
+--      - Use when you just want a safety net with context
 --
---  Usage:
+--    Single mapping:
+--      - 1:1 discrimination: one specific exception -> one specific error
+--      - Unmapped exceptions fall through to Default_Error_Kind
+--
+--    Multiple mappings:
+--      - 1..N:1..N discrimination: each exception -> its specific error
+--      - Unmapped exceptions fall through to Default_Error_Kind
+--      - Declarative table is self-documenting (data, not code)
+--
+--  Usage (multiple mappings):
 --    package Try_Read is new Functional.Try.Map_To_Result
 --      (Error_Kind_Type    => Domain.Error.Error_Kind,
 --       Result_Type        => Read_Result.Result,
@@ -27,6 +38,9 @@ pragma Ada_2022;
 --       (Use_Error'Identity,   IO_Error)];
 --
 --    Result := Try_Read.Run (Mappings);
+--
+--  Usage (catch-all):
+--    Result := Try_Read.Run_Catch_All;  --  or Run(Empty_Mappings)
 --
 --  ===========================================================================
 
