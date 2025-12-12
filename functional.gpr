@@ -25,6 +25,7 @@ project Functional is
    --    - Functional.Option       Option<T> monad for optional values
    --    - Functional.Either       Either<L,R> disjoint union type
    --    - Functional.Try          Exception-to-monad bridge
+   --    - Functional.Scoped       RAII resource guards (finalization-based)
    --    - Functional.Version      Library version information
    --    - Functional_Config       Build configuration
    --
@@ -45,6 +46,7 @@ project Functional is
       "Functional.Try",
       "Functional.Try.To_Option",
       "Functional.Try.To_Result",
+      "Functional.Scoped",
       "Functional.Version");
 
    -- ==========================================================================
