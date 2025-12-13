@@ -1,20 +1,20 @@
 # Changelog
 
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 4.0.0
+**Date:** December 12, 2025
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [4.0.0] - 2025-12-12
 
-### ⚠️ BREAKING CHANGES
+### BREAKING CHANGES
 - **Removed exception-raising functions from Result and Option**
   - `Expect` removed from Result (was: extract value or raise Program_Error)
   - `Expect_Error` removed from Result (was: extract error or raise Program_Error)
@@ -42,9 +42,47 @@ Val := Int_Result.Value (R);
 Val := Int_Result.Unwrap_Or (R, Default_Value);
 ```
 
-**Operation counts:**
-- Result: 36 → 30 operations (-3: Expect, Expect_Error, Unwrap_Error)
-- Option: 26 → 25 operations (-1: Expect)
+### Added
+
+**New Exception Mapping Packages**
+- `Functional.Try.Map_To_Result` - Declarative exception-to-Result mapping with
+  configurable exception→error kind tables. Supports empty mappings (catch-all)
+  or specific exception discrimination.
+- `Functional.Try.Map_To_Result_With_Param` - Parameterized version for actions
+  requiring input context (file paths, user IDs, etc.). Supports indefinite types.
+
+**New RAII Resource Management**
+- `Functional.Scoped.Guard_For` - Unconditional RAII guard for automatic resource
+  cleanup. Calls Release procedure when guard goes out of scope.
+- `Functional.Scoped.Conditional_Guard_For` - Conditional RAII guard that checks
+  Should_Release predicate before calling Release.
+
+**New Tests**
+- 11 tests for `Functional.Scoped` covering normal exit, exception paths,
+  multiple guards, conditional release, and exception-safe Finalize behavior.
+- 35 tests for `Map_To_Result` and `Map_To_Result_With_Param` covering
+  success paths, mapped exceptions, unmapped exceptions, and catch-all behavior.
+
+### Fixed
+- **Hardened Finalize in Scoped** - `Finalize` procedures now catch all exceptions
+  to prevent exception propagation during stack unwinding (which causes
+  Program_Error or termination).
+- **Keyword casing** - Fixed `in Out` to `in out` in generic formal parameters.
+- **Comment clarity** - Fixed misleading "order doesn't matter" comment in
+  Map_To_Result; now correctly states "first match wins if duplicates exist".
+
+### Changed
+- **Operation counts:**
+  - Result: 33 operations (was 36, removed Expect/Expect_Error/Unwrap_Error)
+  - Option: 25 operations (was 26, removed Expect)
+  - Try: 7 operations (was 5, added Map_To_Result variants)
+  - Scoped: 2 generic packages (new)
+
+### Technical Details
+- All 269 unit tests passing
+- SPARK proved (Option, Result, Either, Version)
+- Scoped uses SPARK_Mode => Off (requires Ada.Finalization)
+- Zero heap allocation maintained
 
 ## [3.0.0] - 2025-12-06
 

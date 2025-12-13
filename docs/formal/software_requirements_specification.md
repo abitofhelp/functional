@@ -1,8 +1,8 @@
 # Software Requirements Specification (SRS)
 
 **Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 4.0.0
+**Date:** December 12, 2025
 **Author:** Michael Gardner, A Bit of Help, Inc.
 **Status:** Released  
 
@@ -21,6 +21,8 @@ Functional provides:
 - `Option[T]` type for optional values (presence or absence)
 - `Either[L, R]` type for disjoint unions (one of two possible values)
 - `Try` bridges for converting exception-based APIs to Result/Option types
+- `Try.Map_To_Result` for declarative exception-to-error mapping tables
+- `Scoped` RAII guards for automatic resource cleanup at scope exit
 - Railway-oriented programming patterns for composable error handling
 - Full Ada 2022 contract support (Pre, Post, Inline aspects)
 - SPARK compatibility for formal verification
@@ -31,6 +33,8 @@ Functional provides:
 - **Option**: A discriminated record representing either a present value (Some) or absence (None)
 - **Either**: A discriminated record representing one of two possible values (Left or Right)
 - **Try**: Exception-to-Result/Option conversion utilities
+- **Map_To_Result**: Declarative exception-to-error mapping with mapping tables
+- **Scoped**: RAII guards for automatic resource cleanup (Guard_For, Conditional_Guard_For)
 - **Railway-Oriented Programming (ROP)**: A pattern where operations chain along "happy path" (Ok/Some) or "error track" (Error/None)
 - **Monadic Bind**: The `And_Then` operation that chains fallible operations
 - **SPARK**: Subset of Ada designed for formal verification

@@ -1,14 +1,14 @@
 # Functional Library Cheatsheet
 
 **Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 4.0.0
+**Date:** December 12, 2025
 **Author:** Michael Gardner, A Bit of Help, Inc.
 **Status:** Released  
 
 ---
 
-## Result[T,E] — 36 Operations
+## Result[T,E] — 33 Operations
 
 ```ada
 package R is new Functional.Result (T => Integer, E => Error);
@@ -27,11 +27,9 @@ package R is new Functional.Result (T => Integer, E => Error);
 | `Contains(r,v)` | `Result × T → Boolean` | Ok equals value |
 | `r = v` | `Result × T → Boolean` | Operator alias |
 | `Value(r)` | `Result → T` | Extract (Pre: Is_Ok) |
-| `Error(r)` | `Result → E` | Extract (Pre: Is_Error) |
-| `Expect(r,msg)` | `Result × String → T` | Extract or raise |
-| `Expect_Error(r,msg)` | `Result × String → E` | Extract error or raise |
-| `Unwrap_Error(r)` | `Result → E` | Extract error (Pre: Is_Error) |
+| `Error_Info(r)` | `Result → E` | Extract error (Pre: Is_Error) |
 | `Unwrap_Or(r,d)` | `Result × T → T` | Value or default |
+| `Unwrap_Or_With(r,f)` | `(→T) → Result → T` | Lazy default |
 | `r or d` | `Result × T → T` | Operator alias |
 | `a or b` | `Result × Result → Result` | Fallback operator |
 
@@ -60,7 +58,7 @@ package R is new Functional.Result (T => Integer, E => Error);
 
 ---
 
-## Option[T] — 26 Operations
+## Option[T] — 25 Operations
 
 ```ada
 package O is new Functional.Option (T => Integer);
@@ -77,7 +75,6 @@ package O is new Functional.Option (T => Integer);
 | `Contains(o,v)` | `Option × T → Boolean` | Some equals value |
 | `o = v` | `Option × T → Boolean` | Operator alias |
 | `Value(o)` | `Option → T` | Extract (Pre: Has_Value) |
-| `Expect(o,msg)` | `Option × String → T` | Extract or raise |
 | `Unwrap_Or(o,d)` | `Option × T → T` | Value or default |
 | `o or d` | `Option × T → T` | Operator alias |
 | `a or b` | `Option × Option → Option` | Or_Else operator |
@@ -142,7 +139,7 @@ package E is new Functional.Either (L => String, R => Integer);
 
 ---
 
-## Try — 5 Functions (Exception Boundary)
+## Try — 7 Functions (Exception Boundary)
 
 ```ada
 with Functional.Try;
@@ -155,11 +152,58 @@ with Functional.Try;
 | `Try_To_Functional_Option` | Convenience for Functional.Option |
 | `Try_To_Result_With_Param` | Parameterized Result bridge |
 | `Try_To_Option_With_Param` | Parameterized Option bridge |
+| `Map_To_Result` | Declarative exception mapping tables |
+| `Map_To_Result_With_Param` | Parameterized declarative mapping |
 
 ```ada
+--  Procedural style (Map_Exception callback)
 function Safe_Parse is new Functional.Try.Try_To_Functional_Result
   (T => Integer, E => Error, Result_Pkg => Int_Result,
    Map_Exception => To_Error, Action => Parse);
+
+--  Declarative style (Map_To_Result with mapping table)
+package Try_Read is new Functional.Try.Map_To_Result
+  (Error_Kind_Type    => Domain.Error.Error_Kind,
+   Default_Error_Kind => IO_Error,
+   Result_Type        => Domain.Value_Result.Instance,
+   Value_Type         => My_Value,
+   Make_Error         => Make_File_Error,
+   Make_Result        => Value_Result.New_Error,
+   Action             => Read_File,
+   Mappings           => File_IO_Mappings);  --  First match wins
+```
+
+---
+
+## Scoped — 2 RAII Guard Packages
+
+```ada
+with Functional.Scoped;
+```
+
+| Package | Use Case |
+|---------|----------|
+| `Guard_For` | Unconditional RAII guard for automatic cleanup |
+| `Conditional_Guard_For` | Conditional RAII guard with Should_Release check |
+
+```ada
+--  Unconditional cleanup
+declare
+   File : aliased Ada.Streams.Stream_IO.File_Type;
+   package File_Scoped is new Functional.Scoped.Guard_For
+     (Resource => Ada.Streams.Stream_IO.File_Type,
+      Release  => Ada.Streams.Stream_IO.Close);
+   Guard : File_Scoped.Guard (File'Access);
+begin
+   Open (File, ...);
+   --  File is automatically closed when scope exits
+end;
+
+--  Conditional cleanup (e.g., only close if open)
+package Safe_File is new Functional.Scoped.Conditional_Guard_For
+  (Resource       => File_Type,
+   Release        => Close,
+   Should_Release => Is_Open);
 ```
 
 ---
@@ -196,6 +240,6 @@ if E.Is_Left then ...      -- Either
 
 ---
 
-**SPARK**: Option, Result, Either are `SPARK_Mode => On`. Try is `SPARK_Mode => Off`.
+**SPARK**: Option, Result, Either, Version are `SPARK_Mode => On`. Try and Scoped are `SPARK_Mode => Off`.
 
-**Total Operations**: 87 (Result: 36, Option: 26, Either: 20, Try: 5)
+**Total Operations**: 87 (Result: 33, Option: 25, Either: 20, Try: 7, Scoped: 2)

@@ -1,13 +1,13 @@
 # Quick Start Guide
 
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 4.0.0
+**Date:** December 12, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
 **Status:** Released  
 
-Type-safe error handling for Ada 2022: `Result[T,E]`, `Option[T]`, `Either[L,R]`
+Type-safe error handling for Ada 2022: `Result[T,E]`, `Option[T]`, `Either[L,R]`, `Try`, `Scoped`
 
 ---
 
@@ -34,13 +34,13 @@ package Int_Option is new Functional.Option (T => Integer);
 
 ---
 
-## Result[T,E] - Error Handling (25 Operations)
+## Result[T,E] - Error Handling (33 Operations)
 
 | Category | Operations | Purpose |
 |----------|------------|---------|
 | **Construct** | `Ok(v)`, `New_Error(e)`, `From_Error(e)` | Create success or error result |
 | **Predicates** | `Is_Ok(r)`, `Is_Error(r)` | Test result state |
-| **Extract** | `Value(r)`, `Error(r)`, `Expect(r, msg)` | Get value (with Pre) or panic with message |
+| **Extract** | `Value(r)`, `Error_Info(r)` | Get value or error (with Pre) |
 | **Defaults** | `Unwrap_Or(r, default)`, `Unwrap_Or_With(r)` | Get value or fallback (eager/lazy) |
 | **Transform** | `Map(r)`, `And_Then(r)`, `And_Then_Into(r)` | Transform Ok value, chain operations |
 | **Error Map** | `Map_Error(r)`, `Bimap(r)` | Transform error, transform both sides |

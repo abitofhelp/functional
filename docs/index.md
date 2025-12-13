@@ -1,7 +1,7 @@
 # Functional Documentation Index
 
-**Version:** 3.0.0
-**Date:** December 06, 2025
+**Version:** 4.0.0
+**Date:** December 12, 2025
 **SPDX-License-Identifier:** BSD-3-Clause
 **License File:** See the LICENSE file in the project root.
 **Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
@@ -21,7 +21,7 @@ Practical guides for using the Functional library:
 
 ### [Cheatsheet](guides/cheatsheet.md)
 
-Quick reference for all 87 operations across Result, Option, Either, and Try types:
+Quick reference for all 87 operations across Result, Option, Either, Try, and Scoped types:
 
 - Constructor functions
 - Predicate functions
@@ -37,7 +37,7 @@ Comprehensive guide covering:
 - SPARK compatibility and formal verification
 - Embedded systems considerations
 - Best practices and patterns
-- Migration guide from v2.x to v3.0.0
+- Migration guide from v3.x to v4.0.0
 
 ---
 
@@ -49,10 +49,10 @@ Comprehensive specifications and design documents:
 
 Complete requirements documentation including:
 
-- Functional requirements for Result, Option, Either, and Try types
+- Functional requirements for Result, Option, Either, Try, and Scoped types
 - Non-functional requirements (purity, performance, compatibility)
 - System constraints and dependencies
-- Test coverage requirements (227 tests, 95%+ coverage)
+- Test coverage requirements (269 tests, 95%+ coverage)
 
 ### [Software Design Specification (SDS)](formal/software_design_specification.md)
 
@@ -68,7 +68,7 @@ Detailed design documentation covering:
 
 Complete testing documentation including:
 
-- Test strategy and organization
+- Test strategy and organization (269 tests: Result 84, Option 65, Either 58, Try 14, Try_Option 6, Scoped 11, Map_To_Result 31)
 - Running tests (unit tests via AUnit)
 - Writing new tests
 - Coverage analysis procedures
@@ -79,7 +79,7 @@ Complete testing documentation including:
 
 - [Main README](../README.md) - Project overview and installation
 - [CHANGELOG](../CHANGELOG.md) - Release history and changes
-- [Tests](../test/) - Complete test suite (227 tests)
+- [Tests](../test/) - Complete test suite (269 tests)
 
 ---
 

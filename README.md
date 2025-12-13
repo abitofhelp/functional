@@ -2,16 +2,16 @@
 
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Proved-brightgreen.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
-**Version:** 3.0.0  
-**Date:** December 06, 2025  
+**Version:** 4.0.0
+**Date:** December 12, 2025
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released  
 
 ## Overview
 
-A production-ready Ada 2022 library providing functional programming abstractions for type-safe computation. Implements `Result<T,E>`, `Option<T>`, and `Either<L,R>` monadic types with 87 composable operations enabling railway-oriented programming, explicit error handling, and optional value management.
+A production-ready Ada 2022 library providing functional programming abstractions for type-safe computation. Implements `Result<T,E>`, `Option<T>`, `Either<L,R>` monadic types, and `Scoped` RAII guards with 80+ composable operations enabling railway-oriented programming, explicit error handling, optional value management, and automatic resource cleanup.
 
 Designed for safety-critical, embedded, and high-assurance applications with full SPARK compatibility.
 
@@ -54,24 +54,26 @@ make spark-prove    # Run full SPARK proof verification
 
 | Package | SPARK_Mode | Description |
 |---------|-----------|-------------|
-| `Functional.Result` | On | Result[T,E] monad (36 operations) |
-| `Functional.Option` | On | Option[T] monad (26 operations) |
+| `Functional.Result` | On | Result[T,E] monad (33 operations) |
+| `Functional.Option` | On | Option[T] monad (25 operations) |
 | `Functional.Either` | On | Either[L,R] type (20 operations) |
 | `Functional.Version` | On | Version information |
 | `Functional.Try` | Off | Exception boundary (by design) |
+| `Functional.Scoped` | Off | RAII guards (requires finalization) |
 
-The `Try` module uses `SPARK_Mode => Off` because it bridges exception-based code to functional types.
+The `Try` and `Scoped` modules use `SPARK_Mode => Off` because they interact with exception handling and finalization respectively.
 
 ## Features
 
-### Core Types (87 operations)
+### Core Types (85+ operations)
 
 | Type | Operations | Purpose |
 |------|------------|---------|
-| **Result[T,E]** | 36 | Success/failure with typed errors |
-| **Option[T]** | 26 | Optional values (presence/absence) |
+| **Result[T,E]** | 33 | Success/failure with typed errors |
+| **Option[T]** | 25 | Optional values (presence/absence) |
 | **Either[L,R]** | 20 | Disjoint unions (one of two types) |
-| **Try** | 5 | Exception-to-functional bridges |
+| **Try** | 7 | Exception-to-functional bridges |
+| **Scoped** | 2 | RAII resource guards |
 
 ### SPARK Formal Verification
 
@@ -197,13 +199,13 @@ R := Safe_Parse;  --  Never raises, returns Result
 
 ## API Reference
 
-### Result<T,E> (36 operations)
+### Result<T,E> (33 operations)
 
 | Category | Operations |
 |----------|------------|
 | **Constructors** | `Ok`, `New_Error`, `From_Error` |
 | **Predicates** | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Is_Ok_Or`, `Is_Error_Or`, `Contains` |
-| **Extractors** | `Value`, `Error`, `Expect`, `Expect_Error`, `Unwrap_Error` |
+| **Extractors** | `Value`, `Error_Info` |
 | **Defaults** | `Unwrap_Or`, `Unwrap_Or_With` |
 | **Transforms** | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten`, `To_Option` |
 | **Recovery** | `Fallback`, `Fallback_With`, `Recover`, `Recover_With` |
@@ -211,13 +213,13 @@ R := Safe_Parse;  --  Never raises, returns Result
 | **Side Effects** | `Tap`, `Tap_Ok`, `Tap_Error` |
 | **Operators** | `"or"` (Unwrap_Or, Fallback), `"="` (Contains) |
 
-### Option<T> (26 operations)
+### Option<T> (25 operations)
 
 | Category | Operations |
 |----------|------------|
 | **Constructors** | `New_Some`, `None` |
 | **Predicates** | `Is_Some`, `Is_None`, `Is_Some_And`, `Is_None_Or`, `Contains` |
-| **Extractors** | `Value`, `Expect` |
+| **Extractors** | `Value` |
 | **Defaults** | `Unwrap_Or`, `Unwrap_Or_With` |
 | **Transforms** | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `Filter`, `Zip_With`, `Flatten` |
 | **Fallback** | `Or_Else`, `Or_Else_With`, `Fallback` |
@@ -237,7 +239,7 @@ R := Safe_Parse;  --  Never raises, returns Result
 | **Conversion** | `To_Option`, `To_Result` |
 | **Operators** | `"="` (Contains) |
 
-### Try Module (5 functions)
+### Try Module (7 functions)
 
 | Function | Purpose |
 |----------|---------|
@@ -246,6 +248,15 @@ R := Safe_Parse;  --  Never raises, returns Result
 | `Try_To_Functional_Option` | Convenience for Functional.Option |
 | `Try_To_Result_With_Param` | Parameterized Result bridge |
 | `Try_To_Option_With_Param` | Parameterized Option bridge |
+| `Map_To_Result` | Declarative exception mapping tables |
+| `Map_To_Result_With_Param` | Parameterized declarative mapping |
+
+### Scoped Module (2 generic packages)
+
+| Package | Purpose |
+|---------|---------|
+| `Guard_For` | Unconditional RAII guard for automatic cleanup |
+| `Conditional_Guard_For` | Conditional RAII guard with Should_Release check |
 
 ## Testing
 
@@ -260,7 +271,7 @@ make test-unit
 make test-coverage
 ```
 
-**Results:** 227 tests passing (Result: 84, Option: 65, Either: 58, Try: 14, Try_Option: 6)
+**Results:** 269 tests passing (Result: 84, Option: 65, Either: 58, Try: 14, Try_Option: 6, Scoped: 11, Map_To_Result: 31)
 
 ## Documentation
 
@@ -317,12 +328,13 @@ A Bit of Help, Inc.
 
 ## Project Status
 
-**Status**: Production Ready (v3.0.0)
+**Status**: Production Ready (v4.0.0)
 
-- ✅ Result[T,E] - 36 operations
-- ✅ Option[T] - 26 operations
+- ✅ Result[T,E] - 33 operations
+- ✅ Option[T] - 25 operations
 - ✅ Either[L,R] - 20 operations
-- ✅ Try module - 5 exception bridges
+- ✅ Try module - 7 exception bridges
+- ✅ Scoped module - 2 RAII guard packages
 - ✅ SPARK compatible (Option, Result, Either, Version)
 - ✅ Comprehensive test coverage (90%+)
 - ✅ Zero external dependencies
