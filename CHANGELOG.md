@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 4.0.0
-**Date:** December 12, 2025
+**Version:** 4.0.0  
+**Date:** December 12, 2025  
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
-**Status:** Released
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
+**Status:** Released  
 
 All notable changes to this project will be documented in this file.
 
@@ -13,6 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [4.0.0] - 2025-12-12
+
+**Test Coverage:** 269 unit + 0 integration + 0 examples = 269 total
 
 ### BREAKING CHANGES
 - **Removed exception-raising functions from Result and Option**
