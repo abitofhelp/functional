@@ -24,6 +24,11 @@ pragma Ada_2022;
 --    - N mappings = multiple exception discrimination
 --    - RECOMMENDED for new code due to declarative, self-documenting nature
 --
+--  When to Use Map_To_Result_With_Param (child package):
+--    Same as Map_To_Result but when action needs input context
+--    - File paths, user IDs, configuration, etc.
+--    - Supports indefinite types like String
+--
 --  Functions:
 --    Try_To_Result                   - No-param bridge to any Result type
 --    Try_To_Any_Result_With_Param    - Parameterized bridge to any Result type

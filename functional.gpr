@@ -47,6 +47,7 @@ project Functional is
       "Functional.Try.To_Option",
       "Functional.Try.To_Result",
       "Functional.Try.Map_To_Result",
+      "Functional.Try.Map_To_Result_With_Param",
       "Functional.Scoped",
       "Functional.Version");
 

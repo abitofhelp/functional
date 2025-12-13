@@ -12,7 +12,6 @@ pragma Ada_2022;
 
 with Ada.Text_IO;    use Ada.Text_IO;
 with Ada.Command_Line;
-with Ada.Exceptions; use Ada.Exceptions;
 with Ada.IO_Exceptions;
 with Functional.Try.Map_To_Result;
 with Test_Framework;
@@ -21,8 +20,7 @@ procedure Test_Try_Map_To_Result is
 
    --  Domain error enumeration (simulates real domain errors)
    type Error_Kind is
-     (Validation_Error,
-      Parse_Error,
+     (Parse_Error,
       Not_Found_Error,
       IO_Error,
       Internal_Error);
