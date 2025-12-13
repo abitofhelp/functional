@@ -21,6 +21,7 @@ with Test_Try;
 with Test_Try_Option;
 with Test_Try_Map_To_Result;
 with Test_Try_Map_To_Result_With_Param;
+with Test_Scoped;
 
 procedure Unit_Runner is
 
@@ -50,6 +51,7 @@ begin
    Test_Try_Option;
    Test_Try_Map_To_Result;
    Test_Try_Map_To_Result_With_Param;
+   Test_Scoped;
 
    --  Get cumulative results
    Total  := Test_Framework.Grand_Total_Tests;
