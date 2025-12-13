@@ -59,6 +59,53 @@ procedure Test_Scoped is
         Should_Release => Is_Active,
         Release        => Release_Resource);
 
+   --  ========================================================================
+   --  Raising Resource - For testing exception handling in Finalize
+   --  ========================================================================
+
+   type Raising_Resource is record
+      Release_Attempted : Boolean := False;
+   end record;
+
+   Release_Exception : exception;
+
+   procedure Raising_Release (R : in out Raising_Resource) is
+   begin
+      R.Release_Attempted := True;
+      raise Release_Exception;
+   end Raising_Release;
+
+   function Always_True (R : Raising_Resource) return Boolean is
+      pragma Unreferenced (R);
+   begin
+      return True;
+   end Always_True;
+
+   Condition_Exception : exception;
+
+   function Raising_Condition (R : Raising_Resource) return Boolean is
+      pragma Unreferenced (R);
+   begin
+      raise Condition_Exception;
+      return True;  --  Never reached
+   end Raising_Condition;
+
+   package Raising_Guard is new Functional.Scoped.Guard_For
+     (Resource => Raising_Resource,
+      Release  => Raising_Release);
+
+   package Cond_Raising_Release_Guard is new
+     Functional.Scoped.Conditional_Guard_For
+       (Resource       => Raising_Resource,
+        Should_Release => Always_True,
+        Release        => Raising_Release);
+
+   package Cond_Raising_Check_Guard is new
+     Functional.Scoped.Conditional_Guard_For
+       (Resource       => Raising_Resource,
+        Should_Release => Raising_Condition,
+        Release        => Raising_Release);
+
 begin
    Put_Line ("========================================");
    Put_Line ("Testing: Functional.Scoped");
@@ -249,6 +296,75 @@ begin
       Assert
         (Res.Release_Count = 0,
          "Conditional_Guard_For skips release on exception when false");
+   end;
+
+   --  ========================================================================
+   --  Test: Guard_For handles raising Release without propagating
+   --  ========================================================================
+
+   Put_Line ("Test: Guard_For - Raising Release Is Caught");
+   declare
+      Res : aliased Raising_Resource := (Release_Attempted => False);
+      Scope_Exited_Normally : Boolean := False;
+   begin
+      declare
+         Guard : Raising_Guard.Guard (Res'Access);
+         pragma Unreferenced (Guard);
+      begin
+         null;
+      end;  --  Finalize called, Release raises, but is caught
+
+      Scope_Exited_Normally := True;
+      --  Primary check: scope exited normally (exception didn't propagate)
+      Assert
+        (Scope_Exited_Normally,
+         "Guard_For catches exception from Release");
+   end;
+
+   --  ========================================================================
+   --  Test: Conditional_Guard_For handles raising Release without propagating
+   --  ========================================================================
+
+   Put_Line ("Test: Conditional_Guard_For - Raising Release Is Caught");
+   declare
+      Res : aliased Raising_Resource := (Release_Attempted => False);
+      Scope_Exited_Normally : Boolean := False;
+   begin
+      declare
+         Guard : Cond_Raising_Release_Guard.Guard (Res'Access);
+         pragma Unreferenced (Guard);
+      begin
+         null;
+      end;  --  Finalize called, Release raises, but is caught
+
+      Scope_Exited_Normally := True;
+      --  Primary check: scope exited normally (exception didn't propagate)
+      Assert
+        (Scope_Exited_Normally,
+         "Conditional_Guard_For catches exception from Release");
+   end;
+
+   --  ========================================================================
+   --  Test: Conditional_Guard_For handles raising Should_Release
+   --  ========================================================================
+
+   Put_Line ("Test: Conditional_Guard_For - Raising Should_Release Is Caught");
+   declare
+      Res : aliased Raising_Resource := (Release_Attempted => False);
+      Scope_Exited_Normally : Boolean := False;
+   begin
+      declare
+         Guard : Cond_Raising_Check_Guard.Guard (Res'Access);
+         pragma Unreferenced (Guard);
+      begin
+         null;
+      end;  --  Should_Release raises, caught, defaults to no release
+
+      Scope_Exited_Normally := True;
+      --  Release should NOT have been attempted because Should_Release raised
+      Assert
+        (Scope_Exited_Normally and then not Res.Release_Attempted,
+         "Conditional_Guard_For defaults to no release when check raises");
    end;
 
    --  Print summary

@@ -26,6 +26,12 @@ package body Functional.Scoped is
       overriding procedure Finalize (G : in out Guard) is
       begin
          Release (G.R.all);
+      exception
+         when others =>
+            --  Finalize must never propagate exceptions.
+            --  During stack unwinding, a propagating exception causes
+            --  Program_Error or termination.
+            null;
       end Finalize;
 
    end Guard_For;
@@ -37,9 +43,26 @@ package body Functional.Scoped is
    package body Conditional_Guard_For is
 
       overriding procedure Finalize (G : in out Guard) is
+         Do_Release : Boolean := False;
       begin
-         if Should_Release (G.R.all) then
-            Release (G.R.all);
+         --  Check condition first; if it raises, default to not releasing
+         begin
+            Do_Release := Should_Release (G.R.all);
+         exception
+            when others =>
+               Do_Release := False;
+         end;
+
+         if Do_Release then
+            begin
+               Release (G.R.all);
+            exception
+               when others =>
+                  --  Finalize must never propagate exceptions.
+                  --  During stack unwinding, a propagating exception causes
+                  --  Program_Error or termination.
+                  null;
+            end;
          end if;
       end Finalize;
 

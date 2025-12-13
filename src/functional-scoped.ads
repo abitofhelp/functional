@@ -73,7 +73,7 @@ is
    generic
       type Resource is limited private;
       with function Should_Release (R : Resource) return Boolean;
-      with procedure Release (R : in Out Resource);
+      with procedure Release (R : in out Resource);
    package Conditional_Guard_For is
 
       type Guard (R : access Resource) is

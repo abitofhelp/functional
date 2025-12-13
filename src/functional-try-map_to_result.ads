@@ -78,7 +78,7 @@ is
       Error_Kind   : Error_Kind_Type;
    end record;
 
-   --  Array of mappings (order doesn't matter - first match wins)
+   --  Array of mappings (first match wins if duplicates exist)
    type Mapping_Array is array (Positive range <>) of Exception_Mapping;
 
    --  Empty mapping array constant for convenience
