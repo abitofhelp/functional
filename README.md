@@ -24,7 +24,7 @@ Designed for safety-critical, embedded, and high-assurance applications with ful
 </tr>
 <tr>
 <td><strong>Scope</strong></td>
-<td>All packages (Option, Result, Either, Version)</td>
+<td>All packages (Option, Result, Either, Version) + comprehensive instantiation tests</td>
 </tr>
 <tr>
 <td><strong>Mode</strong></td>
@@ -32,7 +32,7 @@ Designed for safety-critical, embedded, and high-assurance applications with ful
 </tr>
 <tr>
 <td><strong>Results</strong></td>
-<td>76 checks: 40 flow, 36 proved, 0 unproved</td>
+<td>See <a href="CHANGELOG.md">CHANGELOG</a> for current proof statistics</td>
 </tr>
 </table>
 
@@ -62,6 +62,14 @@ make spark-prove    # Run full SPARK proof verification
 | `Functional.Scoped` | Off | RAII guards (requires finalization) |
 
 The `Try` and `Scoped` modules use `SPARK_Mode => Off` because they interact with exception handling and finalization respectively.
+
+### SPARK Proof Coverage
+
+Since SPARK only analyzes instantiated generics (not generic templates), the library includes a comprehensive SPARK test suite (`test/spark/`) that instantiates all generic operations, providing:
+
+- **Full operation coverage**: All Map, And_Then, Filter, Zip, Flatten, Fold operations instantiated
+- **Helper function verification**: All predicates and transformers formally proven overflow-safe
+- **High proof rate**: See [CHANGELOG](CHANGELOG.md) for current statistics
 
 ## Features
 

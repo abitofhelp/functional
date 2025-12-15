@@ -83,6 +83,9 @@ Val := Int_Result.Unwrap_Or (R, Default_Value);
 ### Technical Details
 - All 269 unit tests passing
 - SPARK proved (Option, Result, Either, Version)
+- **SPARK proof coverage**: 402 checks, 401 proved (99.7%), 270 subprograms analyzed
+  - Comprehensive instantiation tests (`test/spark/`) exercise all generic operations
+  - All helper functions proven overflow-safe
 - Scoped uses SPARK_Mode => Off (requires Ada.Finalization)
 - Zero heap allocation maintained
 

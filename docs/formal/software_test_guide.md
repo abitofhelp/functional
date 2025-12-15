@@ -129,17 +129,19 @@ Functional Library - Unit Test Suite
 ========================================
         GRAND TOTAL - ALL UNIT TESTS
 ========================================
-Total tests:   227
-Passed:        227
+Total tests:   [N]
+Passed:        [N]
 Failed:        0
 
 ########################################
 ###
 ###    UNIT TESTS: SUCCESS
-###    All  227 tests passed!
+###    All [N] tests passed!
 ###
 ########################################
 ```
+
+*Note: [N] represents current test counts. See CHANGELOG for actual values.*
 
 ## 5. Writing Tests
 
@@ -457,16 +459,18 @@ Each test file header should include:
 
 ## 11. Test Statistics
 
-### 11.1 Current Test Counts
+### 11.1 Test Counts
 
-| Test File | Tests | Target Package |
-|-----------|-------|----------------|
-| test_result.adb | 84 | Functional.Result (36 operations) |
-| test_option.adb | 65 | Functional.Option (26 operations) |
-| test_either.adb | 58 | Functional.Either (20 operations) |
-| test_try.adb | 14 | Functional.Try (5 functions) |
-| test_try_option.adb | 6 | Try Option bridges |
-| **Total** | **227** | **87 operations** |
+See [CHANGELOG](../../CHANGELOG.md) for current test counts per release.
+
+| Test File | Target Package |
+|-----------|----------------|
+| test_result.adb | Functional.Result |
+| test_option.adb | Functional.Option |
+| test_either.adb | Functional.Either |
+| test_try.adb | Functional.Try |
+| test_try_option.adb | Try Option bridges |
+| test_scoped.adb | Functional.Scoped |
 
 ### 11.2 Test Commands Reference
 
@@ -478,35 +482,6 @@ Each test file header should include:
 | `make clean-test` | Clean test artifacts |
 | `./test/bin/unit_runner` | Run tests directly |
 
-### 11.3 v3.0.0 Test Additions
+### 11.3 Version-Specific Changes
 
-The following operations were added in v3.0.0 and have full test coverage:
-
-**Result tests added:**
-- `Contains` / `"="` operator
-- `Is_Ok_And`, `Is_Error_And` (strict predicates)
-- `Is_Ok_Or`, `Is_Error_Or` (lenient predicates)
-- `Expect_Error`, `Unwrap_Error`
-- `Map_Or`, `Map_Or_Else`
-- `Tap_Ok`, `Tap_Error`
-- `Zip_With`, `Flatten`, `To_Option`
-
-**Option tests added:**
-- `Contains` / `"="` operator
-- `Is_Some_And` (strict predicate)
-- `Is_None_Or` (lenient predicate)
-- `Expect`
-- `Map_Or`, `Map_Or_Else`
-- `Tap`
-- `"and"`, `"xor"` operators
-- `Zip_With`, `Flatten`
-- `Ok_Or`, `Ok_Or_Else`
-
-**Either tests added:**
-- `Contains` / `"="` operator
-- `Is_Left_And`, `Is_Right_And` (strict predicates)
-- `Is_Left_Or`, `Is_Right_Or` (lenient predicates)
-- `Get_Or_Else`
-- `Map`, `Swap`, `And_Then`
-- `Merge`
-- `To_Option`, `To_Result`
+See [CHANGELOG](../../CHANGELOG.md) for test additions and changes per release.

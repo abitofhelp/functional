@@ -370,15 +370,7 @@ None - pure library with no hardware dependencies.
 | Functional.Try | 5 functions |
 | **Total** | **87 operations** |
 
-### 7.2 Project Statistics
-
-- Source Files: 13
-- Test Files: 6
-- Total Tests: 227
-- Code Coverage: 95% (stmt+decision)
-- SPARK Packages: 3 (Option, Result, Either)
-
-### 7.3 v3.0.0 Breaking Changes Summary
+### 7.2 v3.0.0 Breaking Changes Summary
 
 | Change | Old (2.x) | New (3.0.0) |
 |--------|-----------|-------------|
