@@ -158,6 +158,10 @@ function Double is new Int_Result.Map (F => Times_Two);
 R := Double (R);  --  Ok(42) -> Ok(84), Error stays Error
 ```
 
+See how the Result monad is used in production:
+  - [zoneinfo: Domain.Error.Result](https://github.com/abitofhelp/zoneinfo_ada/tree/main/src/domain/error)
+  - [tzif: Domain.Error.Result](https://github.com/abitofhelp/tzif_ada/tree/main/src/domain/error)
+
 ### Option\<T\> - Presence or Absence
 
 ```ada
@@ -176,6 +180,10 @@ Age := Int_Option.Unwrap_Or (O, 0);
 function Parse is new Int_Option.And_Then (F => Try_Parse);
 O := Parse (Input);  --  Some -> parse it, None -> stays None
 ```
+
+See how the Option monad is used in production:
+  - [zoneinfo: Domain.Types.Option](https://github.com/abitofhelp/zoneinfo_ada/tree/main/src/domain/types)
+  - [tzif: Domain.Types.Option](https://github.com/abitofhelp/tzif_ada/tree/main/src/domain/types)
 
 ### Either\<L,R\> - One of Two Types
 
