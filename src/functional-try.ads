@@ -29,6 +29,14 @@ pragma Ada_2022;
 --    - File paths, user IDs, configuration, etc.
 --    - Supports indefinite types like String
 --
+--  When to Use Option (Try_To_Functional_Option / Try_To_Option_With_Param):
+--    When you don't need error details and have a sensible default
+--    - "Probe" operations: Is_TZif_File, File_Exists, etc.
+--    - "Best effort" reads: Read_Version with Unwrap_Or("unknown")
+--    - Recursive traversals: Count_Files with Unwrap_Or(0) on access errors
+--    - Pattern: Try action, on ANY exception return None, then Unwrap_Or(default)
+--    - Appropriate when failure is expected/normal, not an error condition
+--
 --  Functions:
 --    Try_To_Result                   - No-param bridge to any Result type
 --    Try_To_Any_Result_With_Param    - Parameterized bridge to any Result type
@@ -127,8 +135,7 @@ is
       type T is private;
       with package Option_Pkg is new Functional.Option (T => T);
       with function Action return T;
-   function Try_To_Functional_Option return Option_Pkg.Option
-     with Obsolescent => "Use Functional.Try.Map_To_Result with default";
+   function Try_To_Functional_Option return Option_Pkg.Option;
 
    --  ========================================================================
    --  Try_To_Result_With_Param - Parameterized Result bridge
@@ -161,7 +168,6 @@ is
       type Param (<>) is private;
       with package Option_Pkg is new Functional.Option (T => T);
       with function Action (P : Param) return T;
-   function Try_To_Option_With_Param (P : Param) return Option_Pkg.Option
-     with Obsolescent => "Use Functional.Try.Map_To_Result_With_Param with default";
+   function Try_To_Option_With_Param (P : Param) return Option_Pkg.Option;
 
 end Functional.Try;

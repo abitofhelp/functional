@@ -8,15 +8,16 @@ pragma Ada_2022;
 
 package body Functional.Try.To_Option is
 
+   ---------
+   -- Run --
+   ---------
+
    function Run return T_Option.Option is
-      --  Instantiate the core generic function
-      function Try_Impl is new
-        Try_To_Functional_Option
-          (T          => T,
-           Option_Pkg => T_Option,
-           Action     => Action);
    begin
-      return Try_Impl;
+      return T_Option.New_Some (Action);
+   exception
+      when others =>
+         return T_Option.None;
    end Run;
 
 end Functional.Try.To_Option;

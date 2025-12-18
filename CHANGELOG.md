@@ -1,11 +1,11 @@
 # Changelog
 
-**Version:** 4.0.0  
-**Date:** December 12, 2025  
+**Version:** 4.1.0
+**Date:** December 18, 2025
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>  
-**Status:** Released  
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 All notable changes to this project will be documented in this file.
 
@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [4.1.0] - 2025-12-18
+
 ### Deprecated
 
-#### Result-based Try functions
+#### Result-based Try functions (procedural Map_Exception pattern)
 - `Try_To_Result` - Use `Functional.Try.Map_To_Result`
 - `Try_To_Any_Result_With_Param` - Use `Functional.Try.Map_To_Result_With_Param`
 - `Try_To_Functional_Result` - Use `Functional.Try.Map_To_Result`
@@ -27,13 +31,18 @@ maintainable than procedural `Map_Exception` functions (code). The Map
 versions use a mapping array that is self-documenting and allows multiple
 exception-to-error-kind discriminations without if/elsif chains.
 
-#### Option-based Try functions
-- `Try_To_Functional_Option` - Use `Functional.Try.Map_To_Result` with default
-- `Try_To_Option_With_Param` - Use `Functional.Try.Map_To_Result_With_Param` with default
+**Note:** Option-based Try functions (`Try_To_Functional_Option`,
+`Try_To_Option_With_Param`) are NOT deprecated. They serve valid use cases
+for "probe" operations with sensible defaults where error details don't matter.
 
-**Rationale:** Discarding exception context loses debuggability. Prefer
-Result with explicit `Unwrap_Or` at call site to preserve error information
-while still providing default fallback behavior.
+### Changed
+
+- `Functional.Try.To_Result` - Reimplemented with inline exception handling
+  instead of delegating to deprecated `Try_To_Functional_Result`. This eliminates
+  deprecation warnings when building the functional library itself.
+- `Functional.Try.To_Option` - Reimplemented with inline exception handling
+  instead of delegating to `Try_To_Functional_Option` (consistency).
+- Added "When to Use Option" documentation section to `functional-try.ads`
 
 ---
 

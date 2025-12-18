@@ -1,17 +1,23 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Try.To_Result - Child package for backwards compatibility
+--  Functional.Try.To_Result - Simple Exception-to-Result Bridge
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Provides backwards-compatible API for existing tests.
---    Wraps the generic function Functional.Try.Try_To_Result.
+--    Bridges exception-based code to Result types using a procedural
+--    Map_Exception function for exception-to-error conversion.
 --
---  Note:
---    New code should use Functional.Try.Try_To_Functional_Result directly
---    for cleaner syntax. This child package exists for test compatibility.
+--  When to Use:
+--    - Simple 1:1 exception-to-error mapping with procedural logic
+--    - When you need to inspect Exception_Occurrence for custom error building
+--    - Legacy code integration
+--
+--  When to Use Map_To_Result Instead:
+--    - Declarative exception mappings (data, not code)
+--    - Multiple exception types mapping to different error kinds
+--    - Self-documenting mapping tables
 --
 --  ===========================================================================
 

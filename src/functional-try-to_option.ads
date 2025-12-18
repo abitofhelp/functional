@@ -1,17 +1,24 @@
 pragma Ada_2022;
 --  ===========================================================================
---  Functional.Try.To_Option - Child package for backwards compatibility
+--  Functional.Try.To_Option - Simple Exception-to-Option Bridge
 --  ===========================================================================
 --  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 --  SPDX-License-Identifier: BSD-3-Clause
 --
 --  Purpose:
---    Provides backwards-compatible API for existing tests.
---    Wraps the generic function Functional.Try.Try_To_Functional_Option.
+--    Bridges exception-based code to Option types. Returns Some(value) on
+--    success, None on any exception.
 --
---  Note:
---    New code should use Functional.Try.Try_To_Functional_Option directly
---    for cleaner syntax. This child package exists for test compatibility.
+--  When to Use:
+--    - "Probe" operations where you have a sensible default (Is_TZif_File, etc.)
+--    - "Best effort" reads with Unwrap_Or fallback (Read_Version, etc.)
+--    - Recursive traversals that skip on access errors (Count_Files, etc.)
+--    - When failure is expected/normal, not an error condition
+--
+--  When NOT to Use:
+--    - When error details matter for logging/debugging
+--    - When different exceptions need different handling
+--    - For critical operations where failures should be explicit
 --
 --  ===========================================================================
 

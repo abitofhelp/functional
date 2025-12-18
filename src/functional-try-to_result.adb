@@ -8,17 +8,16 @@ pragma Ada_2022;
 
 package body Functional.Try.To_Result is
 
+   ---------
+   -- Run --
+   ---------
+
    function Run return T_Result.Result is
-      --  Instantiate the core generic function
-      function Try_Impl is new
-        Try_To_Functional_Result
-          (T             => T,
-           E             => E,
-           Result_Pkg    => T_Result,
-           Map_Exception => Map_Exception,
-           Action        => Action);
    begin
-      return Try_Impl;
+      return T_Result.Ok (Action);
+   exception
+      when Occ : others =>
+         return T_Result.New_Error (Map_Exception (Occ));
    end Run;
 
 end Functional.Try.To_Result;
