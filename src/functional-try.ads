@@ -74,7 +74,8 @@ is
         function Map_Exception
           (Occ : Ada.Exceptions.Exception_Occurrence) return E is <>;
       with function Action return T;
-   function Try_To_Result return Result_Type;
+   function Try_To_Result return Result_Type
+     with Obsolescent => "Use Functional.Try.Map_To_Result";
 
    --  ========================================================================
    --  Try_To_Any_Result_With_Param - Parameterized bridge to any Result type
@@ -95,7 +96,8 @@ is
         function Map_Exception
           (Occ : Ada.Exceptions.Exception_Occurrence) return E;
       with function Action (P : Param) return T;
-   function Try_To_Any_Result_With_Param (P : Param) return Result_Type;
+   function Try_To_Any_Result_With_Param (P : Param) return Result_Type
+     with Obsolescent => "Use Functional.Try.Map_To_Result_With_Param";
 
    --  ========================================================================
    --  Try_To_Functional_Result - Convenience for Functional.Result
@@ -111,7 +113,8 @@ is
         function Map_Exception
           (Occ : Ada.Exceptions.Exception_Occurrence) return E is <>;
       with function Action return T;
-   function Try_To_Functional_Result return Result_Pkg.Result;
+   function Try_To_Functional_Result return Result_Pkg.Result
+     with Obsolescent => "Use Functional.Try.Map_To_Result";
 
    --  ========================================================================
    --  Try_To_Functional_Option - Convenience for Functional.Option
@@ -124,7 +127,8 @@ is
       type T is private;
       with package Option_Pkg is new Functional.Option (T => T);
       with function Action return T;
-   function Try_To_Functional_Option return Option_Pkg.Option;
+   function Try_To_Functional_Option return Option_Pkg.Option
+     with Obsolescent => "Use Functional.Try.Map_To_Result with default";
 
    --  ========================================================================
    --  Try_To_Result_With_Param - Parameterized Result bridge
@@ -142,7 +146,8 @@ is
         function Map_Exception
           (Occ : Ada.Exceptions.Exception_Occurrence) return E;
       with function Action (P : Param) return T;
-   function Try_To_Result_With_Param (P : Param) return Result_Pkg.Result;
+   function Try_To_Result_With_Param (P : Param) return Result_Pkg.Result
+     with Obsolescent => "Use Functional.Try.Map_To_Result_With_Param";
 
    --  ========================================================================
    --  Try_To_Option_With_Param - Parameterized Option bridge
@@ -156,6 +161,7 @@ is
       type Param (<>) is private;
       with package Option_Pkg is new Functional.Option (T => T);
       with function Action (P : Param) return T;
-   function Try_To_Option_With_Param (P : Param) return Option_Pkg.Option;
+   function Try_To_Option_With_Param (P : Param) return Option_Pkg.Option
+     with Obsolescent => "Use Functional.Try.Map_To_Result_With_Param with default";
 
 end Functional.Try;

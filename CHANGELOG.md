@@ -12,6 +12,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Deprecated
+
+#### Result-based Try functions
+- `Try_To_Result` - Use `Functional.Try.Map_To_Result`
+- `Try_To_Any_Result_With_Param` - Use `Functional.Try.Map_To_Result_With_Param`
+- `Try_To_Functional_Result` - Use `Functional.Try.Map_To_Result`
+- `Try_To_Result_With_Param` - Use `Functional.Try.Map_To_Result_With_Param`
+
+**Rationale:** Declarative exception mappings (data) are clearer and more
+maintainable than procedural `Map_Exception` functions (code). The Map
+versions use a mapping array that is self-documenting and allows multiple
+exception-to-error-kind discriminations without if/elsif chains.
+
+#### Option-based Try functions
+- `Try_To_Functional_Option` - Use `Functional.Try.Map_To_Result` with default
+- `Try_To_Option_With_Param` - Use `Functional.Try.Map_To_Result_With_Param` with default
+
+**Rationale:** Discarding exception context loses debuggability. Prefer
+Result with explicit `Unwrap_Or` at call site to preserve error information
+while still providing default fallback behavior.
+
+---
+
 ## [4.0.0] - 2025-12-12
 
 **Test Coverage:** 269 unit + 0 integration + 0 examples = 269 total
