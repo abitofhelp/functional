@@ -1,4 +1,6 @@
 pragma Ada_2022;
+--  Suppress obsolescent warnings: we're testing deprecated functions still work
+pragma Warnings (Off, "reference to obsolescent");
 --  ======================================================================
 --  Test_Try
 --  ======================================================================

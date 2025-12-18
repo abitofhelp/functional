@@ -1,4 +1,7 @@
 pragma Ada_2022;
+--  Suppress "condition is always True" - intentional pattern for testing
+--  that scope exits normally after guard finalization catches exceptions
+pragma Warnings (Off, "condition is always");
 --  ======================================================================
 --  Test_Scoped
 --  ======================================================================
