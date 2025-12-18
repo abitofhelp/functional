@@ -44,6 +44,13 @@ for "probe" operations with sensible defaults where error details don't matter.
   instead of delegating to `Try_To_Functional_Option` (consistency).
 - Added "When to Use Option" documentation section to `functional-try.ads`
 
+### Fixed
+
+- Suppress expected warnings in test suite:
+  - `test_try.adb`: obsolescent warnings (testing deprecated functions still work)
+  - `test_scoped.adb`: "condition is always True" (intentional test pattern)
+- Added `*__GNATPP-TEMP` to `.gitignore` (GNAT Pretty Print temp files)
+
 ---
 
 ## [4.0.0] - 2025-12-12
