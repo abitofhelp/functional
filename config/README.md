@@ -1,11 +1,11 @@
 # Functional Library - Embedded Restrictions
 
-**Version:** 4.0.0  
-**Date:** December 12, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause
-**License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
-**Status:** Released  
+**Version:** 4.1.0<br>
+**Date:** 2025-12-18<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ## Overview
 
