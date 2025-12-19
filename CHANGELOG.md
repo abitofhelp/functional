@@ -1,10 +1,10 @@
 # Changelog
 
 **Version:** 4.1.0
-**Date:** December 18, 2025
-**SPDX-License-Identifier:** BSD-3-Clause<br>
-**License File:** See the LICENSE file in the project root.<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Date:** 2025-12-18
+**SPDX-License-Identifier:** BSD-3-Clause
+**License File:** See the LICENSE file in the project root
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.
 **Status:** Released
 
 All notable changes to this project will be documented in this file.
@@ -50,6 +50,11 @@ for "probe" operations with sensible defaults where error details don't matter.
   - `test_try.adb`: obsolescent warnings (testing deprecated functions still work)
   - `test_scoped.adb`: "condition is always True" (intentional test pattern)
 - Added `*__GNATPP-TEMP` to `.gitignore` (GNAT Pretty Print temp files)
+
+### Technical Details
+
+- **Test Coverage:** 269 unit tests (all passing)
+- **SPARK Proof:** See release for updated statistics
 
 ---
 
