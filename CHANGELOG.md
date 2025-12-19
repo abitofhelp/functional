@@ -54,7 +54,7 @@ for "probe" operations with sensible defaults where error details don't matter.
 ### Technical Details
 
 - **Test Coverage:** 269 unit tests (all passing)
-- **SPARK Proof:** See release for updated statistics
+- **SPARK Status:** See release for updated statistics
 
 ---
 
