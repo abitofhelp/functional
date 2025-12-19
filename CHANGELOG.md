@@ -54,7 +54,7 @@ for "probe" operations with sensible defaults where error details don't matter.
 ### Technical Details
 
 - **Test Coverage:** 269 unit tests (all passing)
-- **SPARK Status:** See release for updated statistics
+- **SPARK Status:** 410 checks: 8 flow, 401 proved, 1 unproved (~98% proved) (--mode=prove --level=2)
 
 ---
 
