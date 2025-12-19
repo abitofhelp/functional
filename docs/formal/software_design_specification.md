@@ -1,10 +1,11 @@
-# Software Design Specification (SDS)
+# Software Design Specification
 
-**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 4.0.0  
-**Date:** December 12, 2025  
-**Author:** Michael Gardner, A Bit of Help, Inc.
-**Status:** Released  
+**Version:** 4.1.0<br>
+**Date:** 2025-12-18<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ---
 
@@ -12,502 +13,367 @@
 
 ### 1.1 Purpose
 
-This Software Design Specification (SDS) describes the architectural and detailed design of the Functional library, a utility library providing type-safe functional programming abstractions for Ada 2022.
+This Software Design Specification (SDS) describes the architecture, design patterns, and implementation decisions for the Functional library.
 
 ### 1.2 Scope
 
 This document covers:
-- Package organization and dependencies
-- Type definitions and invariants
-- Generic design patterns
-- Operation semantics and contracts
-- Memory model and performance considerations
-- SPARK compatibility design decisions
+- Package structure and dependencies
+- Type definitions and their design rationale
+- Design patterns employed
+- Error handling strategy
+- Build configuration
 
-**Note:** Functional is a **nonhybrid utility library** - it does not use hexagonal/clean architecture layers. It provides foundational types consumed by projects that do use layered architectures.
+### 1.3 References
 
-## 2. Architectural Design
+- [Software Requirements Specification](software_requirements_specification.md)
+- [Software Test Guide](software_test_guide.md)
+- Ada 2022 Language Reference Manual
 
-### 2.1 Architecture Style
+---
 
-Functional follows a **flat package hierarchy** design:
-- Single parent package (`Functional`) as namespace anchor
-- Four primary child packages (`Result`, `Option`, `Either`, `Try`)
-- Two backwards-compatibility child packages (`Try.To_Result`, `Try.To_Option`)
-- One version package (`Version`)
+## 2. Architectural Overview
 
-```
-Functional (Pure, namespace only)
-├── Functional.Result      (Generic package, Preelaborate, SPARK_Mode => On)
-├── Functional.Option      (Generic package, Preelaborate, SPARK_Mode => On)
-├── Functional.Either      (Generic package, Preelaborate, SPARK_Mode => On)
-├── Functional.Try         (Non-generic, SPARK_Mode => Off, exception boundary)
-│   ├── Functional.Try.To_Result  (Backwards-compat wrapper)
-│   └── Functional.Try.To_Option  (Backwards-compat wrapper)
-└── Functional.Version     (Pure, version constants)
-```
-
-### 2.2 Design Principles
-
-| Principle | Application |
-|-----------|-------------|
-| **Zero-Cost Abstraction** | All operations marked `Inline`; discriminated records have no overhead |
-| **Explicit Error Handling** | Errors encoded in types, not hidden in exceptions |
-| **Composition over Conditionals** | `And_Then`, `Map`, `Fallback` replace nested if/case |
-| **Contract-First** | Pre/Post conditions document and enforce invariants |
-| **Generic Reusability** | Package-level generics work with any `private` type |
-| **SPARK Compatibility** | All core types are `SPARK_Mode => On` for formal verification |
-
-### 2.3 Package Dependencies
+### 2.1 Package Architecture
 
 ```
-                    ┌─────────────────┐
-                    │   Functional    │ (Pure namespace)
-                    └────────┬────────┘
-           ┌─────────────────┼─────────────────┐
-           │                 │                 │
-    ┌──────┴──────┐   ┌──────┴──────┐   ┌──────┴──────┐
-    │   Result    │   │   Option    │   │   Either    │
-    │ SPARK: On   │   │ SPARK: On   │   │ SPARK: On   │
-    └─────────────┘   └─────────────┘   └─────────────┘
-           │                 │
-           └────────┬────────┘
-                    │
-             ┌──────┴──────┐
-             │    Try      │ ← with Ada.Exceptions
-             │ SPARK: Off  │
-             └──────┬──────┘
-           ┌────────┴────────┐
-    ┌──────┴──────┐   ┌──────┴──────┐
-    │ To_Result   │   │  To_Option  │ (child packages)
-    └─────────────┘   └─────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                      Functional (Root)                       │
+│                    [SPARK_Mode => On]                        │
+├─────────────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐         │
+│  │   Result    │  │   Option    │  │   Either    │         │
+│  │ SPARK: On   │  │ SPARK: On   │  │ SPARK: On   │         │
+│  └─────────────┘  └─────────────┘  └─────────────┘         │
+│                                                              │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │                        Try                            │  │
+│  │                   [SPARK_Mode => Off]                 │  │
+│  │  ┌────────────────┐  ┌─────────────────────────────┐ │  │
+│  │  │ Map_To_Result  │  │ Map_To_Result_With_Param    │ │  │
+│  │  └────────────────┘  └─────────────────────────────┘ │  │
+│  │  ┌────────────────┐  ┌─────────────────────────────┐ │  │
+│  │  │   To_Result    │  │        To_Option            │ │  │
+│  │  └────────────────┘  └─────────────────────────────┘ │  │
+│  └──────────────────────────────────────────────────────┘  │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                      Scoped                          │   │
+│  │                  [SPARK_Mode => Off]                 │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2.4 SPARK Design Decisions
+### 2.2 Dependency Rules
 
-The library is designed to be SPARK-compatible, enabling formal verification:
+| Package | Dependencies | SPARK_Mode |
+|---------|--------------|------------|
+| Functional | None | On |
+| Functional.Result | Functional | On |
+| Functional.Option | Functional | On |
+| Functional.Either | Functional | On |
+| Functional.Try | Ada.Exceptions, Result, Option | Off |
+| Functional.Try.Map_To_Result | Try | Off |
+| Functional.Try.Map_To_Result_With_Param | Try | Off |
+| Functional.Try.To_Result | Try, Result | Off |
+| Functional.Try.To_Option | Try, Option | Off |
+| Functional.Scoped | Ada.Finalization | Off |
 
-| Package | SPARK_Mode | Categorization |
-|---------|------------|----------------|
-| `Functional.Option` | On | Preelaborate |
-| `Functional.Result` | On | Preelaborate |
-| `Functional.Either` | On | Preelaborate |
-| `Functional.Try` | Off | Exception boundary (by design) |
-| `Functional.Version` | N/A | Pure |
+### 2.3 SPARK Boundary
 
-#### 2.4.1 SPARK Trade-offs
+- **SPARK_Mode => On**: Result, Option, Either (pure functional types)
+- **SPARK_Mode => Off**: Try (exception handling), Scoped (finalization)
 
-Some operations are intentionally excluded to maintain SPARK compatibility:
+This boundary ensures core types are formally verifiable while allowing exception handling at system boundaries.
 
-| Excluded Operation | SPARK Prohibition | Alternative Pattern |
-|-------------------|-------------------|---------------------|
-| `Option.Replace` | Functions cannot have `in out` mode parameters | Use explicit assignment: `Old := Current; Current := New_Some(V);` |
+---
 
-**Rationale:**
+## 3. Package Structure
 
-SPARK prohibits functions with `out` or `in out` parameters because functions must be mathematically pure (no side effects). The `Replace` operation would require:
+### 3.1 Directory Layout
 
-```ada
-function Replace (O : in out Option; New_Value : T) return Option;
---  Returns old option, modifies O to hold new value
+```
+src/
+├── functional.ads                           # Root package
+├── functional-result.ads                    # Result type
+├── functional-result.adb
+├── functional-option.ads                    # Option type
+├── functional-option.adb
+├── functional-either.ads                    # Either type
+├── functional-either.adb
+├── functional-try.ads                       # Try exception bridges
+├── functional-try.adb
+├── functional-try-map_to_result.ads         # Declarative mapping
+├── functional-try-map_to_result.adb
+├── functional-try-map_to_result_with_param.ads
+├── functional-try-map_to_result_with_param.adb
+├── functional-try-to_result.ads             # Child package wrapper
+├── functional-try-to_result.adb
+├── functional-try-to_option.ads             # Child package wrapper
+├── functional-try-to_option.adb
+├── functional-scoped.ads                    # RAII guards
+├── functional-scoped.adb
+└── version/
+    └── functional-version.ads               # Version info
 ```
 
-This violates the SPARK principle that functions only compute and return values.
+### 3.2 Package Descriptions
 
-**Design Decision:** Maintain `SPARK_Mode => On` for all core packages at the cost of excluding mutation-oriented operations. For mutation-heavy code, use explicit assignment sequences instead of functional-style Replace.
+| Package | Purpose | SPARK_Mode |
+|---------|---------|------------|
+| `Functional` | Root namespace, common declarations | On |
+| `Functional.Result` | Success/failure discriminated union | On |
+| `Functional.Option` | Presence/absence discriminated union | On |
+| `Functional.Either` | Left/right discriminated union | On |
+| `Functional.Try` | Exception-to-Result/Option bridges | Off |
+| `Functional.Try.Map_To_Result` | Declarative exception mapping | Off |
+| `Functional.Try.Map_To_Result_With_Param` | Parameterized declarative mapping | Off |
+| `Functional.Try.To_Result` | Procedural exception mapping | Off |
+| `Functional.Try.To_Option` | Exception-to-Option for probes | Off |
+| `Functional.Scoped` | RAII guard generics | Off |
+| `Functional.Version` | Library version constants | On |
 
-## 3. Detailed Design
+---
 
-### 3.1 Functional.Result
+## 4. Type Definitions
 
-#### 3.1.1 Type Definition
-
-```ada
-generic
-   type T is private;  -- Success value type
-   type E is private;  -- Error value type
-package Functional.Result
-  with Preelaborate, SPARK_Mode => On
-is
-   type Result (Is_Ok : Boolean := True) is record
-      case Is_Ok is
-         when True  => Ok_Value    : T;
-         when False => Error_Value : E;
-      end case;
-   end record;
-```
-
-**Design Rationale:**
-- Discriminated record ensures only one value present at a time
-- Boolean discriminant `Is_Ok` enables SPARK compatibility (vs enumeration)
-- Default discriminant `True` allows uninitialized declarations (Ada requirement)
-- `T` and `E` are separate types; caller decides error representation
-
-#### 3.1.2 Invariants
-
-| Invariant | Enforcement |
-|-----------|-------------|
-| `Value` only valid when `Is_Ok` | `Pre => R.Is_Ok` |
-| `Error` only valid when not `Is_Ok` | `Pre => not R.Is_Ok` |
-| `Map` preserves Error unchanged | Implementation + Postcondition |
-| `And_Then` short-circuits on Error | Implementation + Postcondition |
-
-#### 3.1.3 Operation Categories (36 operations)
-
-| Category | Operations | Pattern |
-|----------|------------|---------|
-| Constructors | `Ok`, `New_Error`, `From_Error` | Create Result from value |
-| Predicates | `Is_Ok`, `Is_Error`, `Is_Ok_And`, `Is_Error_And`, `Is_Ok_Or`, `Is_Error_Or`, `Contains` | Query state |
-| Extractors | `Value`, `Error`, `Expect`, `Expect_Error`, `Unwrap_Error` | Extract with precondition |
-| Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
-| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `And_Then_Into`, `Map_Error`, `Bimap`, `Zip_With`, `Flatten`, `To_Option` | Value transformation |
-| Recovery | `Fallback`, `Fallback_With`, `Recover`, `Recover_With` | Error recovery |
-| Validation | `Ensure`, `With_Context` | Ok value validation |
-| Side Effects | `Tap`, `Tap_Ok`, `Tap_Error` | Logging/debugging hooks |
-| Operators | `"or"` (Unwrap_Or, Fallback), `"="` (Contains) | Operator aliases |
-
-### 3.2 Functional.Option
-
-#### 3.2.1 Type Definition
+### 4.1 Result Type
 
 ```ada
 generic
    type T is private;
-package Functional.Option
-  with Preelaborate, SPARK_Mode => On
-is
-   type Option (Has_Value : Boolean := False) is record
-      case Has_Value is
+   type E is private;
+package Functional.Result with SPARK_Mode => On is
+   type Result (Is_Ok : Boolean := False) is record
+      case Is_Ok is
+         when True  => Value : T;
+         when False => Error : E;
+      end case;
+   end record;
+end Functional.Result;
+```
+
+**Design Rationale:**
+- Discriminated union ensures exactly one of Value or Error
+- Default discriminant `False` allows uninitialized declarations
+- Generic parameters allow any success/error types
+
+### 4.2 Option Type
+
+```ada
+generic
+   type T is private;
+package Functional.Option with SPARK_Mode => On is
+   type Option (Is_Some : Boolean := False) is record
+      case Is_Some is
          when True  => Value : T;
          when False => null;
       end case;
    end record;
+end Functional.Option;
 ```
 
 **Design Rationale:**
-- Boolean discriminant `Has_Value` enables SPARK compatibility
-- `Preelaborate` allows instantiation in preelaborable contexts (domain layers)
-- Default `False` represents "no value" naturally
-- Simpler than Result (no error type needed)
+- Discriminated union eliminates null references
+- Preelaborate pragma for domain layer usage
+- No heap allocation
 
-#### 3.2.2 Invariants
-
-| Invariant | Enforcement |
-|-----------|-------------|
-| `Value` only valid when `Has_Value` | `Pre => O.Has_Value` |
-| `Map` preserves None unchanged | Implementation + Postcondition |
-| `Filter` converts Some to None on predicate failure | Implementation + Postcondition |
-
-#### 3.2.3 Operation Categories (26 operations)
-
-| Category | Operations | Pattern |
-|----------|------------|---------|
-| Constructors | `New_Some`, `None` | Create Option |
-| Predicates | `Is_Some`, `Is_None`, `Is_Some_And`, `Is_None_Or`, `Contains` | Query state |
-| Extractors | `Value`, `Expect` | Extract with precondition |
-| Defaults | `Unwrap_Or`, `Unwrap_Or_With` | Extract with fallback |
-| Transforms | `Map`, `Map_Or`, `Map_Or_Else`, `And_Then`, `Filter`, `Zip_With`, `Flatten` | Value transformation |
-| Fallback | `Or_Else`, `Or_Else_With`, `Fallback` | Alternative on None |
-| Side Effects | `Tap` | Logging/debugging hooks |
-| Conversion | `Ok_Or`, `Ok_Or_Else` | Option to Result |
-| Operators | `"or"`, `"and"`, `"xor"`, `"="` | Operator aliases |
-
-### 3.3 Functional.Either
-
-#### 3.3.1 Type Definition
+### 4.3 Either Type
 
 ```ada
 generic
-   type L is private;  -- Left type
-   type R is private;  -- Right type
-package Functional.Either
-  with Preelaborate, SPARK_Mode => On
-is
+   type L is private;
+   type R is private;
+package Functional.Either with SPARK_Mode => On is
    type Either (Is_Left : Boolean := True) is record
       case Is_Left is
          when True  => Left_Value  : L;
          when False => Right_Value : R;
       end case;
    end record;
+end Functional.Either;
 ```
 
 **Design Rationale:**
-- Boolean discriminant `Is_Left` enables SPARK compatibility
-- Symmetric union (neither side is "error" or "success")
-- Useful for parsing, validation with multiple outcomes
-- `Fold` reduces to single value via handler functions
+- Neither side designated as "error" (unlike Result)
+- Useful for union types, parsing, validation branches
 
-#### 3.3.2 Operation Categories (20 operations)
+---
 
-| Category | Operations | Pattern |
-|----------|------------|---------|
-| Constructors | `Left`, `Right` | Create Either |
-| Predicates | `Is_Left`, `Is_Right`, `Is_Left_And`, `Is_Right_And`, `Is_Left_Or`, `Is_Right_Or`, `Contains` | Query state |
-| Extractors | `Left_Value`, `Right_Value`, `Get_Or_Else` | Extract with precondition |
-| Transforms | `Map`, `Map_Left`, `Map_Right`, `Bimap`, `Swap`, `And_Then` | Value transformation |
-| Reduction | `Fold`, `Merge` | Reduce to single value |
-| Conversion | `To_Option`, `To_Result` | Either to Option/Result |
-| Operators | `"="` (Contains) | Operator alias |
+## 5. Design Patterns
 
-### 3.4 Functional.Try
+### 5.1 Discriminated Union Pattern
 
-#### 3.4.1 Design Pattern
+All core types use Ada discriminated records:
+- Compile-time enforcement of valid access
+- Zero heap allocation
+- SPARK compatible
 
-Try bridges convert exception-based APIs to typed error handling:
+### 5.2 Generic Instantiation Pattern
 
-```
-Exception World          │         Result/Option World
-                         │
-  action() ──────────────┼──────────→ Result[T, E]
-  raises Exception       │            or Option[T]
-                         │
-                    Try Bridge
-```
-
-#### 3.4.2 Generic Functions
-
-| Function | Generics | Purpose |
-|----------|----------|---------|
-| `Try_To_Result` | `T`, `E`, `Result_Type`, `Ok`, `New_Error`, `Map_Exception`, `Action` | Full control over result type |
-| `Try_To_Functional_Result` | `T`, `E`, `Result_Pkg`, `Map_Exception`, `Action` | Convenience for Functional.Result |
-| `Try_To_Functional_Option` | `T`, `Option_Pkg`, `Action` | Convenience for Functional.Option |
-| `Try_To_Result_With_Param` | `T`, `E`, `Param (<>)`, `Result_Pkg`, `Map_Exception`, `Action` | Parameterized Result bridge |
-| `Try_To_Option_With_Param` | `T`, `Param (<>)`, `Option_Pkg`, `Action` | Parameterized Option bridge |
-
-**Param (<>) Pattern:**
-The `type Param (<>) is private` allows indefinite types like `String`:
 ```ada
-function Try_Parse is new Try_To_Result_With_Param
-  (T => Integer, E => Error, Param => String, ...);
-
-Result := Try_Parse ("42");  -- String passed directly
+--  User instantiates with their types
+package User_Result is new Functional.Result
+  (T => User_Type, E => Error_Kind);
 ```
 
-## 4. Design Patterns
+Benefits:
+- Type safety (can't mix different Result instantiations)
+- Monomorphization (no runtime dispatch)
+- Clear at call site what types are involved
 
-### 4.1 Railway-Oriented Programming
+### 5.3 Railway-Oriented Programming
 
-Operations compose along two tracks:
+Operations chain through Map/And_Then/Or_Else:
 
-```
-Ok Track:    Ok(v1) ──Map──→ Ok(v2) ──And_Then──→ Ok(v3) ──→ final Ok
-                                          │
-Error Track:                Error(e) ←────┘ (short-circuit)
-```
-
-**Implementation:** Each transform checks discriminant first:
 ```ada
-function Map (R : Result) return Result is
+Result := User_Result.Ok (User)
+  .Map (Validate'Access)
+  .And_Then (Save'Access)
+  .Or_Else (Log_And_Default'Access);
+```
+
+Error propagation is automatic - no explicit checking between operations.
+
+### 5.4 Declarative Exception Mapping
+
+Map_To_Result uses data (mapping arrays) instead of code (if/elsif):
+
+```ada
+Mappings : constant Try_Read.Mapping_Array :=
+  [(Name_Error'Identity,  Not_Found),
+   (Use_Error'Identity,   Permission_Error)];
+
+Result := Try_Read.Run (Path, Mappings);
+```
+
+Benefits:
+- Self-documenting (exception table is visible data)
+- No procedural Map_Exception function to maintain
+- Easy to add/remove mappings
+
+### 5.5 RAII Guard Pattern
+
+Scoped uses Ada finalization for automatic cleanup:
+
+```ada
+declare
+   Guard : File_Guard.Guard (File'Access);
 begin
-   if R.Is_Ok then
-      return Ok (F (R.Ok_Value));
-   else
-      return R;  -- Pass through unchanged
-   end if;
-end Map;
+   --  Work with file
+end;  --  Guard.Finalize automatically closes file
 ```
 
-### 4.2 Lazy Evaluation Pattern
+---
 
-`*_With` variants use generic function parameters for lazy evaluation:
+## 6. Error Handling Strategy
 
-```ada
-generic
-   with function F return T;
-function Unwrap_Or_With (O : Option) return T;
-```
+### 6.1 Core Principle
 
-The function `F` is only called if needed (Option is None).
+**Errors are values, not exceptions.**
 
-### 4.3 Monadic Bind (And_Then)
+Domain and Application layers use Result/Option exclusively. Exceptions are caught at boundaries (Infrastructure layer) using Try and converted to Result.
 
-The core composition operation chains fallible operations:
+### 6.2 Layer Responsibilities
 
-```ada
-generic
-   with function F (X : T) return Result;
-function And_Then (R : Result) return Result;
-```
+| Layer | Error Handling |
+|-------|----------------|
+| Domain | Return Result/Option, never raise |
+| Application | Propagate Result/Option, compose with And_Then |
+| Infrastructure | Catch exceptions with Try, return Result |
 
-**Semantics:**
-- If `R` is Ok, apply `F` to the value (which may return Ok or Error)
-- If `R` is Error, return Error unchanged (short-circuit)
+### 6.3 Try Usage Guidelines
 
-### 4.4 Lenient vs Strict Predicates
+| Scenario | Use |
+|----------|-----|
+| Multiple exception types → multiple errors | Map_To_Result_With_Param |
+| Catch-all with default error | Map_To_Result.Run_Catch_All |
+| Probe/check operations | To_Option + Unwrap_Or |
+| Legacy procedural mapping | To_Result |
 
-Version 3.0.0 introduces predicate pairs for different use cases:
+---
 
-**Strict predicates** (`Is_Ok_And`, `Is_Some_And`, etc.):
-- Return True only if the value exists AND the predicate holds
-- Short-circuit: if no value, return False without calling predicate
+## 7. Build Configuration
 
-**Lenient predicates** (`Is_Ok_Or`, `Is_None_Or`, etc.):
-- Return True if no value OR the predicate holds on the value
-- Useful for validation: "pass if empty or valid"
+### 7.1 GPR Projects
 
-```ada
--- Strict: Must be Some AND positive
-if Is_Some_And (Age, Is_Positive'Access) then ...
+| Project | Purpose |
+|---------|---------|
+| `functional.gpr` | Main library build |
+| `test/functional_test.gpr` | Test suite build |
 
--- Lenient: Pass if None OR positive (optional field validation)
-if Is_None_Or (Age, Is_Positive'Access) then ...
-```
+### 7.2 Build Profiles
 
-## 5. Data Flow
+| Profile | Optimization | Assertions | Debug | Use Case |
+|---------|--------------|------------|-------|----------|
+| Development | -O0 | Enabled | -g | Daily development |
+| Validation | -O1 | Enabled | -g | Pre-release testing |
+| Release | -O2 | Disabled | None | Production |
 
-### 5.1 Result Composition Flow
+---
 
-```
-Input ──→ Validate ──→ Transform ──→ Persist ──→ Output
-           │             │             │
-           ▼             ▼             ▼
-        Result        Result        Result
-         │               │             │
-         └───And_Then────┴─And_Then───┘
-                         │
-                    Final Result
-```
+## 8. Design Decisions
 
-### 5.2 Error Propagation
+### 8.1 No Tagged Types in Core
 
-Errors propagate automatically through `And_Then` chains:
-1. First `Error` short-circuits the chain
-2. Original error preserved (or enriched via `With_Context`)
-3. `Recover` or `Recover_With` can intercept and handle
+**Decision:** Core types (Result, Option, Either) are not tagged.
 
-## 6. Memory Model
+**Rationale:**
+- Static dispatch eliminates runtime overhead
+- SPARK compatibility (tagged types have limitations)
+- Generic instantiation provides needed polymorphism
 
-### 6.1 Stack-Based Types
+### 8.2 Deprecation of Procedural Try Functions
 
-All types are stack-allocated discriminated records:
-- No dynamic allocation
-- No access types or pointers
-- Suitable for embedded/restricted runtimes
+**Decision:** Deprecate Try_To_Result, Try_To_Functional_Result, etc. in favor of Map_To_Result.
 
-### 6.2 Size Considerations
+**Rationale:**
+- Declarative mappings are more maintainable
+- Exception tables are self-documenting
+- Reduces procedural Map_Exception boilerplate
 
-Result and Either sizes depend on the larger of their type parameters:
-```
-Size(Result[T, E]) = max(Size(T), Size(E)) + discriminant overhead
-```
+**Exception:** Option-based Try functions (Try_To_Functional_Option, Try_To_Option_With_Param) are NOT deprecated - they serve valid use cases for probe operations.
 
-For large types, consider using access types or limited types with explicit lifetime management.
+### 8.3 Exception Suppression in Scoped
 
-## 7. Performance Design
+**Decision:** Scoped guards catch and suppress exceptions from Release.
 
-### 7.1 Inline Optimization
+**Rationale:**
+- Prevents double-exception scenarios
+- Ensures cleanup completes even if Release fails
+- Consistent with RAII semantics in other languages
 
-All operations marked `with Inline`:
-```ada
-function Is_Ok (R : Result) return Boolean
-with Inline;
-```
+---
 
-Expected optimization: direct discriminant check, no function call overhead.
+## 9. Appendices
 
-### 7.2 Zero-Cost Abstraction
-
-Generated code should be equivalent to manual pattern matching:
-```ada
--- This Result code:
-Result := Chain (Validate (Transform (Parse (Input))));
-
--- Should compile to equivalent of:
-if Parse_Result.Is_Ok then
-   Transform_Result := Transform (Parse_Result.Ok_Value);
-   if Transform_Result.Is_Ok then
-      Result := Validate (Transform_Result.Ok_Value);
-   else
-      Result := Transform_Result;
-   end if;
-else
-   Result := Parse_Result;
-end if;
-```
-
-## 8. Testing Strategy
-
-### 8.1 Unit Tests
-
-Each package has dedicated test file:
-| File | Target | Tests |
-|------|--------|-------|
-| `test_result.adb` | Functional.Result | 84 |
-| `test_option.adb` | Functional.Option | 65 |
-| `test_either.adb` | Functional.Either | 58 |
-| `test_try.adb` | Functional.Try | 14 |
-| `test_try_option.adb` | Try Option bridges | 6 |
-| **Total** | | **227** |
-
-### 8.2 Coverage Target
-
-- Statement coverage: 90%+
-- Decision coverage: 90%+
-- Current: 95%+
-
-## 9. Build Configuration
-
-### 9.1 Library Modes
-
-```ada
-type Library_Type_Type is ("relocatable", "static", "static-pic");
-Library_Type : Library_Type_Type := external ("LIBRARY_TYPE", "static");
-for Library_Kind use Library_Type;
-```
-
-### 9.2 Build Profiles
-
-| Profile | Optimization | Debug | Assertions |
-|---------|--------------|-------|------------|
-| development | -O0 | Full | Enabled |
-| release | -O3 | None | Disabled |
-| validation | -O1 | Full | Enabled |
-
-## 10. Project Structure
+### Appendix A: Package Dependency Graph
 
 ```
-functional/
-├── alire.toml              # Alire manifest (v3.0.0)
-├── functional.gpr          # GPRbuild project
-├── src/
-│   ├── functional.ads      # Pure namespace
-│   ├── functional-result.ads/adb
-│   ├── functional-option.ads/adb
-│   ├── functional-either.ads/adb
-│   ├── functional-try.ads/adb
-│   ├── functional-try-to_result.ads/adb
-│   ├── functional-try-to_option.ads/adb
-│   └── version/
-│       └── functional-version.ads  # Auto-generated
-├── test/
-│   ├── alire.toml          # Test crate (v3.0.0)
-│   ├── unit/               # Unit tests (227 total)
-│   └── common/             # Test framework
-├── config/                 # Build configuration
-└── docs/
-    ├── formal/             # SRS, SDS, STG
-    ├── guides/             # User guide, cheatsheet
-    └── index.md            # Documentation hub
+Functional (root)
+├── Functional.Result
+├── Functional.Option
+├── Functional.Either
+├── Functional.Try
+│   ├── Functional.Try.Map_To_Result
+│   ├── Functional.Try.Map_To_Result_With_Param
+│   ├── Functional.Try.To_Result
+│   └── Functional.Try.To_Option
+├── Functional.Scoped
+└── Functional.Version
 ```
 
-## 11. API Quick Reference
+### Appendix B: Change History
 
-### 11.1 Operation Totals
+| Version | Date | Changes |
+|---------|------|---------|
+| 4.1.0 | 2025-12-18 | Deprecated procedural Try functions; kept Option functions |
+| 4.0.0 | 2025-12-12 | Removed Expect functions; added Map_To_Result packages |
+| 3.0.0 | 2025-11-30 | Initial architecture with Result, Option, Either, Try |
 
-| Package | Operations |
-|---------|------------|
-| Result | 36 |
-| Option | 26 |
-| Either | 20 |
-| Try | 5 |
-| **Total** | **87** |
+---
 
-### 11.2 SPARK Status
-
-| Package | SPARK_Mode | Categorization |
-|---------|------------|----------------|
-| Option | On | Preelaborate |
-| Result | On | Preelaborate |
-| Either | On | Preelaborate |
-| Try | Off | Exception boundary |
-| Version | N/A | Pure |
+**Document Control:**
+- Version: 4.1.0
+- Last Updated: 2025-12-18
+- Status: Released

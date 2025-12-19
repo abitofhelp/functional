@@ -1,94 +1,153 @@
-# Functional Documentation Index
+# Functional Library Documentation
 
-**Version:** 4.0.0  
-**Date:** December 12, 2025  
-**SPDX-License-Identifier:** BSD-3-Clause
-**License File:** See the LICENSE file in the project root.
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.  
-**Status:** Released  
-
----
-
-## Quick Start
-
-- **[Quick Start Guide](quick_start.md)** - Get started with Result, Option, Either, and Try in minutes
+**Version:** 4.1.0<br>
+**Date:** 2025-12-18<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ---
 
-## User Guides
+## Overview
 
-Practical guides for using the Functional library:
+The Functional library provides type-safe functional programming abstractions for Ada 2022. It enables railway-oriented programming with explicit error handling through Result, Option, Either, and Try types - eliminating the need for exceptions in business logic.
 
-### [Cheatsheet](guides/cheatsheet.md)
+**Key Capabilities:**
 
-Quick reference for all 87 operations across Result, Option, Either, Try, and Scoped types:
-
-- Constructor functions
-- Predicate functions
-- Extractors and defaults
-- Transform and chain operations
-- Operator overloads
-
-### [User Guide](guides/user_guide.md)
-
-Comprehensive guide covering:
-
-- Design philosophy and railway-oriented programming
-- SPARK compatibility and formal verification
-- Embedded systems considerations
-- Best practices and patterns
-- Migration guide from v3.x to v4.0.0
+- **Result[T, E]** - Success/failure with typed errors
+- **Option[T]** - Presence/absence without null
+- **Either[L, R]** - Neutral disjunction (both sides valid)
+- **Try** - Exception-to-Result/Option bridges at boundaries
+- **Scoped** - RAII guards for automatic resource cleanup
+- **SPARK Verified** - Domain/Application layers formally proved
 
 ---
 
-## Formal Documentation
+## Quick Navigation
 
-Comprehensive specifications and design documents:
+### Getting Started
 
-### [Software Requirements Specification (SRS)](formal/software_requirements_specification.md)
+- [Quick Start Guide](quick_start.md) - Installation, first program, basic usage
+- [Build Profiles](common/guides/build_profiles.md) - Development, validation, release configurations
 
-Complete requirements documentation including:
+### Formal Documentation
 
-- Functional requirements for Result, Option, Either, Try, and Scoped types
-- Non-functional requirements (purity, performance, compatibility)
-- System constraints and dependencies
-- Test coverage requirements (269 tests, 95%+ coverage)
+- [Software Requirements Specification](formal/software_requirements_specification.md) - Functional and non-functional requirements
+- [Software Design Specification](formal/software_design_specification.md) - Architecture, patterns, design decisions
+- [Software Test Guide](formal/software_test_guide.md) - Test strategy, execution, writing tests
 
-### [Software Design Specification (SDS)](formal/software_design_specification.md)
+### Developer Guides
 
-Detailed design documentation covering:
+- [User Guide](guides/user_guide.md) - Comprehensive API usage guide
+- [Cheatsheet](guides/cheatsheet.md) - Quick reference for all operations
+- [Error Handling Strategy](common/guides/error_handling_strategy.md) - Result monad patterns
 
-- Generic package architecture
-- Type safety and invariants (Boolean discriminants)
-- Railway-Oriented Programming patterns
-- Exception boundary design (Try module)
-- SPARK compatibility considerations
+### Reference
 
-### [Software Test Guide (STG)](formal/software_test_guide.md)
-
-Complete testing documentation including:
-
-- Test strategy and organization (269 tests: Result 84, Option 65, Either 58, Try 14, Try_Option 6, Scoped 11, Map_To_Result 31)
-- Running tests (unit tests via AUnit)
-- Writing new tests
-- Coverage analysis procedures
+- [CHANGELOG](../CHANGELOG.md) - Release history and version notes
+- [README](../README.md) - Project overview
 
 ---
 
-## Quick Links
+## Architecture
 
-- [Main README](../README.md) - Project overview and installation
-- [CHANGELOG](../CHANGELOG.md) - Release history and changes
-- [Tests](../test/) - Complete test suite (269 tests)
+```
+┌─────────────────────────────────────────────────────┐
+│                    Your Application                  │
+├─────────────────────────────────────────────────────┤
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │
+│  │   Result    │  │   Option    │  │   Either    │  │
+│  │   [T, E]    │  │     [T]     │  │   [L, R]    │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  │
+│  ┌─────────────────────────────────────────────────┐│
+│  │                     Try                          ││
+│  │  Map_To_Result | Map_To_Result_With_Param       ││
+│  │  To_Result | To_Option (child packages)         ││
+│  └─────────────────────────────────────────────────┘│
+│  ┌─────────────────────────────────────────────────┐│
+│  │                   Scoped                         ││
+│  │  Guard_For | Conditional_Guard_For              ││
+│  └─────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────┘
+```
+
+**Design Principles:**
+
+- **No Exceptions in Domain Logic** - All errors are values
+- **Type Safety** - Compiler enforces error handling
+- **Composability** - Chain operations with Map, And_Then, Or_Else
+- **SPARK Compatible** - Domain/Application layers provable
+- **Zero Runtime Cost** - Static dispatch, no heap allocation
 
 ---
 
-## Documentation Updates
+## API Summary
 
-Documentation is updated during the release process:
+| Module | Operations | Purpose |
+|--------|------------|---------|
+| **Result** | Ok, Error, Is_Ok, Is_Error, Value, Get_Error, Map, Map_Error, And_Then, Or_Else, Recover, Unwrap_Or, Match | Success/failure with typed errors |
+| **Option** | Some, None, Is_Some, Is_None, Value, Map, And_Then, Or_Else, Unwrap_Or, Match, Filter | Optional values without null |
+| **Either** | Left, Right, Is_Left, Is_Right, Left_Value, Right_Value, Map_Left, Map_Right, Fold | Neutral disjunction |
+| **Try** | Map_To_Result, Map_To_Result_With_Param, To_Result, To_Option | Exception boundaries |
+| **Scoped** | Guard_For, Conditional_Guard_For | RAII resource cleanup |
 
-- Version package regenerated from alire.toml
-- Formal documentation rebuilt from current codebase
-- Guide metadata updated with current version/date
+---
 
-For documentation issues or suggestions, please file an issue on GitHub.
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Linux (x86_64) | Supported | Primary development platform |
+| macOS (x86_64) | Supported | Tested with GNAT FSF |
+| macOS (ARM64) | Supported | Apple Silicon via Rosetta or native |
+| Windows (x86_64) | Supported | Tested with GNAT FSF |
+
+---
+
+## Quick Example
+
+```ada
+with Functional.Result;
+with Functional.Option;
+
+--  Define your error type
+type Error_Kind is (Validation_Error, Not_Found);
+
+--  Instantiate Result for your types
+package User_Result is new Functional.Result
+  (T => User_Type, E => Error_Kind);
+
+--  Use railway-oriented programming
+function Find_User (ID : User_ID) return User_Result.Result is
+begin
+   if not Valid_ID (ID) then
+      return User_Result.Error (Validation_Error);
+   end if;
+
+   declare
+      User : constant User_Type := Database.Lookup (ID);
+   begin
+      return User_Result.Ok (User);
+   end;
+end Find_User;
+
+--  Chain operations
+Result := Find_User (ID)
+  .And_Then (Validate_User'Access)
+  .Map (Format_User'Access);
+```
+
+---
+
+## Need Help?
+
+- **Getting Started** - See [Quick Start Guide](quick_start.md)
+- **Running Tests** - See [Software Test Guide](formal/software_test_guide.md)
+- **Error Handling** - See [Error Handling Strategy](common/guides/error_handling_strategy.md)
+- **API Reference** - See [User Guide](guides/user_guide.md) and [Cheatsheet](guides/cheatsheet.md)
+
+---
+
+**License:** BSD-3-Clause<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.

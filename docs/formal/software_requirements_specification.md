@@ -1,10 +1,11 @@
-# Software Requirements Specification (SRS)
+# Software Requirements Specification
 
-**Project:** Functional - Type-Safe Error Handling Library for Ada 2022
-**Version:** 4.0.0  
-**Date:** December 12, 2025  
-**Author:** Michael Gardner, A Bit of Help, Inc.
-**Status:** Released  
+**Version:** 4.1.0<br>
+**Date:** 2025-12-18<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ---
 
@@ -12,372 +13,240 @@
 
 ### 1.1 Purpose
 
-This Software Requirements Specification (SRS) describes the functional and non-functional requirements for the Functional library, a production-ready Ada 2022 library providing type-safe functional programming abstractions for error handling.
+This Software Requirements Specification (SRS) defines the functional and non-functional requirements for the Functional library, a type-safe functional programming library for Ada 2022.
 
 ### 1.2 Scope
 
-Functional provides:
-- `Result[T, E]` type for explicit error handling (success or failure with typed error)
-- `Option[T]` type for optional values (presence or absence)
-- `Either[L, R]` type for disjoint unions (one of two possible values)
-- `Try` bridges for converting exception-based APIs to Result/Option types
-- `Try.Map_To_Result` for declarative exception-to-error mapping tables
-- `Scoped` RAII guards for automatic resource cleanup at scope exit
-- Railway-oriented programming patterns for composable error handling
-- Full Ada 2022 contract support (Pre, Post, Inline aspects)
-- SPARK compatibility for formal verification
+The Functional library provides:
+- Result type for explicit error handling
+- Option type for optional values
+- Either type for neutral disjunction
+- Try bridges for exception-to-Result/Option conversion
+- Scoped guards for RAII resource management
 
 ### 1.3 Definitions and Acronyms
 
-- **Result**: A discriminated record representing either a success value (Ok) or an error value (Error)
-- **Option**: A discriminated record representing either a present value (Some) or absence (None)
-- **Either**: A discriminated record representing one of two possible values (Left or Right)
-- **Try**: Exception-to-Result/Option conversion utilities
-- **Map_To_Result**: Declarative exception-to-error mapping with mapping tables
-- **Scoped**: RAII guards for automatic resource cleanup (Guard_For, Conditional_Guard_For)
-- **Railway-Oriented Programming (ROP)**: A pattern where operations chain along "happy path" (Ok/Some) or "error track" (Error/None)
-- **Monadic Bind**: The `And_Then` operation that chains fallible operations
-- **SPARK**: Subset of Ada designed for formal verification
+| Term | Definition |
+|------|------------|
+| Result | A discriminated union representing success (Ok) or failure (Error) |
+| Option | A discriminated union representing presence (Some) or absence (None) |
+| Either | A discriminated union representing one of two valid values (Left or Right) |
+| Railway-Oriented Programming | A pattern where operations are chained, with errors automatically propagating |
+| RAII | Resource Acquisition Is Initialization - automatic cleanup pattern |
+| SPARK | SPARK Ada - a formally verifiable subset of Ada |
 
 ### 1.4 References
 
-- Ada 2022 Reference Manual (ISO/IEC 8652:2023)
-- Semantic Versioning 2.0.0 (semver.org)
-- Railway-Oriented Programming (Scott Wlaschin)
-- Rust std::result::Result and std::option::Option documentation
+- Ada 2022 Language Reference Manual
 - SPARK 2014 Reference Manual
+- Functional Programming in Ada (internal design document)
+
+---
 
 ## 2. Overall Description
 
 ### 2.1 Product Perspective
 
-Functional is a standalone utility library with no external dependencies beyond the Ada standard library. It provides foundational types used by domain, application, and infrastructure layers in hexagonal architecture projects.
-
-The library is designed to:
-- Replace exception-based error handling with explicit typed errors
-- Enable composition of fallible operations without nested conditionals
-- Provide a consistent API familiar to developers from Rust, Haskell, or F#
-- Support formal verification through SPARK compatibility
+The Functional library is a standalone Ada 2022 library designed to enable functional programming patterns in Ada applications. It integrates with the Ada ecosystem through Alire package management.
 
 ### 2.2 Product Features
 
-| Feature | Description |
-|---------|-------------|
-| **Result Type** | 36 operations for error handling (constructors, predicates, extractors, transforms, recovery, operators) |
-| **Option Type** | 26 operations for optional values (constructors, predicates, transforms, fallbacks, operators) |
-| **Either Type** | 20 operations for disjoint unions (constructors, predicates, transforms, conversions, operators) |
-| **Try Bridges** | 5 generic functions for exception-to-Result/Option conversion |
-| **SPARK Compatibility** | Option, Result, Either are `SPARK_Mode => On` for formal verification |
-| **Contract Support** | Pre/Post conditions with postconditions for prover assistance |
-| **Preelaborate** | Option, Result, Either packages support preelaborate instantiation |
+- **Result[T, E]**: Type-safe success/failure handling
+- **Option[T]**: Null-safe optional values
+- **Either[L, R]**: Neutral disjunction without error semantics
+- **Try**: Exception boundary adapters
+- **Scoped**: RAII guards for resource cleanup
 
 ### 2.3 User Classes
 
 | User Class | Description |
 |------------|-------------|
-| **Library Developers** | Build domain/application layers using Result/Option for all fallible operations |
-| **Infrastructure Developers** | Use Try bridges at I/O boundaries to convert exceptions to typed errors |
-| **SPARK Users** | Leverage formal verification for safety-critical applications |
-| **Embedded Developers** | Use zero-allocation types in resource-constrained environments |
+| Library Users | Ada developers using Functional in their projects |
+| Domain Developers | Developers implementing business logic with Result/Option |
+| Infrastructure Developers | Developers implementing I/O with Try bridges |
 
 ### 2.4 Operating Environment
 
-- **Ada Version**: Ada 2022 (requires GNAT >= 13)
-- **Build System**: Alire 2.0+ with GPRbuild
-- **Platforms**: Any platform supported by GNAT (Linux, macOS, Windows, embedded)
-- **Memory Model**: No dynamic allocation in core types; stack-based discriminated records
-- **SPARK**: GNATprove compatible for formal verification
+- Ada 2022 compatible compiler (GNAT 14+)
+- Any platform supported by GNAT (Linux, macOS, Windows)
+- Alire 2.0+ for dependency management
+
+### 2.5 Constraints
+
+- No heap allocation in core types (stack-based discriminated unions)
+- SPARK compatibility for Domain/Application layers
+- No runtime dependencies beyond Ada standard library
+
+---
 
 ## 3. Functional Requirements
 
-### 3.1 Result Type (FR-01)
+### 3.1 Result Module
 
-The `Functional.Result` generic package SHALL provide 36 operations:
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| FR-R01 | SHALL provide Ok constructor to create success values | Must |
+| FR-R02 | SHALL provide Error constructor to create failure values | Must |
+| FR-R03 | SHALL provide Is_Ok/Is_Error discriminant checks | Must |
+| FR-R04 | SHALL provide Value accessor with precondition Is_Ok | Must |
+| FR-R05 | SHALL provide Get_Error accessor with precondition Is_Error | Must |
+| FR-R06 | SHALL provide Map to transform success values | Must |
+| FR-R07 | SHALL provide Map_Error to transform error values | Must |
+| FR-R08 | SHALL provide And_Then for chaining fallible operations | Must |
+| FR-R09 | SHALL provide Or_Else for error recovery | Must |
+| FR-R10 | SHALL provide Unwrap_Or for default extraction | Must |
+| FR-R11 | SHALL provide Match for pattern matching | Should |
+| FR-R12 | SHALL provide Recover for error-to-success conversion | Should |
 
-**Constructors (3):**
-- `Ok(V)` - Create success result containing value V
-- `New_Error(E)` - Create error result containing error E
-- `From_Error(E)` - Alias for New_Error (infrastructure convenience)
+### 3.2 Option Module
 
-**Predicates (7):**
-- `Is_Ok(R)` - Returns True if R is Ok
-- `Is_Error(R)` - Returns True if R is Error
-- `Is_Ok_And(R)` - True if Ok and predicate holds on value (strict)
-- `Is_Error_And(R)` - True if Error and predicate holds on error (strict)
-- `Is_Ok_Or(R)` - True if Error or predicate holds on Ok value (lenient)
-- `Is_Error_Or(R)` - True if Ok or predicate holds on Error value (lenient)
-- `Contains(R, V)` - True if Ok value equals V
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| FR-O01 | SHALL provide Some constructor for present values | Must |
+| FR-O02 | SHALL provide None constructor for absent values | Must |
+| FR-O03 | SHALL provide Is_Some/Is_None discriminant checks | Must |
+| FR-O04 | SHALL provide Value accessor with precondition Is_Some | Must |
+| FR-O05 | SHALL provide Map to transform present values | Must |
+| FR-O06 | SHALL provide And_Then for chaining optional operations | Must |
+| FR-O07 | SHALL provide Or_Else for absence recovery | Must |
+| FR-O08 | SHALL provide Unwrap_Or for default extraction | Must |
+| FR-O09 | SHALL provide Filter to conditionally keep values | Should |
+| FR-O10 | SHALL provide Match for pattern matching | Should |
 
-**Extractors (5):**
-- `Value(R)` - Extract Ok value (Pre: Is_Ok)
-- `Error(R)` - Extract Error value (Pre: Is_Error)
-- `Expect(R, Msg)` - Extract Ok or raise with message
-- `Expect_Error(R, Msg)` - Extract Error or raise with message
-- `Unwrap_Error(R)` - Extract Error (Pre: Is_Error)
+### 3.3 Either Module
 
-**Defaults (2):**
-- `Unwrap_Or(R, Default)` - Return value or default
-- `Unwrap_Or_With(R)` - Return value or call lazy function
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| FR-E01 | SHALL provide Left constructor | Must |
+| FR-E02 | SHALL provide Right constructor | Must |
+| FR-E03 | SHALL provide Is_Left/Is_Right discriminant checks | Must |
+| FR-E04 | SHALL provide Left_Value accessor with precondition Is_Left | Must |
+| FR-E05 | SHALL provide Right_Value accessor with precondition Is_Right | Must |
+| FR-E06 | SHALL provide Map_Left to transform left values | Must |
+| FR-E07 | SHALL provide Map_Right to transform right values | Must |
+| FR-E08 | SHALL provide Fold for consuming either side | Should |
 
-**Transformations (12):**
-- `Map(R)` - Transform Ok value, pass Error unchanged
-- `Map_Or(R, Default)` - Transform Ok value or return default (eager)
-- `Map_Or_Else(R)` - Transform Ok value or call default producer (lazy)
-- `And_Then(R)` - Chain fallible operation (monadic bind)
-- `And_Then_Into(R)` - Chain with type transformation
-- `Map_Error(R)` - Transform Error value, pass Ok unchanged
-- `Bimap(R)` - Transform both Ok and Error simultaneously
-- `Zip_With(R1, R2)` - Combine two Results with a function
-- `Flatten(R)` - Unwrap nested Result[Result[T,E],E] to Result[T,E]
-- `To_Option(R)` - Convert Ok(v) to Some(v), Error(_) to None
+### 3.4 Try Module
 
-**Recovery (4):**
-- `Fallback(A, B)` - Return A if Ok, else B (eager)
-- `Fallback_With(R)` - Lazy fallback
-- `Recover(R)` - Convert Error to value
-- `Recover_With(R)` - Convert Error to Result
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| FR-T01 | SHALL provide Map_To_Result for declarative exception mapping | Must |
+| FR-T02 | SHALL provide Map_To_Result_With_Param for parameterized actions | Must |
+| FR-T03 | SHALL support empty mappings for catch-all behavior | Must |
+| FR-T04 | SHALL support multiple exception-to-error mappings | Must |
+| FR-T05 | SHALL provide To_Result child package for procedural mapping | Should |
+| FR-T06 | SHALL provide To_Option child package for probe operations | Should |
+| FR-T07 | SHALL include exception message in error construction | Must |
 
-**Validation (2):**
-- `Ensure(R)` - Validate Ok value with predicate
-- `With_Context(R, Msg)` - Append context to Error
+### 3.5 Scoped Module
 
-**Side Effects (3):**
-- `Tap(R)` - Execute callbacks on both Ok and Error
-- `Tap_Ok(R)` - Execute callback on Ok only
-- `Tap_Error(R)` - Execute callback on Error only
+| ID | Requirement | Priority |
+|----|-------------|----------|
+| FR-S01 | SHALL provide Guard_For for unconditional RAII | Must |
+| FR-S02 | SHALL provide Conditional_Guard_For for conditional RAII | Must |
+| FR-S03 | SHALL catch and suppress exceptions from Release | Must |
+| FR-S04 | SHALL support user-defined Release procedures | Must |
 
-**Operators (3):**
-- `"or"` for Unwrap_Or - `R or Default` syntax
-- `"or"` for Fallback - `A or B` syntax
-- `"="` for Contains - `R = V` syntax
-
-### 3.2 Option Type (FR-02)
-
-The `Functional.Option` generic package SHALL provide 26 operations:
-
-**Constructors (2):**
-- `New_Some(V)` - Create Option containing value V
-- `None` - Create empty Option
-
-**Predicates (5):**
-- `Is_Some(O)` - Returns True if O contains a value
-- `Is_None(O)` - Returns True if O is empty
-- `Is_Some_And(O)` - True if Some and predicate holds (strict)
-- `Is_None_Or(O)` - True if None or predicate holds on Some (lenient)
-- `Contains(O, V)` - True if Some value equals V
-
-**Extractors (2):**
-- `Value(O)` - Extract value (Pre: Has_Value)
-- `Expect(O, Msg)` - Extract value or raise with message
-
-**Defaults (2):**
-- `Unwrap_Or(O, Default)` - Return value or default
-- `Unwrap_Or_With(O)` - Return value or call lazy function
-
-**Transformations (9):**
-- `Map(O)` - Transform Some value, pass None unchanged
-- `Map_Or(O, Default)` - Transform Some value or return default (eager)
-- `Map_Or_Else(O)` - Transform Some value or call default producer (lazy)
-- `And_Then(O)` - Chain optional operation (monadic bind)
-- `Filter(O)` - Keep value only if predicate holds
-- `Zip_With(O1, O2)` - Combine two Options with a function
-- `Flatten(O)` - Unwrap nested Option[Option[T]] to Option[T]
-- `Ok_Or(O, E)` - Convert Some(v) to Ok(v), None to Error(e) (eager)
-- `Ok_Or_Else(O)` - Convert Some(v) to Ok(v), None to Error(f()) (lazy)
-
-**Fallback (3):**
-- `Or_Else(A, B)` - Return A if Some, else B (eager)
-- `Or_Else_With(O)` - Lazy fallback
-- `Fallback` - Alias for Or_Else
-
-**Side Effects (1):**
-- `Tap(O)` - Execute callback on Some value
-
-**Operators (4):**
-- `"or"` for Unwrap_Or - `O or Default` syntax
-- `"or"` for Or_Else - `A or B` syntax
-- `"and"` - Returns second when both have values
-- `"xor"` - Returns one when exactly one has value
-- `"="` for Contains - `O = V` syntax
-
-### 3.3 Either Type (FR-03)
-
-The `Functional.Either` generic package SHALL provide 20 operations:
-
-**Constructors (2):**
-- `Left(V)` - Create Either with Left value
-- `Right(V)` - Create Either with Right value
-
-**Predicates (7):**
-- `Is_Left(E)` - Returns True if E is Left
-- `Is_Right(E)` - Returns True if E is Right
-- `Is_Left_And(E)` - True if Left and predicate holds (strict)
-- `Is_Right_And(E)` - True if Right and predicate holds (strict)
-- `Is_Left_Or(E)` - True if Right or predicate holds on Left (lenient)
-- `Is_Right_Or(E)` - True if Left or predicate holds on Right (lenient)
-- `Contains(E, V)` - True if Right value equals V
-
-**Extractors (3):**
-- `Left_Value(E)` - Extract Left value (Pre: Is_Left)
-- `Right_Value(E)` - Extract Right value (Pre: Is_Right)
-- `Get_Or_Else(E, Default)` - Get Right value or default
-
-**Transformations (6):**
-- `Map(E)` - Right-biased transform (convenience)
-- `Map_Left(E)` - Transform Left value only
-- `Map_Right(E)` - Transform Right value only
-- `Bimap(E)` - Transform both values simultaneously
-- `Swap(E)` - Exchange Left and Right values
-- `And_Then(E)` - Right-biased monadic bind
-
-**Reduction (2):**
-- `Fold(E)` - Reduce to single value via handlers
-- `Merge(E)` - Extract value when L and R are same type
-
-**Conversion (2):**
-- `To_Option(E)` - Convert Right(v) to Some(v), Left(_) to None
-- `To_Result(E)` - Convert Right(v) to Ok(v), Left(e) to Error(e)
-
-**Operators (1):**
-- `"="` for Contains - `E = V` syntax
-
-### 3.4 Try Bridges (FR-04)
-
-The `Functional.Try` package SHALL provide 5 generic functions:
-
-**General Bridge:**
-- `Try_To_Result` - Convert exception-throwing action to any Result type
-
-**Convenience Wrappers:**
-- `Try_To_Functional_Result` - Bridge to Functional.Result
-- `Try_To_Functional_Option` - Bridge to Functional.Option
-
-**Parameterized Bridges:**
-- `Try_To_Result_With_Param` - Result bridge with input parameter
-- `Try_To_Option_With_Param` - Option bridge with input parameter
-
-### 3.5 Child Packages (FR-05)
-
-Backwards-compatible child packages SHALL provide legacy API:
-- `Functional.Try.To_Result` - Child package with `.Run` function
-- `Functional.Try.To_Option` - Child package with `.Run` function
+---
 
 ## 4. Non-Functional Requirements
 
-### 4.1 Performance (NFR-01)
+| ID | Category | Requirement |
+|----|----------|-------------|
+| NFR-01 | Performance | SHALL have zero heap allocation in core operations |
+| NFR-01 | Performance | SHALL use static dispatch (no tagged types in core) |
+| NFR-02 | Reliability | SHALL handle all exceptions at Try boundaries |
+| NFR-02 | Reliability | SHALL not propagate exceptions from Scoped guards |
+| NFR-03 | Portability | SHALL compile on GNAT 14+ across Linux, macOS, Windows |
+| NFR-03 | Portability | SHALL have no platform-specific code in library |
+| NFR-04 | Maintainability | SHALL achieve ≥90% test coverage |
+| NFR-04 | Maintainability | SHALL follow hybrid DDD/Clean/Hexagonal architecture |
+| NFR-05 | Usability | SHALL provide clear error messages |
+| NFR-05 | Usability | SHALL provide comprehensive documentation |
+| NFR-06 | Platform Abstraction | SHALL isolate exception handling to Try module |
+| NFR-07 | SPARK Verification | SHALL verify Domain types with SPARK_Mode => On |
+| NFR-07 | SPARK Verification | SHALL mark Try/Scoped with SPARK_Mode => Off |
+| NFR-08 | Testability | SHALL support unit testing of all public operations |
+| NFR-08 | Testability | SHALL provide instantiation tests for SPARK compatibility |
 
-- All core operations SHALL be marked with `Inline` aspect
-- No dynamic memory allocation in Result, Option, or Either types
-- Zero-overhead abstraction: generated code equivalent to manual if/case
-
-### 4.2 Reliability (NFR-02)
-
-- Pre/Post contracts SHALL enforce correct usage at compile time (assertions enabled)
-- No exceptions SHALL propagate from core type operations
-- Try bridges SHALL catch all exceptions and convert to typed errors
-
-### 4.3 Portability (NFR-03)
-
-- Library SHALL compile on any GNAT >= 13 target
-- No platform-specific code in core packages
-- Library type (static, relocatable, static-pic) configurable via GPR
-
-### 4.4 Maintainability (NFR-04)
-
-- 90%+ statement+decision test coverage target
-- All public API documented with purpose and usage
-- Consistent naming following Ada and functional programming conventions
-
-### 4.5 Usability (NFR-05)
-
-- API naming familiar to Rust/Haskell developers
-- Generic packages instantiable with any `private` type
-- Option, Result, Either packages support `Preelaborate` for strict elaboration contexts
-
-### 4.6 SPARK Formal Verification (NFR-06)
-
-| ID | Requirement |
-|----|-------------|
-| NFR-06.1 | Library SHALL pass SPARK legality checking (gnatprove --mode=check) |
-| NFR-06.2 | Option, Result, Either, Version packages SHALL use `SPARK_Mode => On` |
-| NFR-06.3 | Try package SHALL use `SPARK_Mode => Off` (exception boundary by design) |
-| NFR-06.4 | All transform operations SHALL have postconditions for prover assistance |
-| NFR-06.5 | No runtime errors provable (overflow, range, division by zero) |
-| NFR-06.6 | All variables SHALL be properly initialized before use |
-| NFR-06.7 | SPARK legality verification SHALL be runnable via `make spark-check` |
-| NFR-06.8 | SPARK proof verification SHALL be runnable via `make spark-prove` |
-| NFR-06.9 | No heap allocation, no controlled types, Ravenscar compatible |
-
-**Verification Scope:**
-
-| Package | SPARK_Mode | Rationale |
-|---------|-----------|-----------|
-| Functional.Result | On | Core monad, formally verifiable |
-| Functional.Option | On | Core monad, formally verifiable |
-| Functional.Either | On | Core type, formally verifiable |
-| Functional.Version | On | Pure data, formally verifiable |
-| Functional.Try | Off | Exception boundary by design |
+---
 
 ## 5. System Requirements
 
 ### 5.1 Hardware Requirements
 
-None - pure library with no hardware dependencies.
+No specific hardware requirements. The library operates within standard Ada runtime constraints.
 
 ### 5.2 Software Requirements
 
 | Component | Requirement |
 |-----------|-------------|
-| Ada Compiler | GNAT >= 13 (FSF or Pro) |
-| Build System | Alire >= 2.0, GPRbuild |
-| SPARK Prover | GNATprove (optional, for formal verification) |
-| Test Coverage | GNATcoverage (optional) |
+| Compiler | GNAT 14+ (Ada 2022 support) |
+| Package Manager | Alire 2.0+ |
+| SPARK Prover | GNATprove 14+ (optional, for verification) |
 
-## 6. Verification and Validation
+---
 
-### 6.1 Test Coverage
+## 6. Interface Requirements
 
-| Suite | Tests | Coverage Target |
-|-------|-------|-----------------|
-| Unit Tests | 227 | 90%+ stmt+decision |
-| Result | 84 | 95%+ |
-| Option | 65 | 95%+ |
-| Either | 58 | 95%+ |
-| Try | 14 | 95%+ |
-| Try_Option | 6 | 95%+ |
+### 6.1 User Interfaces
 
-### 6.2 Verification Methods
+Not applicable - this is a library, not an application.
 
-| Requirement | Method |
-|-------------|--------|
-| FR-01 to FR-05 | Unit tests exercising all operations |
-| NFR-01 | Code review for Inline aspects |
-| NFR-02 | Tests verify no exceptions from core operations |
-| NFR-03 | Build on multiple targets (POSIX, Windows) |
-| NFR-04 | GNATcoverage analysis |
-| NFR-05 | API review against Rust documentation |
-| NFR-06 | GNATprove analysis (optional) |
+### 6.2 Software Interfaces
 
-## 7. Appendices
+| Interface | Description |
+|-----------|-------------|
+| Ada.Exceptions | Used by Try module for exception handling |
+| Ada.Finalization | Used by Scoped module for RAII |
 
-### 7.1 API Summary
+### 6.3 Hardware Interfaces
 
-| Package | Operations |
-|---------|------------|
-| Functional.Result | 36 operations |
-| Functional.Option | 26 operations |
-| Functional.Either | 20 operations |
-| Functional.Try | 5 functions |
-| **Total** | **87 operations** |
+Not applicable.
 
-### 7.2 v3.0.0 Breaking Changes Summary
+---
 
-| Change | Old (2.x) | New (3.0.0) |
-|--------|-----------|-------------|
-| Option discriminant | `Kind : Kind_Type` | `Has_Value : Boolean` |
-| Result discriminant | `Kind : Kind_Type` | `Is_Ok : Boolean` |
-| Either discriminant | `Kind : Kind_Type` | `Is_Left : Boolean` |
-| Result constructor | `Err(e)` | `New_Error(e)` |
-| Result predicate | `Is_Err(r)` | `Is_Error(r)` |
-| Result transform | `Map_Err(r)` | `Map_Error(r)` |
-| Result field | `Err_Value` | `Error_Value` |
+## 7. Verification and Validation
+
+### 7.1 Verification Methods
+
+| Method | Scope |
+|--------|-------|
+| Unit Testing | All public operations of Result, Option, Either, Try, Scoped |
+| SPARK Proof | Result, Option, Either core operations |
+| Integration Testing | Try with real exception scenarios |
+| Code Review | All changes before merge |
+
+### 7.2 Traceability Matrix
+
+See [Software Test Guide](software_test_guide.md) Section 8 for requirements-to-tests mapping.
+
+---
+
+## 8. Appendices
+
+### Appendix A: Glossary
+
+| Term | Definition |
+|------|------------|
+| Discriminated Union | Ada record type with discriminant controlling variant |
+| Monad | Abstraction for sequencing computations (Map, And_Then) |
+| Functor | Abstraction for transforming wrapped values (Map) |
+| Applicative | Abstraction for applying wrapped functions |
+
+### Appendix B: Module Statistics
+
+| Module | Operations | SPARK_Mode |
+|--------|------------|------------|
+| Result | 34 | On |
+| Option | 26 | On |
+| Either | 18 | On |
+| Try | 6 + child packages | Off |
+| Scoped | 2 | Off |
+
+---
+
+**Document Control:**
+- Version: 4.1.0
+- Last Updated: 2025-12-18
+- Status: Released
