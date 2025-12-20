@@ -318,6 +318,270 @@ procedure Test_Try is
          "Try_Option_With_Param returns None when action raises");
    end Test_Try_Option_With_Param_Exception;
 
+   --  ==========================================================================
+   --  Test: Try_To_Result (base generic) - success path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Result_Success is
+      function Get_Value return Integer is (42);
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Get is new Functional.Try.Try_To_Result
+        (T             => Integer,
+         E             => Error,
+         Result_Type   => Int_Result.Result,
+         Ok            => Int_Result.Ok,
+         New_Error     => Int_Result.New_Error,
+         Map_Exception => To_Error,
+         Action        => Get_Value);
+
+      Result : constant Int_Result.Result := Try_Get;
+   begin
+      Put_Line ("Testing Try_To_Result (success)...");
+      Assert
+        (Int_Result.Is_Ok (Result), "Try_To_Result returns Ok for success");
+      Assert
+        (Int_Result.Value (Result) = 42, "Try_To_Result returns correct value");
+   end Test_Try_To_Result_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Result (base generic) - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Result_Exception is
+      function Raise_Error return Integer is
+      begin
+         raise Program_Error with "deliberate error";
+         return 0;  --  Unreachable, satisfies compiler
+      end Raise_Error;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Raise is new Functional.Try.Try_To_Result
+        (T             => Integer,
+         E             => Error,
+         Result_Type   => Int_Result.Result,
+         Ok            => Int_Result.Ok,
+         New_Error     => Int_Result.New_Error,
+         Map_Exception => To_Error,
+         Action        => Raise_Error);
+
+      Result : constant Int_Result.Result := Try_Raise;
+      Err    : Error;
+   begin
+      Put_Line ("Testing Try_To_Result (exception)...");
+      Assert
+        (Int_Result.Is_Error (Result),
+         "Try_To_Result returns Error when action raises");
+
+      Err := Int_Result.Error (Result);
+      Assert
+        (Err.Message (1 .. 16) = "deliberate error",
+         "Try_To_Result preserves exception message");
+   end Test_Try_To_Result_Exception;
+
+   --  ==========================================================================
+   --  Test: Try_To_Any_Result_With_Param - success path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Any_Result_With_Param_Success is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Parse is new Functional.Try.Try_To_Any_Result_With_Param
+        (T             => Integer,
+         E             => Error,
+         Param         => String,
+         Result_Type   => Int_Result.Result,
+         Ok            => Int_Result.Ok,
+         New_Error     => Int_Result.New_Error,
+         Map_Exception => To_Error,
+         Action        => Parse_String);
+
+      Result : constant Int_Result.Result := Try_Parse ("123");
+   begin
+      Put_Line ("Testing Try_To_Any_Result_With_Param (success)...");
+      Assert
+        (Int_Result.Is_Ok (Result),
+         "Try_To_Any_Result_With_Param returns Ok for success");
+      Assert
+        (Int_Result.Value (Result) = 123,
+         "Try_To_Any_Result_With_Param returns correct value");
+   end Test_Try_To_Any_Result_With_Param_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Any_Result_With_Param - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Any_Result_With_Param_Exception is
+      function Parse_String (S : String) return Integer is
+      begin
+         return Integer'Value (S);
+      end Parse_String;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Parse is new Functional.Try.Try_To_Any_Result_With_Param
+        (T             => Integer,
+         E             => Error,
+         Param         => String,
+         Result_Type   => Int_Result.Result,
+         Ok            => Int_Result.Ok,
+         New_Error     => Int_Result.New_Error,
+         Map_Exception => To_Error,
+         Action        => Parse_String);
+
+      Result : constant Int_Result.Result := Try_Parse ("invalid");
+   begin
+      Put_Line ("Testing Try_To_Any_Result_With_Param (exception)...");
+      Assert
+        (Int_Result.Is_Error (Result),
+         "Try_To_Any_Result_With_Param returns Error when action raises");
+   end Test_Try_To_Any_Result_With_Param_Exception;
+
+   --  ==========================================================================
+   --  Test: Try_To_Functional_Result - success path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Functional_Result_Success is
+      function Get_Value return Integer is (99);
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Get is new Functional.Try.Try_To_Functional_Result
+        (T             => Integer,
+         E             => Error,
+         Result_Pkg    => Int_Result,
+         Map_Exception => To_Error,
+         Action        => Get_Value);
+
+      Result : constant Int_Result.Result := Try_Get;
+   begin
+      Put_Line ("Testing Try_To_Functional_Result (success)...");
+      Assert
+        (Int_Result.Is_Ok (Result),
+         "Try_To_Functional_Result returns Ok for success");
+      Assert
+        (Int_Result.Value (Result) = 99,
+         "Try_To_Functional_Result returns correct value");
+   end Test_Try_To_Functional_Result_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Functional_Result - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Functional_Result_Exception is
+      function Raise_Error return Integer is
+      begin
+         raise Storage_Error with "out of memory";
+         return 0;  --  Unreachable, satisfies compiler
+      end Raise_Error;
+
+      function To_Error (Exc : Exception_Occurrence) return Error is
+         Msg : constant String := Exception_Message (Exc);
+      begin
+         return
+           (Exception_Error, Msg & [Msg'Length + 1 .. 100 => ' '], Msg'Length);
+      end To_Error;
+
+      function Try_Raise is new Functional.Try.Try_To_Functional_Result
+        (T             => Integer,
+         E             => Error,
+         Result_Pkg    => Int_Result,
+         Map_Exception => To_Error,
+         Action        => Raise_Error);
+
+      Result : constant Int_Result.Result := Try_Raise;
+      Err    : Error;
+   begin
+      Put_Line ("Testing Try_To_Functional_Result (exception)...");
+      Assert
+        (Int_Result.Is_Error (Result),
+         "Try_To_Functional_Result returns Error when action raises");
+
+      Err := Int_Result.Error (Result);
+      Assert
+        (Err.Message (1 .. 13) = "out of memory",
+         "Try_To_Functional_Result preserves exception message");
+   end Test_Try_To_Functional_Result_Exception;
+
+   --  ==========================================================================
+   --  Test: Try_To_Functional_Option - success path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Functional_Option_Success is
+      function Get_Value return Integer is (77);
+
+      function Try_Get is new Functional.Try.Try_To_Functional_Option
+        (T          => Integer,
+         Option_Pkg => Int_Option,
+         Action     => Get_Value);
+
+      Result : constant Int_Option.Option := Try_Get;
+   begin
+      Put_Line ("Testing Try_To_Functional_Option (success)...");
+      Assert
+        (Int_Option.Is_Some (Result),
+         "Try_To_Functional_Option returns Some for success");
+      Assert
+        (Int_Option.Value (Result) = 77,
+         "Try_To_Functional_Option returns correct value");
+   end Test_Try_To_Functional_Option_Success;
+
+   --  ==========================================================================
+   --  Test: Try_To_Functional_Option - exception path
+   --  ==========================================================================
+
+   procedure Test_Try_To_Functional_Option_Exception is
+      function Raise_Error return Integer is
+      begin
+         raise Tasking_Error with "task failed";
+         return 0;  --  Unreachable, satisfies compiler
+      end Raise_Error;
+
+      function Try_Raise is new Functional.Try.Try_To_Functional_Option
+        (T          => Integer,
+         Option_Pkg => Int_Option,
+         Action     => Raise_Error);
+
+      Result : constant Int_Option.Option := Try_Raise;
+   begin
+      Put_Line ("Testing Try_To_Functional_Option (exception)...");
+      Assert
+        (Int_Option.Is_None (Result),
+         "Try_To_Functional_Option returns None when action raises");
+   end Test_Try_To_Functional_Option_Exception;
+
 begin
    Put_Line ("======================================");
    Put_Line ("  Functional.Try.To_Result Tests");
@@ -333,6 +597,16 @@ begin
    Test_Try_With_Param_Exception;
    Test_Try_Option_With_Param_Success;
    Test_Try_Option_With_Param_Exception;
+
+   --  Tests for previously uncovered functions in Functional.Try
+   Test_Try_To_Result_Success;
+   Test_Try_To_Result_Exception;
+   Test_Try_To_Any_Result_With_Param_Success;
+   Test_Try_To_Any_Result_With_Param_Exception;
+   Test_Try_To_Functional_Result_Success;
+   Test_Try_To_Functional_Result_Exception;
+   Test_Try_To_Functional_Option_Success;
+   Test_Try_To_Functional_Option_Exception;
 
    New_Line;
    Put_Line ("======================================");
