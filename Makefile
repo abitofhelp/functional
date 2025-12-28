@@ -194,7 +194,7 @@ clean-coverage:
 
 clean-clutter: ## Remove temporary files, backups, and clutter
 	@echo "$(CYAN)Cleaning temporary files and clutter...$(NC)"
-	@$(PYTHON3) scripts/python/makefile/cleanup_temp_files.py
+	@$(PYTHON3) scripts/python/shared/makefile/cleanup_temp_files.py
 	@echo "$(GREEN)✓ Temporary files removed$(NC)"
 
 compress:
@@ -285,7 +285,7 @@ test-e2e: build build-tests
 
 test-coverage: ## Run tests with GNATcoverage analysis
 	@echo "$(GREEN)Running tests with GNATcoverage analysis...$(NC)"
-	@$(PYTHON3) scripts/python/makefile/coverage_ada.py
+	@$(PYTHON3) scripts/python/shared/makefile/coverage_ada.py
 
 test-python: ## Run Python script tests (arch_guard.py validation)
 	@echo "$(GREEN)Running Python script tests...$(NC)"
@@ -333,7 +333,7 @@ check:
 
 check-arch: ## Validate architecture boundaries
 	@echo "$(GREEN)Validating architecture boundaries...$(NC)"
-	-@PYTHONPATH=scripts/python $(PYTHON3) -m arch_guard
+	-@PYTHONPATH=scripts/python/shared $(PYTHON3) -m arch_guard --project-root .
 	@echo "$(YELLOW)⚠ Architecture validation complete (violations are warnings, not errors)$(NC)"
 
 spark-check: ## Run SPARK CHECK formal verification
@@ -368,8 +368,8 @@ spark-prove: ## Run SPARK PROVE formal verification
 # THE CURRENT SCRIPT IS COMMENTING COMMENTS AND MESSING UP WITH INDEXED COMMENTS.
 # format-src:
 # 	@echo "$(GREEN)Formatting source code...$(NC)"
-# 	@if [ ! -f "scripts/python/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
-# 		echo "$(RED)Error: scripts/python/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
+# 	@if [ ! -f "scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
+# 		echo "$(RED)Error: scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
 # 		exit 1; \
 # 	fi
 # 	@for dir in $(SRC_DIR); do \
@@ -377,7 +377,7 @@ spark-prove: ## Run SPARK PROVE formal verification
 # 			find "$$dir" -name "*.ads" -o -name "*.adb" | \
 # 			while read file; do \
 # 				echo "  Formatting $$file..."; \
-# 				$(PYTHON3) scripts/python/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(PROJECT_NAME).gpr" --include-path "$(PWD)/$$file" || true; \
+# 				$(PYTHON3) scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(PROJECT_NAME).gpr" --include-path "$(PWD)/$$file" || true; \
 # 			done; \
 # 		fi; \
 # 	done
@@ -385,15 +385,15 @@ spark-prove: ## Run SPARK PROVE formal verification
 
 # format-tests:
 # 	@echo "$(GREEN)Formatting test code...$(NC)"
-# 	@if [ ! -f "scripts/python/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
-# 		echo "$(RED)Error: scripts/python/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
+# 	@if [ ! -f "scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py" ]; then \
+# 		echo "$(RED)Error: scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py not found$(NC)"; \
 # 		exit 1; \
 # 	fi
 # 	@if [ -d "$(TEST_DIR)" ] && [ -f "$(TEST_DIR)/tests.gpr" ]; then \
 # 		find $(TEST_DIR) -name "*.ads" -o -name "*.adb" | \
 # 		while read file; do \
 # 			echo "  Formatting $$file..."; \
-# 			$(PYTHON3) scripts/python/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(TEST_DIR)/tests.gpr" --include-path "$(PWD)/$$file" || true; \
+# 			$(PYTHON3) scripts/python/shared/makefile/ada_formatter_pipeline.donotuse.py "$(PWD)/$(TEST_DIR)/tests.gpr" --include-path "$(PWD)/$$file" || true; \
 # 		done; \
 # 		echo "$(GREEN)✓ Test formatting complete$(NC)"; \
 # 	fi
@@ -447,12 +447,12 @@ refresh: ## Refresh Alire dependencies
 
 install-tools: ## Install development tools (GMP, gcovr, gnatformat)
 	@echo "$(CYAN)Installing development tools...$(NC)"
-	@$(PYTHON3) scripts/python/makefile/install_tools.py
+	@$(PYTHON3) scripts/python/shared/makefile/install_tools.py
 	@echo "$(GREEN)✓ Tool installation complete$(NC)"
 
 build-coverage-runtime: ## Force rebuild GNATcoverage runtime library
 	@echo "$(CYAN)Rebuilding GNATcoverage runtime...$(NC)"
-	@$(PYTHON3) scripts/python/makefile/coverage_ada.py --rebuild-runtime --unit-only
+	@$(PYTHON3) scripts/python/shared/makefile/coverage_ada.py --rebuild-runtime --unit-only
 	@echo "$(GREEN)✓ GNATcov runtime rebuilt (run 'make test-coverage' for full analysis)$(NC)"
 
 .DEFAULT_GOAL := help
