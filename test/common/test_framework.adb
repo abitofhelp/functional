@@ -51,7 +51,18 @@ package body Test_Framework is
    begin
       Put_Line ("");
 
-      if Passed = Total then
+      if Total = 0 then
+         --  No tests ran: Bright red box
+         Put_Line (Color_Red & "########################################");
+         Put_Line ("###");
+         Put_Line ("###    " & Category_Name & ": FAILURE");
+         Put_Line ("###    No tests were executed!");
+         Put_Line ("###");
+         Put_Line ("########################################" & Color_Reset);
+         Put_Line ("");
+         return 1;  --  Failure exit code
+
+      elsif Passed = Total then
          --  Success: Bright green box
          Put_Line (Color_Green & "########################################");
          Put_Line ("###");
