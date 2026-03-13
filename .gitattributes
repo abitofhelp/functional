@@ -85,5 +85,5 @@ config/tzif_config.ads linguist-generated
 # Exclude submodules from Alire source archives to prevent path collisions
 # with dependencies that share the same submodule structure
 scripts/python export-ignore
-test/python export-ignore
+test/scripts/python/shared export-ignore
 docs/common export-ignore

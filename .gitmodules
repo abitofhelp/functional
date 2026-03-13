@@ -1,6 +1,6 @@
-[submodule "test/python"]
-	path = test/python
-	url = https://github.com/abitofhelp/hybrid_test_python.git
 [submodule "scripts/python/shared"]
 	path = scripts/python/shared
 	url = https://github.com/abitofhelp/hybrid_scripts_python.git
+[submodule "test/scripts/python/shared"]
+	path = test/scripts/python/shared
+	url = https://github.com/abitofhelp/hybrid_test_python.git
