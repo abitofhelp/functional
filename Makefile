@@ -90,7 +90,7 @@ help: ## Display this help message
 	@echo "  clean-clutter      - Remove temporary files and backups"
 	@echo "  clean-coverage     - Clean coverage data"
 	@echo "  clean-deep         - Deep clean (includes Alire cache)"
-	@echo "  compress           - Create compressed source archive (tar.gz)"
+	@echo "  compress           - Create compressed source archive (tgz)"
 	@echo "  rebuild            - Clean and rebuild"
 	@echo ""
 	@echo "$(YELLOW)Testing Commands:$(NC)"
@@ -199,23 +199,8 @@ clean-clutter: ## Remove temporary files, backups, and clutter
 
 compress:
 	@echo "$(CYAN)Creating compressed source archive...$(NC)"
-	@tar -czvf "$(PROJECT_NAME).tar.gz" \
-		--exclude="$(PROJECT_NAME).tar.gz" \
-		--exclude='.git' \
-		--exclude='tools' \
-		--exclude='data' \
-		--exclude='obj' \
-		--exclude='bin' \
-		--exclude='lib' \
-		--exclude='alire' \
-		--exclude='.build' \
-		--exclude='coverage' \
-		--exclude='.DS_Store' \
-		--exclude='*.o' \
-		--exclude='*.ali' \
-		--exclude='*.backup' \
-		.
-	@echo "$(GREEN)✓ Archive created: $(PROJECT_NAME).tar.gz$(NC)"
+	git archive --format=tar.gz -o "$(PROJECT_NAME).tgz" HEAD
+	@echo "$(GREEN)✓ Archive created: $(PROJECT_NAME).tgz$(NC)"
 
 rebuild: clean build
 
