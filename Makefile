@@ -52,8 +52,11 @@ PYTHON3 := python3
 # =============================================================================
 # Tool Flags
 # =============================================================================
-ALR_BUILD_FLAGS := -j8 | grep -E 'warning:|(style)|error:' || true
-ALR_TEST_FLAGS  := -j8 | grep -E 'warning:|(style)|error:' || true
+ALR_BUILD_FLAGS := -j8
+
+# Build wrapper: filters output to diagnostics only while propagating the
+# build exit code. See scripts/python/shared/makefile/alr_build.py.
+ALR_BUILD_WRAPPER := $(PYTHON3) scripts/python/shared/makefile/alr_build.py
 
 # =============================================================================
 # Directories
@@ -141,23 +144,23 @@ build: build-dev
 
 build-dev: check-arch prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (development mode)...$(NC)"
-	$(ALR) build --development -- $(ALR_BUILD_FLAGS)
+	@$(ALR_BUILD_WRAPPER) $(ALR) build --development -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Development build complete$(NC)"
 
 build-opt: check-arch prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (optimized -O2)...$(NC)"
-	$(ALR) build -- -O2 $(ALR_BUILD_FLAGS)
+	@$(ALR_BUILD_WRAPPER) $(ALR) build -- -O2 $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Optimized build complete$(NC)"
 
 build-release: check-arch prereqs
 	@echo "$(GREEN)Building $(PROJECT_NAME) (release mode)...$(NC)"
-	$(ALR) build --release -- $(ALR_BUILD_FLAGS)
+	@$(ALR_BUILD_WRAPPER) $(ALR) build --release -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
 build-tests: check-arch prereqs
 	@echo "$(GREEN)Building test suites...$(NC)"
 	@if [ -f "$(TEST_DIR)/unit/unit_tests.gpr" ]; then \
-		$(ALR) exec -- $(GPRBUILD) -P $(TEST_DIR)/unit/unit_tests.gpr -p $(ALR_TEST_FLAGS); \
+		$(ALR_BUILD_WRAPPER) $(ALR) exec -- $(GPRBUILD) -P $(TEST_DIR)/unit/unit_tests.gpr -p $(ALR_BUILD_FLAGS); \
 		echo "$(GREEN)✓ Unit tests built$(NC)"; \
 	else \
 		echo "$(YELLOW)Unit test project not found$(NC)"; \
@@ -169,6 +172,8 @@ clean:
 	@$(ALR) exec -- gprclean -P $(PROJECT_NAME).gpr -q 2>/dev/null || true
 	@$(ALR) exec -- gprclean -P $(TEST_DIR)/unit/unit_tests.gpr -q 2>/dev/null || true
 	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TEST_DIR)/bin $(TEST_DIR)/obj
+	@# Delete platform-specific lock file (see README: Platform Build Constraint)
+	@rm -f alire/alire.lock
 	@find . -name "*.backup" -delete 2>/dev/null || true
 	@echo "$(GREEN)✓ Project artifacts cleaned (dependencies preserved for fast rebuild)$(NC)"
 
@@ -313,7 +318,7 @@ test-windows: ## Trigger Windows CI validation on GitHub Actions
 
 check:
 	@echo "$(GREEN)Running code checks...$(NC)"
-	@$(ALR) build --development -- $(ALR_BUILD_FLAGS)
+	@$(ALR_BUILD_WRAPPER) $(ALR) build --development -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Code checks complete$(NC)"
 
 check-arch: ## Validate architecture boundaries
