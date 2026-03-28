@@ -198,3 +198,4 @@ ENV/
 # Temporary 
 # GNAT Pretty Print temp files
 *__GNATPP-TEMP
+*.tgz

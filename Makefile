@@ -204,8 +204,8 @@ clean-clutter: ## Remove temporary files, backups, and clutter
 
 compress:
 	@echo "$(CYAN)Creating compressed source archive...$(NC)"
-	git archive --format=tar.gz -o "$(PROJECT_NAME).tgz" HEAD
-	@echo "$(GREEN)✓ Archive created: $(PROJECT_NAME).tgz$(NC)"
+	git archive --format=tar.gz -o "$(PROJECT_NAME).tar.gz" HEAD
+	@echo "$(GREEN)✓ Archive created: $(PROJECT_NAME).tar.gz$(NC)"
 
 rebuild: clean build
 
