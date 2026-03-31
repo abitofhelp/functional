@@ -219,7 +219,7 @@ Not applicable.
 
 ### 7.2 Traceability Matrix
 
-See [Software Test Guide](software_test_guide.md) Section 8 for requirements-to-tests mapping.
+See [Software Test Plan](software_test_plan.md) Section 8 for requirements-to-tests mapping.
 
 ---
 

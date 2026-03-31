@@ -35,7 +35,7 @@ The Functional library provides type-safe functional programming abstractions fo
 
 - [Software Requirements Specification](formal/software_requirements_specification.md) - Functional and non-functional requirements
 - [Software Design Specification](formal/software_design_specification.md) - Architecture, patterns, design decisions
-- [Software Test Guide](formal/software_test_guide.md) - Test strategy, execution, writing tests
+- [Software Test Plan](formal/software_test_plan.md) - Test strategy, execution, writing tests
 
 ### Developer Guides
 
@@ -143,7 +143,7 @@ Result := Find_User (ID)
 ## Need Help?
 
 - **Getting Started** - See [Quick Start Guide](quick_start.md)
-- **Running Tests** - See [Software Test Guide](formal/software_test_guide.md)
+- **Running Tests** - See [Software Test Plan](formal/software_test_plan.md)
 - **Error Handling** - See [Error Handling Strategy](common/guides/error_handling_strategy.md)
 - **API Reference** - See [User Guide](guides/user_guide.md) and [Cheatsheet](guides/cheatsheet.md)
 

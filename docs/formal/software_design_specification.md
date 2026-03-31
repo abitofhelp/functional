@@ -27,7 +27,7 @@ This document covers:
 ### 1.3 References
 
 - [Software Requirements Specification](software_requirements_specification.md)
-- [Software Test Guide](software_test_guide.md)
+- [Software Test Plan](software_test_plan.md)
 - Ada 2022 Language Reference Manual
 
 ---

@@ -1,4 +1,4 @@
-# Software Test Guide
+# Software Test Plan
 
 **Version:** 4.1.0<br>
 **Date:** 2025-12-18<br>
@@ -13,7 +13,7 @@
 
 ### 1.1 Purpose
 
-This Software Test Guide (STG) describes the test strategy, organization, and execution procedures for the Functional library.
+This Software Test Plan (STP) describes the test strategy, organization, and execution procedures for the Functional library.
 
 ### 1.2 Scope
 
