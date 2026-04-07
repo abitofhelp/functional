@@ -17,6 +17,7 @@ PROJECT_NAME := functional
 		help prereqs rebuild refresh stats test test-all test-coverage \
 		test-unit test-integration test-e2e test-python test-windows \
 		install-tools build-coverage-runtime \
+		docs-formal \
 		submodule-init submodule-update submodule-status spark-check spark-prove
 # FIX: ENABLE AFTER THE TARGETS CONVERT TO USING OUR ADAFMT TOOL, WHICH IS IN DEVELOPMENT.
 #       format format-all format-src format-tests
@@ -446,6 +447,13 @@ build-coverage-runtime: ## Force rebuild GNATcoverage runtime library
 	@echo "$(GREEN)✓ GNATcov runtime rebuilt (run 'make test-coverage' for full analysis)$(NC)"
 
 .DEFAULT_GOAL := help
+
+## ---------------------------------------------------------------------------
+## Documentation
+## ---------------------------------------------------------------------------
+
+docs-formal: ## Compile Typst formal docs (SRS, SDS, STG) to PDF
+	@python3 scripts/python/shared/makefile/compile_formal_docs.py
 
 ## ---------------------------------------------------------------------------
 ## Submodule Management
