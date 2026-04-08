@@ -391,14 +391,15 @@ None. The library is hardware-agnostic.
   [NFR-07.3], [Provide instantiation tests for SPARK compatibility.],
 )
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto, 1fr),
   table.header([*Module*], [*SPARK_Mode*], [*Rationale*]),
-  [Result], [On], [Pure functional type, no side effects.],
-  [Option], [On], [Pure functional type, no side effects.],
   [Either], [On], [Pure functional type, no side effects.],
-  [Try], [Off], [Exception handling.],
+  [Option], [On], [Pure functional type, no side effects.],
+  [Result], [On], [Pure functional type, no side effects.],
   [Scoped], [Off], [Ada.Finalization.],
+  [Try], [Off], [Exception handling.],
 )
 
 == Testability (NFR-08)
