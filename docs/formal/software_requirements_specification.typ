@@ -8,6 +8,12 @@
 // Modification Policy:
 //   - Edit this file for project-specific SRS content.
 //   - Keep shared presentation logic in core.typ.
+// Table Ordering:
+//   Sort any table whose rows a reader might scan to locate a specific
+//   entry — definitions, acronyms, constraints, packages, interfaces,
+//   and similar reference tables.  Sort alphabetically by the first
+//   column.  Tables with an inherent sequence (requirement IDs within
+//   a section, change history, workflow steps) retain their logical order.
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
@@ -79,18 +85,19 @@ This Software Requirements Specification (SRS) defines the functional and non-fu
 
 == Definitions and Acronyms
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Term*], [*Definition*]),
-  [Result], [A discriminated union representing success (Ok) or failure (Error).],
-  [Option], [A discriminated union representing presence (Some) or absence (None).],
-  [Either], [A discriminated union representing one of two valid values (Left or Right).],
-  [Railway-Oriented Programming], [A pattern where operations are chained, with errors automatically propagating through the pipeline.],
-  [RAII], [Resource Acquisition Is Initialization — automatic cleanup pattern using Ada finalization.],
-  [SPARK], [A formally verifiable subset of Ada.],
   [Discriminated Union], [Ada record type with a discriminant controlling the variant.],
-  [Monad], [Abstraction for sequencing computations (Map, And_Then).],
+  [Either], [A discriminated union representing one of two valid values (Left or Right).],
   [Functor], [Abstraction for transforming wrapped values (Map).],
+  [Monad], [Abstraction for sequencing computations (Map, And_Then).],
+  [Option], [A discriminated union representing presence (Some) or absence (None).],
+  [RAII], [Resource Acquisition Is Initialization — automatic cleanup pattern using Ada finalization.],
+  [Railway-Oriented Programming], [A pattern where operations are chained, with errors automatically propagating through the pipeline.],
+  [Result], [A discriminated union representing success (Ok) or failure (Error).],
+  [SPARK], [A formally verifiable subset of Ada.],
 )
 
 == References
@@ -134,12 +141,13 @@ Unlike the typical hybrid DDD/Clean/Hexagonal project, Functional does not have 
 
 == User Classes
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*User Class*], [*Description*]),
-  [Library Consumers], [Ada developers using Functional types in their projects.],
   [Domain Developers], [Developers implementing business logic with Result/Option.],
   [Infrastructure Developers], [Developers implementing I/O boundaries with Try bridges.],
+  [Library Consumers], [Ada developers using Functional types in their projects.],
 )
 
 == Operating Environment
@@ -158,13 +166,14 @@ Unlike the typical hybrid DDD/Clean/Hexagonal project, Functional does not have 
 
 == Constraints
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Constraint*], [*Rationale*]),
   [Ada 2022], [Required for modern language features.],
   [No Heap Allocation], [Stack-based discriminated unions ensure embedded safety.],
-  [SPARK Subset], [Core types must remain formally verifiable.],
   [No Runtime Dependencies], [Only the Ada standard library is permitted.],
+  [SPARK Subset], [Core types must remain formally verifiable.],
 )
 
 = Interface Requirements
@@ -423,13 +432,14 @@ No specific hardware requirements. The library operates within standard Ada runt
 
 == Verification Methods
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Method*], [*Description*]),
-  [Unit Testing], [All public operations of Result, Option, Either, Try, Scoped.],
-  [SPARK Proof], [Result, Option, Either core operations.],
-  [Integration Testing], [Try with real exception scenarios.],
   [Code Review], [All changes reviewed before merge.],
+  [Integration Testing], [Try with real exception scenarios.],
+  [SPARK Proof], [Result, Option, Either core operations.],
+  [Unit Testing], [All public operations of Result, Option, Either, Try, Scoped.],
 )
 
 == Traceability Matrix

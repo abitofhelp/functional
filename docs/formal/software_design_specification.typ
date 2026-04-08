@@ -8,6 +8,12 @@
 // Modification Policy:
 //   - Edit this file for project-specific SDS content.
 //   - Keep shared presentation logic in core.typ.
+// Table Ordering:
+//   Sort any table whose rows a reader might scan to locate a specific
+//   entry — definitions, acronyms, constraints, packages, interfaces,
+//   and similar reference tables.  Sort alphabetically by the first
+//   column.  Tables with an inherent sequence (requirement IDs within
+//   a section, change history, workflow steps) retain their logical order.
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
@@ -100,19 +106,20 @@ This document covers:
 
 == Dependency Rules
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr, auto),
   table.header([*Package*], [*Dependencies*], [*SPARK_Mode*]),
   [Functional], [None], [On],
-  [Functional.Result], [Functional], [On],
-  [Functional.Option], [Functional], [On],
   [Functional.Either], [Functional], [On],
+  [Functional.Option], [Functional], [On],
+  [Functional.Result], [Functional], [On],
+  [Functional.Scoped], [Ada.Finalization], [Off],
   [Functional.Try], [Ada.Exceptions, Result, Option], [Off],
   [Functional.Try.Map_To_Result], [Try], [Off],
   [Functional.Try.Map_To_Result_With_Param], [Try], [Off],
-  [Functional.Try.To_Result], [Try, Result], [Off],
   [Functional.Try.To_Option], [Try, Option], [Off],
-  [Functional.Scoped], [Ada.Finalization], [Off],
+  [Functional.Try.To_Result], [Try, Result], [Off],
   [Functional.Version], [None], [On],
 )
 
@@ -145,19 +152,20 @@ src/
 
 == Package Descriptions
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr, auto),
   table.header([*Package*], [*Purpose*], [*SPARK*]),
   [`Functional`], [Root namespace, common declarations.], [On],
-  [`Functional.Result`], [Success/failure discriminated union with combinators.], [On],
-  [`Functional.Option`], [Presence/absence discriminated union with combinators.], [On],
   [`Functional.Either`], [Left/right discriminated union with combinators.], [On],
+  [`Functional.Option`], [Presence/absence discriminated union with combinators.], [On],
+  [`Functional.Result`], [Success/failure discriminated union with combinators.], [On],
+  [`Functional.Scoped`], [RAII guard generics.], [Off],
   [`Functional.Try`], [Exception-to-Result/Option bridge infrastructure.], [Off],
   [`Functional.Try.Map_To_Result`], [Declarative exception mapping (no extra parameter).], [Off],
   [`Functional.Try.Map_To_Result_With_Param`], [Declarative exception mapping (parameterized action).], [Off],
-  [`Functional.Try.To_Result`], [Procedural exception mapping (legacy).], [Off],
   [`Functional.Try.To_Option`], [Exception-to-Option for probe operations.], [Off],
-  [`Functional.Scoped`], [RAII guard generics.], [Off],
+  [`Functional.Try.To_Result`], [Procedural exception mapping (legacy).], [Off],
   [`Functional.Version`], [Library version constants.], [On],
 )
 
@@ -299,14 +307,15 @@ Consumers of the Functional library use Result and Option types for all expected
 
 == Module Responsibilities
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Module*], [*Error Handling Role*]),
-  [Result], [Carry success/failure values through combinators.],
-  [Option], [Carry present/absent values through combinators.],
   [Either], [Carry left/right values through combinators.],
-  [Try], [Catch exceptions at boundaries and convert to Result or Option.],
+  [Option], [Carry present/absent values through combinators.],
+  [Result], [Carry success/failure values through combinators.],
   [Scoped], [Suppress exceptions from cleanup actions to prevent double-exception scenarios.],
+  [Try], [Catch exceptions at boundaries and convert to Result or Option.],
 )
 
 == Try Usage Guidelines
@@ -377,14 +386,15 @@ Functional targets a *spark-targeted* assurance posture. Core types (Result, Opt
 
 == Module Assessment
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto, 1fr),
   table.header([*Module*], [*SPARK*], [*Notes*]),
-  [Result], [On], [Pure functional type, fully provable.],
-  [Option], [On], [Pure functional type, fully provable.],
   [Either], [On], [Pure functional type, fully provable.],
-  [Try], [Off], [Exception handling is inherently outside SPARK.],
+  [Option], [On], [Pure functional type, fully provable.],
+  [Result], [On], [Pure functional type, fully provable.],
   [Scoped], [Off], [Ada.Finalization is outside SPARK.],
+  [Try], [Off], [Exception handling is inherently outside SPARK.],
   [Version], [On], [Constants only.],
 )
 
