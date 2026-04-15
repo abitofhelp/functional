@@ -199,3 +199,11 @@ ENV/
 # GNAT Pretty Print temp files
 *__GNATPP-TEMP
 *.tgz
+# Claude Code session exports / ephemeral scratch space.
+# The CLI /export command has been broken for some time (writes
+# 0-byte stubs); durable session artifacts now live in
+# backup/sessions/ via the session_snapshot tool in
+# scripts/python/shared. The exports/ directory is kept as a local
+# scratch path for cross-project context bouncing, but its contents
+# are not git-tracked. See backup/sessions/README.md.
+exports/
