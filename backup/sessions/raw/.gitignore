@@ -1,0 +1,12 @@
+# Everything in this directory is gitignored on purpose: compressed
+# session jsonls are large binary blobs that belong on external
+# storage, not in git history. The directory itself is tracked
+# (via this .gitignore file being the only tracked file) so fresh
+# clones get a usable target for jsonl_snapshot without needing to
+# run mkdir.
+#
+# See ../README.md and scripts/python/shared/jsonl_snapshot/README.md
+# for the workflow that targets this directory.
+
+*
+!.gitignore
