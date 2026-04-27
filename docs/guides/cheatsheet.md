@@ -1,10 +1,11 @@
 # Cheatsheet
 
-**Version:** 4.1.0<br>
-**Date:** 2025-12-18<br>
+**Doc Version:** 4.1.0<br>
+**Applies to functional:** ^4.1<br>
+**Last Updated:** 2026-04-27<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Copyright:** © 2026 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released
 
 ---
