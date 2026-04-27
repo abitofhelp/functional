@@ -25,10 +25,11 @@
   authors: ("Michael Gardner",),
   version: "4.1.0",
   status: "Released",
-  status_date: "2025-12-18",
+  status_date: "2026-04-27",
   spdx_license: "BSD-3-Clause",
   license_file: "See the LICENSE file in the project root",
-  copyright: "© 2025 Michael Gardner, A Bit of Help, Inc.",
+  copyright: "© 2026 Michael Gardner, A Bit of Help, Inc.",
+  applies_to: "^4.1",
 )
 
 #let profile = (
