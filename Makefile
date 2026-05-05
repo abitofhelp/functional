@@ -12,8 +12,10 @@
 
 PROJECT_NAME := functional
 
-.PHONY: all build build-dev build-opt build-release build-tests check check-arch \
-        clean clean-clutter clean-coverage clean-deep compress deps \
+.PHONY: all build build-dev build-opt build-release build-tests \
+		build-xplatform-validation check check-arch \
+        clean clean-clutter clean-coverage clean-deep clean-deep-extra \
+		compress deps \
 		help prereqs rebuild refresh stats test test-all test-coverage \
 		test-unit test-integration test-e2e test-python test-windows \
 		install-tools build-coverage-runtime \
@@ -70,6 +72,22 @@ BIN_DIR := bin
 COVERAGE_DIR := coverage
 
 # =============================================================================
+# Cross-Platform Validation Configuration
+# =============================================================================
+# PATH_PINNED_REPO_DEPS: sister repos this project path-pins via alire.toml
+# that have their own Makefile and can be deep-cleaned recursively.  Used by
+# `clean-deep` and `build-xplatform-validation` only.
+#
+# This repo (functional) is the leaf of the hybrid Ada DAG: no path-pinned
+# sister-repo dependencies.  Empty list → recursion loop is a no-op.
+PATH_PINNED_REPO_DEPS :=
+
+# BUILD_OUTPUT_DESC: human-readable description of the primary build artifact,
+# shown by `build-xplatform-validation` on success.  Library here, so static
+# archive name; binaries (e.g. adafmt) override this with their bin path.
+BUILD_OUTPUT_DESC := lib/lib$(PROJECT_NAME).a
+
+# =============================================================================
 # Default Target
 # =============================================================================
 
@@ -90,10 +108,13 @@ help: ## Display this help message
 	@echo "  build-opt          - Build with optimization (-O2)"
 	@echo "  build-release      - Build in release mode"
 	@echo "  build-tests        - Build test suite"
+	@echo "  build-xplatform-validation"
+	@echo "                     - Cross-platform validation: clean-deep + build --release"
+	@echo "                       (use only when validating host ↔ container builds)"
 	@echo "  clean              - Clean build artifacts"
 	@echo "  clean-clutter      - Remove temporary files and backups"
 	@echo "  clean-coverage     - Clean coverage data"
-	@echo "  clean-deep         - Deep clean (includes Alire cache)"
+	@echo "  clean-deep         - Deep clean (Alire cache + alire/ + path-pinned deps)"
 	@echo "  compress           - Create compressed source archive (tgz)"
 	@echo "  rebuild            - Clean and rebuild"
 	@echo ""
@@ -158,6 +179,17 @@ build-release: check-arch prereqs
 	@$(ALR_BUILD_WRAPPER) $(ALR) build --release -- $(ALR_BUILD_FLAGS)
 	@echo "$(GREEN)✓ Release build complete$(NC)"
 
+# Cross-platform validation: clean every platform-specific artifact (own
+# outputs + alr cache + alire/ + path-pinned sister repos via recursion +
+# clean-deep-extra hook for non-Makefile deps), then build --release.  Use
+# only when validating that a build is reproducible across host ↔ container
+# platforms; not for normal single-platform development (which is `build-dev`).
+build-xplatform-validation: clean-deep
+	@echo "$(GREEN)Building $(PROJECT_NAME) (cross-platform validation, release mode)...$(NC)"
+	@$(MAKE) build-release --no-print-directory
+	@echo "$(GREEN)✓ Cross-platform validation build complete$(NC)"
+	@echo "$(GREEN)  Output: $(BUILD_OUTPUT_DESC)$(NC)"
+
 build-tests: check-arch prereqs
 	@echo "$(GREEN)Building test suites...$(NC)"
 	@if [ -f "$(TEST_DIR)/unit/unit_tests.gpr" ]; then \
@@ -180,12 +212,38 @@ clean:
 
 clean-deep:
 	@echo "$(YELLOW)Deep cleaning ALL artifacts including dependencies...$(NC)"
-	@echo "$(YELLOW)⚠️  This will require rebuilding all dependencies (slow!)$(NC)"
+	@echo "$(YELLOW)⚠️  Cross-platform validation cleanup — next build will be slow.$(NC)"
 	@$(ALR) clean
 	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TEST_DIR)/bin $(TEST_DIR)/obj
 	@rm -rf alire .build $(COVERAGE_DIR)
 	@find . -name "*.backup" -delete 2>/dev/null || true
+	@# Recurse into path-pinned sister repos.  Fail fast on a missing dep or
+	@# a dep without a Makefile — these are expected invariants and silent
+	@# failure here would leave exactly the platform contamination we are
+	@# trying to remove.
+	@set -e; \
+	for dep in $(PATH_PINNED_REPO_DEPS); do \
+		if [ ! -d "$$dep" ]; then \
+			echo "$(RED)✗ Expected path-pinned dependency is missing: $$dep$(NC)"; \
+			exit 1; \
+		fi; \
+		if [ ! -f "$$dep/Makefile" ]; then \
+			echo "$(RED)✗ Expected path-pinned dependency has no Makefile: $$dep$(NC)"; \
+			exit 1; \
+		fi; \
+		echo "$(YELLOW)  Recursing into $$dep ...$(NC)"; \
+		$(MAKE) -C "$$dep" clean-deep --no-print-directory; \
+	done
+	@# Hook for repo-specific extras (e.g. wiping non-Makefile deps like
+	@# deps26 in astfmt).  Default no-op; override in this Makefile.
+	@$(MAKE) clean-deep-extra --no-print-directory
 	@echo "$(GREEN)✓ Deep clean complete (next build will be slow)$(NC)"
+
+# Default no-op extension point for clean-deep.  Override in repos that have
+# non-Makefile dependencies that still need cross-platform-arch cleaning
+# (e.g. astfmt cleans the deps26 vendored crate build outputs here).
+clean-deep-extra:
+	@:
 
 clean-coverage:
 	@echo "$(YELLOW)Cleaning coverage artifacts...$(NC)"
