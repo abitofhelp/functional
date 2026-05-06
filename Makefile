@@ -213,9 +213,16 @@ clean:
 clean-deep:
 	@echo "$(YELLOW)Deep cleaning ALL artifacts including dependencies...$(NC)"
 	@echo "$(YELLOW)⚠️  Cross-platform validation cleanup — next build will be slow.$(NC)"
-	@$(ALR) clean
-	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TEST_DIR)/bin $(TEST_DIR)/obj
+	@# Ordering matters: we wipe `alire/` (which holds alire.lock plus alr's
+	@# cache and build_hash_inputs) BEFORE doing anything else.  Running
+	@# `alr clean` here would itself trigger a workspace sync that re-reads
+	@# any stale, platform-specific entries in the lock — for example a
+	@# `system:zlib1g-dev` URL recorded on a prior host whose distribution
+	@# detection differed from this one — and bomb out before the wipe
+	@# could happen.  We therefore do not call `alr clean` from clean-deep;
+	@# the destructive rm -rf below is sufficient and free of side effects.
 	@rm -rf alire .build $(COVERAGE_DIR)
+	@rm -rf $(BUILD_DIR) $(BIN_DIR) lib $(TEST_DIR)/bin $(TEST_DIR)/obj
 	@find . -name "*.backup" -delete 2>/dev/null || true
 	@# Recurse into path-pinned sister repos.  Fail fast on a missing dep or
 	@# a dep without a Makefile — these are expected invariants and silent
