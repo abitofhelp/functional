@@ -2,11 +2,11 @@
 
 [![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE) [![Ada](https://img.shields.io/badge/Ada-2022-blue.svg)](https://ada-lang.io) [![SPARK](https://img.shields.io/badge/SPARK-Proved-green.svg)](https://www.adacore.com/about-spark) [![Alire](https://img.shields.io/badge/Alire-2.0+-blue.svg)](https://alire.ada.dev)
 
-**Version:** 4.1.0<br>
-**Date:** 2025-12-18<br>
+**Version:** 4.1.1<br>
+**Date:** <YYYY-MM-DD pending tag><br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Copyright:** © 2025-2026 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released
 
 ## Overview
@@ -352,7 +352,7 @@ A Bit of Help, Inc.
 
 ## Project Status
 
-**Status**: Production Ready (v4.1.0)
+**Status**: Production Ready (v4.1.1)
 
 - [x] Result[T,E] - 30 operations
 - [x] Option[T] - 25 operations

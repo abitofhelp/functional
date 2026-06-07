@@ -1,10 +1,10 @@
 # Changelog
 
-**Version:** 4.1.0<br>
-**Date:** 2025-12-18<br>
+**Version:** 4.1.1<br>
+**Date:** <YYYY-MM-DD pending tag><br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Copyright:** © 2025-2026 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released
 
 All notable changes to this project will be documented in this file.
@@ -13,6 +13,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+No unreleased changes yet.
+
+---
+
+## [4.1.1] - <YYYY-MM-DD pending tag>
+
+### Fixed
+
+- **Publishability of the Alire community-index source**: switch the
+  two `.gitmodules` submodule URLs from SSH (`git@github.com:...`)
+  back to HTTPS (`https://github.com/...`) so downstream consumers
+  and Alire's deployment of the published source can clone the
+  dev/tooling submodules without SSH credentials. Effectively
+  reverses the URL portion of `f4863eb chore(submodules): switch
+  submodule URLs from HTTPS to SSH`. Library API and runtime
+  behaviour are byte-identical to v4.1.0; this is a publishability
+  patch only.
 
 ---
 
