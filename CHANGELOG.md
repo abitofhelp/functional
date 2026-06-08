@@ -1,7 +1,7 @@
 # Changelog
 
 **Version:** 4.1.1<br>
-**Date:** 2026-06-09<br>
+**Date:** 2026-06-08<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
 **Copyright:** © 2025-2026 Michael Gardner, A Bit of Help, Inc.<br>
@@ -18,7 +18,7 @@ No unreleased changes yet.
 
 ---
 
-## [4.1.1] - 2026-06-09
+## [4.1.1] - 2026-06-08
 
 ### Fixed
 
